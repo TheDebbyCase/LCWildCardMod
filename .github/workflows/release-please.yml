@@ -39,11 +39,6 @@ jobs:
         with:
           thunderstore-client: true
 
-      - name: Build
-        run: dotnet build
-        env:
-          BuildThunderstorePackage: true
-
       - name: Publish to Thunderstore
         run: tcli publish
         env:
