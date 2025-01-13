@@ -17,7 +17,7 @@ As of now, I have created:
 - Scraps
 	- Wormted Poster
 	- NBickles
-	- Moo Cow
+	- Moo Cow (CURRENTLY HAS NO 3D MODEL)
 	
 And hope to add more soon! Make suggestions in the Discord!
 
