@@ -1,10 +1,7 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+﻿using System.Collections.Generic;
 using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
-using LethalLib.Modules;
 
 namespace LCWildCardMod
 {

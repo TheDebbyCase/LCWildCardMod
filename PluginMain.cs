@@ -14,7 +14,7 @@ namespace LCWildCardMod
     public class WildCardMod : BaseUnityPlugin
     {
         private const string modGUID = "deB.WildCard";
-        private const string modName = "WILD/CARD Things";
+        private const string modName = "WILDCARD Stuff";
         private const string modVersion = "0.0.1";
         private readonly Harmony harmony = new Harmony(modGUID);
         private static WildCardMod Instance;
