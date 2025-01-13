@@ -3,7 +3,7 @@ schemaVersion = "0.0.1"
 
 [package]
 namespace = "deB"
-name = "WILDCARD Stuff"
+name = "WILDCARDStuff"
 versionNumber = "0.0.1"
 description = "Adds content based on YouTube org WILDCARD!"
 websiteUrl = "https://github.com/TheDebbyCase/LCWildCardMod"
@@ -35,9 +35,8 @@ source = "./LICENSE"
 target = "./LICENSE"
 
 [publish]
-repository = "https://github.com/TheDebbyCase/LCWildCardMod"
-communities = ["lethalcompany"]
+communities = ["lethal-company"]
 [publish.categories]
-lethal-company = ["bepinex", "mods", "items", "server-side"]
+lethal-company = ["bepinex", "mods", "items", "serverside"]
 
 
