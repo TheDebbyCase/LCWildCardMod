@@ -14,7 +14,6 @@
 
 .vs/
 .gradle/
-.zip/
 
 ExportedObj/
 .consulo/
@@ -32,6 +31,7 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
+*.zip
 
 *.pidb.meta
 *.pdb.meta
