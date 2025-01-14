@@ -34,7 +34,7 @@ Subscribe to [WILDCARD](https://www.youtube.com/@WILDCARDorg)!
 
 - [Evaisa](https://thunderstore.io/c/lethal-company/p/Evaisa) for making the library mod this is based on!
 - [ZigZag Awaka](https://thunderstore.io/c/lethal-company/p/Zigzag) for having a solid and readable mod I could learn a lot from!
-- [WhiteSpike](https://thunderstore.io/c/lethal-company/p/WhiteSpike), [Robyn](https://thunderstore.io/c/lethal-company/p/Mom_Llama), [MattyMatty](https://thunderstore.io/c/lethal-company/p/mattymatty/), [XuXiaolan](https://thunderstore.io/c/lethal-company/p/XuXiaolan), [Zaggy](https://thunderstore.io/c/lethal-company/p/Zaggy1024) for giving me various tips and advice!
+- [WhiteSpike](https://thunderstore.io/c/lethal-company/p/WhiteSpike), [Robyn](https://thunderstore.io/c/lethal-company/p/Mom_Llama), [MattyMatty](https://thunderstore.io/c/lethal-company/p/mattymatty/), [XuXiaolan](https://thunderstore.io/c/lethal-company/p/XuXiaolan), [Zaggy](https://thunderstore.io/c/lethal-company/p/Zaggy1024),[IAmBatby](https://thunderstore.io/c/lethal-company/p/IAmBatby/) for giving me various tips and advice!
 - [qwbarch](https://thunderstore.io/c/lethal-company/p/qwbarch) for being the reason I got into modding Lethal Company in the first place, courtesy of [Mirage](https://thunderstore.io/c/lethal-company/p/qwbarch/Mirage)!
 - [Lunxara](https://www.twitch.tv/lunxara) for keeping my interest alive and letting me play with her!
 - Everyone in the [Modding Discord](https://discord.com/channels/1168655651455639582/) for being and making such a great community, and letting me be a part of it!
