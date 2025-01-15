@@ -1,3 +1,8 @@
+## 0.1.0
+- Finished Moo Cow model, gave Wormted Poster some bonus polygons
+- Fixed up prefab scaling
+- Updated README
+
 ## 0.0.4
 - Fixed scrap audio being global
 - Updated README
