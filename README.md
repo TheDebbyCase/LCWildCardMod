@@ -21,7 +21,7 @@ As of now, I have created:
 		![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
 	- NBickles (Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social))
 		![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
-	- Moo Cow (CURRENTLY HAS NO 3D MODEL) (Original design by [Kael](https://www.twitch.tv/kael))
+	- Moo Cow (Original design by [Kael](https://www.twitch.tv/kael))
 		![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png)
 	
 And hope to add more soon! Make suggestions in the Discord!
