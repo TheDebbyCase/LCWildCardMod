@@ -18,6 +18,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	Original design by [Giwi](https://www.twitch.tv/giwi)
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Videos/WormtedPosterShowcase.mp4)
 	
 	</details>
 	
@@ -26,6 +27,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social)
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Videos/NBicklesShowcase.mp4)
 	
 	</details>
 	
@@ -34,6 +36,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	Original design by [Kael](https://www.twitch.tv/kael)
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Videos/MooCowShowcase.mp4)
 	
 	</details>
 	
