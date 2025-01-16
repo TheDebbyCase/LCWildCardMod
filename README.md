@@ -5,26 +5,33 @@ Repository for my very first mod, WILDCARD Stuff!
 You can use the [Issues](https://github.com/TheDebbyCase/LCWildCardMod/issues) tab to submit any problems with the mod, or any suggestions you may have.
 Suggestions can also be made directly to me in the mod-release thread on the [Lethal Company Modding Discord](https://discord.com/channels/1168655651455639582/1328209352628375652)!
 
-If you wish you can also donate to me over on [Ko-Fi](https://ko-fi.com/thedebbycase)
+If you wish you can also donate to me over on [Ko-Fi](https://ko-fi.com/thedebbycase)!
 
-## Thunderstore
-
-Of course, see the Thunderstore page [here](https://thunderstore.io/c/lethal-company/p/deB/WILDCARD_Stuff)!
-Or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
+Of course, see the Thunderstore page [here](https://thunderstore.io/c/lethal-company/p/deB/WILDCARDStuff),
+or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 
 ## Content so far!
 
-As of now, I have created:
-
 - Scraps
-	- Wormted Poster (Original design by [Giwi](https://www.twitch.tv/giwi))
-		![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
-	- NBickles (Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social))
-		![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
-	- Moo Cow (Original design by [Kael](https://www.twitch.tv/kael))
-		![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png)
+	<details>
+	<summary>Wormted Poster</summary>
+	Original design by [Giwi](https://www.twitch.tv/giwi)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
+	</details>
 	
-And hope to add more soon! Make suggestions in the Discord!
+	<details>
+	<summary>NBickles</summary>
+	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
+	</details>
+	
+	<details>
+	<summary>Moo Cow</summary>
+	Original design by [Kael](https://www.twitch.tv/kael)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png)
+	</details>
+	
+I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD
 
