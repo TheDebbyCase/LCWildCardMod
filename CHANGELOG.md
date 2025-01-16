@@ -1,5 +1,8 @@
+## 0.1.2
+- Updated README
+
 ## 0.1.1
--Forgor to update the README oopsies
+- Forgor to update the README oopsies
 
 ## 0.1.0
 - Finished Moo Cow model, gave Wormted Poster some bonus polygons
