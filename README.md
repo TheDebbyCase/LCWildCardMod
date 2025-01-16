@@ -15,20 +15,26 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 - Scraps
 	<details>
 	<summary>Wormted Poster</summary>
+	
 	Original design by [Giwi](https://www.twitch.tv/giwi)
-	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
+	<img src="https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png"/>
+	
 	</details>
 	
 	<details>
 	<summary>NBickles</summary>
+	
 	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social)
-	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
+	<img src="https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png"/>
+	
 	</details>
 	
 	<details>
 	<summary>Moo Cow</summary>
+	
 	Original design by [Kael](https://www.twitch.tv/kael)
 	<img src="https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png"/>
+	
 	</details>
 	
 I hope to add more soon! Make suggestions in the Discord!
