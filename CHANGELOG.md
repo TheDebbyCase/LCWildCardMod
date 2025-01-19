@@ -1,3 +1,6 @@
+## 0.2.1
+- Updated README
+
 ## 0.2.0
 - Unified all scaling settings for the scraps which will make it easier for me in the future
 - Added Pixel Jar

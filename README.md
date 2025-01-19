@@ -41,7 +41,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>Pixel Jar</summary>
 	
 	Original designs by [Kael](https://www.twitch.tv/giwi)
-	No preview right now cause I just gots ta sleep, find it!
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/PixelJarPreview.png)
 	
 	</details>
 	
