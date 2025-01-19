@@ -15,11 +15,13 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.1.2";
+        private const string modVersion = "0.2.0";
         private readonly Harmony harmony = new Harmony(modGUID);
         private static WildCardMod Instance;
         internal static WildCardConfig ModConfig {get; private set;} = null!;
-        private readonly string[] declaredAssetPaths = {"assets/my creations/items", "assets/my creations/enemies"};
+        internal static int randomSeed = 0;
+        internal static List<Texture> floaterTextures = new List<Texture>();
+        private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items", "assets/my creations/shop items", "assets/my creations/entities", "assets/my creations/textures/pixel jar"};
         void Awake()
         {
             if (Instance == null)
@@ -32,7 +34,28 @@ namespace LCWildCardMod
             {
                 if (declaredAssetPaths.Contains(assetPath[..assetPath.LastIndexOf("/")]))
                 {
-                    scrapList.Add(bundle.LoadAsset<Item>(assetPath));
+                    switch (assetPath[..assetPath.LastIndexOf("/")])
+                    {
+                        case "assets/my creations/scrap items":
+                            {
+                                scrapList.Add(bundle.LoadAsset<Item>(assetPath));
+                                break;
+                            }
+                        case "assets/my creations/shop items":
+                            {
+                                scrapList.Add(bundle.LoadAsset<Item>(assetPath));
+                                break;
+                            }
+                        case "assets/my creations/textures/pixel jar":
+                            {
+                                floaterTextures.Add(bundle.LoadAsset<Texture>(assetPath));
+                                break;
+                            }
+                        default:
+                            {
+                                break;
+                            }
+                    }
                 }
                 else
                 {
@@ -73,10 +96,18 @@ namespace LCWildCardMod
                                 scrapModdedWeights.Add(configScrapString, int.Parse(configScrapString.Split(":")[1]));
                             }
                         }
-                        LethalLib.Modules.Items.RegisterScrap(scrapList[i], null, scrapModdedWeights);
-                        LethalLib.Modules.Items.RegisterScrap(scrapList[i], scrapLevelWeights);
+                        switch (scrapList[i].itemName)
+                        {
+                            case "Pixel Jar":
+                                scrapList[i].spawnPrefab.AddComponent<ChangePixelJarFloaterMat>();
+                                break;
+                            default:
+                                break;
+                        }
                         NetworkPrefabs.RegisterNetworkPrefab(scrapList[i].spawnPrefab);
                         Utilities.FixMixerGroups(scrapList[i].spawnPrefab);
+                        LethalLib.Modules.Items.RegisterScrap(scrapList[i], null, scrapModdedWeights);
+                        LethalLib.Modules.Items.RegisterScrap(scrapList[i], scrapLevelWeights);
                         foreach (KeyValuePair<Levels.LevelTypes, int> debugRarities in Items.scrapItems.LastOrDefault().levelRarities)
                         {
                             Logger.LogDebug($"LethalLib Registered Weights {debugRarities}");
