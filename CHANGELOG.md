@@ -1,3 +1,8 @@
+## 0.2.2
+- Fixed Pixal Jars spamming the log with errors, and made them sync between players
+- Wanted to make the type of floater stay the same between sessions but will look into this later
+- Updated README
+
 ## 0.2.1
 - Updated README
 

@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using System;
 using System.Linq;
+using BepInEx.Logging;
 
 namespace LCWildCardMod
 {
@@ -15,18 +16,31 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.2.1";
+        private const string modVersion = "0.2.2";
         private readonly Harmony harmony = new Harmony(modGUID);
+        internal static ManualLogSource Log = null!;
         private static WildCardMod Instance;
         internal static WildCardConfig ModConfig {get; private set;} = null!;
-        internal static int randomSeed = 0;
-        internal static List<Texture> floaterTextures = new List<Texture>();
-        private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items", "assets/my creations/shop items", "assets/my creations/entities", "assets/my creations/textures/pixel jar"};
+        private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items"};
         void Awake()
         {
+            Log = Logger;
             if (Instance == null)
             {
                 Instance = this;
+            }
+            Type[] assemblyTypes = Assembly.GetExecutingAssembly().GetTypes();
+            foreach (Type currentType in assemblyTypes)
+            {
+                MethodInfo[] typeMethods = currentType.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                foreach (MethodInfo currentMethod in typeMethods)
+                {
+                    object[] methodAttributes = currentMethod.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+                    if (methodAttributes.Length > 0)
+                    {
+                        currentMethod.Invoke(null, null);
+                    }
+                }
             }
             AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "wildcardmod"));
             List<Item> scrapList = new List<Item>();
@@ -41,16 +55,6 @@ namespace LCWildCardMod
                                 scrapList.Add(bundle.LoadAsset<Item>(assetPath));
                                 break;
                             }
-                        case "assets/my creations/shop items":
-                            {
-                                scrapList.Add(bundle.LoadAsset<Item>(assetPath));
-                                break;
-                            }
-                        case "assets/my creations/textures/pixel jar":
-                            {
-                                floaterTextures.Add(bundle.LoadAsset<Texture>(assetPath));
-                                break;
-                            }
                         default:
                             {
                                 break;
@@ -59,7 +63,7 @@ namespace LCWildCardMod
                 }
                 else
                 {
-                    Logger.LogDebug($"\"{assetPath}\" is not a known asset path, skipping.");
+                    Log.LogDebug($"\"{assetPath}\" is not a known asset path, skipping.");
                 }
             }
             ModConfig = new WildCardConfig(base.Config, scrapList);
@@ -96,35 +100,27 @@ namespace LCWildCardMod
                                 scrapModdedWeights.Add(configScrapString, int.Parse(configScrapString.Split(":")[1]));
                             }
                         }
-                        switch (scrapList[i].itemName)
-                        {
-                            case "Pixel Jar":
-                                scrapList[i].spawnPrefab.AddComponent<ChangePixelJarFloaterMat>();
-                                break;
-                            default:
-                                break;
-                        }
                         NetworkPrefabs.RegisterNetworkPrefab(scrapList[i].spawnPrefab);
                         Utilities.FixMixerGroups(scrapList[i].spawnPrefab);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], null, scrapModdedWeights);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], scrapLevelWeights);
                         foreach (KeyValuePair<Levels.LevelTypes, int> debugRarities in Items.scrapItems.LastOrDefault().levelRarities)
                         {
-                            Logger.LogDebug($"LethalLib Registered Weights {debugRarities}");
+                            Log.LogDebug($"LethalLib Registered Weights {debugRarities}");
                         }
-                        Logger.LogInfo($"{scrapList[i].itemName} was loaded!");
+                        Log.LogInfo($"{scrapList[i].itemName} was loaded!");
                     }
                     else
                     {
-                        Logger.LogWarning($"{scrapList[i].itemName} was not loaded as its config was not set up correctly!");
+                        Log.LogWarning($"{scrapList[i].itemName} was not loaded as its config was not set up correctly!");
                     }
                 }
                 else
                 {
-                    Logger.LogInfo($"{scrapList[i].itemName} was disabled!");
+                    Log.LogInfo($"{scrapList[i].itemName} was disabled!");
                 }
             }
-            Logger.LogInfo("WILD/CARD Things Successfully Loaded");
+            Log.LogInfo("WILDCARD Stuff Successfully Loaded");
         }
     }
 }

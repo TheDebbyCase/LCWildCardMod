@@ -17,6 +17,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>Wormted Poster</summary>
 	
 	Original design by [Giwi](https://www.twitch.tv/giwi)
+
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
 	
 	</details>
@@ -25,6 +26,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>NBickles</summary>
 	
 	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social)
+
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
 	
 	</details>
@@ -33,6 +35,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>Moo Cow</summary>
 	
 	Original design by [Kael](https://www.twitch.tv/kael)
+
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png)
 	
 	</details>
@@ -40,8 +43,16 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Pixel Jar</summary>
 	
-	Original designs by [Kael](https://www.twitch.tv/giwi)
+	Original designs by [Kael](https://www.twitch.tv/kael)
+
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/PixelJarPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Vulpuxie Item</summary>
+	
+	Coming Soon!
 	
 	</details>
 	

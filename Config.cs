@@ -7,9 +7,9 @@ namespace LCWildCardMod
 {
     public class WildCardConfig
     {
-        public readonly List<ConfigEntry<bool>> isScrapEnabled = new List<ConfigEntry<bool>>();
-        public readonly List<ConfigEntry<string>> scrapSpawnWeights = new List<ConfigEntry<string>>();
-        public WildCardConfig(ConfigFile cfg, List<Item> scrapList)
+        internal readonly List<ConfigEntry<bool>> isScrapEnabled = new List<ConfigEntry<bool>>();
+        internal readonly List<ConfigEntry<string>> scrapSpawnWeights = new List<ConfigEntry<string>>();
+        internal WildCardConfig(ConfigFile cfg, List<Item> scrapList)
         {
             cfg.SaveOnConfigSet = false;
             foreach (Item scrapListItem in scrapList)
