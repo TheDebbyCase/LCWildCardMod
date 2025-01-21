@@ -50,7 +50,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	</details>
 
 	<details>
-	<summary>Vulpuxie Item</summary>
+	<summary>Alolan Vulpixie</summary>
 	
 	Original model by [Game Freak](https://www.gamefreak.co.jp)
 	

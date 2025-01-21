@@ -13,34 +13,28 @@ namespace LCWildCardMod
     {
         public Texture[] floaterVariants;
         public Texture floaterCurrent;
-        private NetworkVariable<int> textureIndex = new NetworkVariable<int>(-1);
-        private System.Random rng = new System.Random();
+        private int textureIndex = new int();
+        private System.Random randomIndex = new System.Random();
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            textureIndex.OnValueChanged += SetTexture;
-            GetTextureIndex();
-            TextureUpdateServerRpc(textureIndex.Value);
-        }
-        public void GetTextureIndex()
-        {
             if (IsServer)
             {
                 if (floaterCurrent == null)
                 {
-                    textureIndex.Value = rng.Next(floaterVariants.Length);
+                    textureIndex = randomIndex.Next(floaterVariants.Length);
+                    floaterCurrent = floaterVariants[textureIndex];
                 }
                 else
                 {
-                    textureIndex.Value = Array.IndexOf(floaterVariants, floaterCurrent);
+                    textureIndex = Array.IndexOf(floaterVariants, floaterCurrent);
                 }
             }
+            TextureUpdateServerRpc();
         }
-        public void SetTexture(int oldIndex, int newIndex)
+        public void SetTexture(Texture texture)
         {
-            floaterCurrent = floaterVariants[newIndex];
-            this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture = floaterCurrent;
-            //this.GetComponentInChildren<ParticleSystemRenderer>().material.SetTexture("_EmissionMap", floaterCurrent);
+            this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture = texture;
             WildCardMod.Log.LogDebug($"Pixel Jar texture: {this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture.name}");
         }
         public override void EquipItem()
@@ -61,16 +55,25 @@ namespace LCWildCardMod
                 this.GetComponentInChildren<ParticleSystem>().Clear();
             }
         }
-        [ServerRpc(RequireOwnership = false)]
-        private void TextureUpdateServerRpc(int index)
+        public override int GetItemDataToSave()
         {
-            TextureUpdateClientRpc(index);
+            return textureIndex;
+        }
+        public override void LoadItemSaveData(int saveData)
+        {
+            floaterCurrent = floaterVariants[saveData];
+        }
+        [ServerRpc(RequireOwnership = false)]
+        private void TextureUpdateServerRpc()
+        {
+            SetTexture(floaterCurrent);
+            TextureUpdateClientRpc(textureIndex);
         }
         [ClientRpc]
         private void TextureUpdateClientRpc(int index)
         {
-            SetTexture(-1, index);
-
+            floaterCurrent = floaterVariants[index];
+            SetTexture(floaterCurrent);
         }
     }
 }

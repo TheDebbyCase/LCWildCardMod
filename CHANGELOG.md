@@ -1,6 +1,11 @@
+## 0.3.1
+- Floaters in Pixel Jars now save between sessions
+- Updated README
+
 ## 0.3.0
 - Added Alolan Vulpix with Vulpixie voice lines and a special form
 - Fixed scan sometimes not working
+- Updated README
 
 ## 0.2.3
 - Improved visibility and clarity on the Pixel Jar floaters
