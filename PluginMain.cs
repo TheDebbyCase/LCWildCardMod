@@ -16,7 +16,7 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.2.3";
+        private const string modVersion = "0.3.0";
         private readonly Harmony harmony = new Harmony(modGUID);
         internal static ManualLogSource Log = null!;
         private static WildCardMod Instance;

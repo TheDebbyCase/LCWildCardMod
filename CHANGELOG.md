@@ -1,3 +1,7 @@
+## 0.3.0
+- Added Alolan Vulpix with Vulpixie voice lines and a special form
+- Fixed scan sometimes not working
+
 ## 0.2.3
 - Improved visibility and clarity on the Pixel Jar floaters
 - Fixed a mistake that allowed close inspection of Moo Cow

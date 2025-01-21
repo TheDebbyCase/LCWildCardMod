@@ -52,7 +52,9 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Vulpuxie Item</summary>
 	
-	Coming Soon!
+	Original model by [Game Freak](https://www.gamefreak.co.jp)
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/VulpixiePreview.png)
 	
 	</details>
 	
