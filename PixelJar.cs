@@ -40,7 +40,7 @@ namespace LCWildCardMod
         {
             floaterCurrent = floaterVariants[newIndex];
             this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture = floaterCurrent;
-            this.GetComponentInChildren<ParticleSystemRenderer>().material.SetTexture("_EmissionMap", floaterCurrent);
+            //this.GetComponentInChildren<ParticleSystemRenderer>().material.SetTexture("_EmissionMap", floaterCurrent);
             WildCardMod.Log.LogDebug($"Pixel Jar texture: {this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture.name}");
         }
         public override void EquipItem()

@@ -1,3 +1,7 @@
+## 0.2.3
+- Improved visibility and clarity on the Pixel Jar floaters
+- Fixed a mistake that allowed close inspection of Moo Cow
+
 ## 0.2.2
 - Fixed Pixal Jars spamming the log with errors, and made them sync between players
 - Wanted to make the type of floater stay the same between sessions but will look into this later
