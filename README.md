@@ -57,6 +57,15 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/VulpixiePreview.png)
 	
 	</details>
+
+	<details>
+	<summary>The Worm</summary>
+	
+	Original design by [Giwi](https://www.twitch.tv/giwi)
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/TheWormPreview.png)
+	
+	</details>
 	
 I hope to add more soon! Make suggestions in the Discord!
 

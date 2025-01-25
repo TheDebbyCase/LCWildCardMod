@@ -1,3 +1,7 @@
+## 0.4.0
+- Added The Worm...
+- Updated README
+
 ## 0.3.1
 - Floaters in Pixel Jars now save between sessions
 - Updated README

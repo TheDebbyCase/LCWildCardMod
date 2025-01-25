@@ -8,10 +8,13 @@ using UnityEngine;
 using System;
 using System.Linq;
 using BepInEx.Logging;
+using LethalCompanyInputUtils;
 
 namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
+    [BepInDependency(LethalLib.Plugin.ModGUID)]
+    [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
     public class WildCardMod : BaseUnityPlugin
     {
         private const string modGUID = "deB.WildCard";
@@ -19,11 +22,13 @@ namespace LCWildCardMod
         private const string modVersion = "0.3.1";
         private readonly Harmony harmony = new Harmony(modGUID);
         internal static ManualLogSource Log = null!;
+        internal static KeyBinds wildcardKeyBinds;
         private static WildCardMod Instance;
         internal static WildCardConfig ModConfig {get; private set;} = null!;
         private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items"};
         void Awake()
         {
+            wildcardKeyBinds = new KeyBinds();
             Log = Logger;
             if (Instance == null)
             {
@@ -63,7 +68,7 @@ namespace LCWildCardMod
                 }
                 else
                 {
-                    Log.LogDebug($"\"{assetPath}\" is not a known asset path, skipping.");
+                    Log.LogWarning($"\"{assetPath}\" is not a known asset path, skipping.");
                 }
             }
             ModConfig = new WildCardConfig(base.Config, scrapList);
@@ -108,7 +113,7 @@ namespace LCWildCardMod
                         {
                             Log.LogDebug($"LethalLib Registered Weights {debugRarities}");
                         }
-                        Log.LogInfo($"{scrapList[i].itemName} was loaded!");
+                        Log.LogDebug($"{scrapList[i].itemName} was loaded!");
                     }
                     else
                     {
