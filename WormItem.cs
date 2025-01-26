@@ -13,15 +13,12 @@ namespace LCWildCardMod
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            CollectedWormServerRpc(isCollected);
-            if (isCollected == 0)
+            WildCardMod.Log.LogDebug($"Spawned isCollected id is: {isCollected}");
+            if (IsServer)
             {
-                spawnMusic.Play();
+                BeginMusic(isCollected);
             }
-            else
-            {
-                triggerAnimator.SetBool("OnFloor", false);
-            }
+            CollectedWormServerRpc();
         }
         public override void EquipItem()
         {
@@ -61,7 +58,7 @@ namespace LCWildCardMod
         }
         public void CheckThrowPress()
         {
-            if (!WildCardMod.wildcardKeyBinds.ThrowButton.triggered)
+            if (!WildCardMod.wildcardKeyBinds.ThrowButton.triggered || !IsOwner)
             {
                 return;
             }
@@ -119,6 +116,17 @@ namespace LCWildCardMod
                 triggerAnimator.SetBool("LookingRight", false);
             }
         }
+        public void BeginMusic(int id)
+        {
+            if (id == 0)
+            {
+                spawnMusic.Play();
+            }
+            else
+            {
+                triggerAnimator.SetBool("OnFloor", false);
+            }
+        }
         public override int GetItemDataToSave()
         {
             return isCollected;
@@ -139,14 +147,17 @@ namespace LCWildCardMod
             throwAudio.Play();
         }
         [ServerRpc(RequireOwnership = false)]
-        public void CollectedWormServerRpc(int collected)
+        public void CollectedWormServerRpc()
         {
-            CollectedWormClientRpc(collected);
+            WildCardMod.Log.LogDebug($"Server isCollected id is: {isCollected}");
+            CollectedWormClientRpc(isCollected);
         }
         [ClientRpc]
-        public void CollectedWormClientRpc(int collected)
+        public void CollectedWormClientRpc(int id)
         {
-            isCollected = collected;
+            isCollected = id;
+            BeginMusic(isCollected);
+            WildCardMod.Log.LogDebug($"Client isCollected id is: {id}");
         }
     }
 }

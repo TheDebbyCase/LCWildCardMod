@@ -1,3 +1,6 @@
+## 0.4.3
+- Fixed The Worm save game issues
+
 ## 0.4.2
 - Gave The Worm an extra voice line and another scream variant
 
