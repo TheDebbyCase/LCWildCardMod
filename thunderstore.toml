@@ -1,5 +1,5 @@
 [config]
-schemaVersion = "0.4.3""
+schemaVersion = "0.4.3"
 
 [package]
 namespace = "deB"
