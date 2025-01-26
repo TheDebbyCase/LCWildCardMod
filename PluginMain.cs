@@ -1,5 +1,4 @@
 ﻿using BepInEx;
-using HarmonyLib;
 using LethalLib.Modules;
 using System.IO;
 using System.Reflection;
@@ -8,8 +7,6 @@ using UnityEngine;
 using System;
 using System.Linq;
 using BepInEx.Logging;
-using LethalCompanyInputUtils;
-
 namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
@@ -19,8 +16,7 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.4.0";
-        private readonly Harmony harmony = new Harmony(modGUID);
+        private const string modVersion = "0.4.1";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         private static WildCardMod Instance;

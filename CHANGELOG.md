@@ -1,3 +1,8 @@
+## 0.4.1
+- Granted The Worm all her rightful power
+- Added a few voice clips to Alolan Vulpixie
+- Updated README
+
 ## 0.4.0
 - Added The Worm...
 - Updated README

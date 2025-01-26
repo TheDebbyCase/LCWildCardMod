@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
-using GameNetcodeStuff;
-
+﻿using UnityEngine;
 namespace LCWildCardMod
 {
     public class ThrowableNoisemaker : NoisemakerProp
@@ -33,7 +28,7 @@ namespace LCWildCardMod
         {
             Vector3 position = base.transform.position;
             throwRay = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
-            if (Physics.Raycast(throwRay, out throwHit, 20f, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(throwRay, out throwHit, 20f, StartOfRound.Instance.allPlayersCollideWithMask, QueryTriggerInteraction.Ignore))
             {
                 position = throwRay.GetPoint(throwHit.distance - 0.05f);
             }
@@ -42,7 +37,7 @@ namespace LCWildCardMod
                 position = throwRay.GetPoint(20f);
             }
             throwRay = new Ray(position, Vector3.down);
-            if (Physics.Raycast(throwRay, out throwHit, 20f, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+            if (Physics.Raycast(throwRay, out throwHit, 20f, StartOfRound.Instance.allPlayersCollideWithMask, QueryTriggerInteraction.Ignore))
             {
                 return throwHit.point + Vector3.up * 0.05f;
             }

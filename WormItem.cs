@@ -1,37 +1,53 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using UnityEngine;
+﻿using UnityEngine;
 using Unity.Netcode;
-using LethalLib;
-using UnityEngine.InputSystem;
-
 namespace LCWildCardMod
 {
     public class WormItem : ThrowableNoisemaker
     {
-        public Animator animator;
-        public GameObject HeadJoint;
+        public AudioSource spawnMusic;
+        public AudioSource throwAudio;
+        public int isCollected = 0;
+        private System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            HeadJoint = GameObject.Find("HeadJoint");
-            animator = this.GetComponent<Animator>();
+            random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
+            if (isCollected == 0)
+            {
+                spawnMusic.Play();
+            }
+            else
+            {
+                triggerAnimator.SetBool("OnFloor", false);
+            }
         }
         public override void EquipItem()
         {
             base.EquipItem();
+            triggerAnimator.SetBool("IsHeld", true);
+            triggerAnimator.SetBool("OnFloor", false);
+            spawnMusic.Stop();
+            throwAudio.Stop();
+            isCollected = 1;
             FaceLeft();
         }
         public override void PocketItem()
         {
             base.PocketItem();
+            triggerAnimator.SetBool("IsHeld", true);
             FaceForward();
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
+            triggerAnimator.SetBool("IsHeld", false);
             FaceForward();
+        }
+        public override void OnHitGround()
+        {
+            base.OnHitGround();
+            throwAudio.Stop();
+            triggerAnimator.SetBool("IsThrown", false);
         }
         public override void Update()
         {
@@ -48,41 +64,76 @@ namespace LCWildCardMod
                 return;
             }
             playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
-            animator.SetTrigger("LookForward");
+            triggerAnimator.SetBool("IsHeld", false);
+            triggerAnimator.SetBool("IsThrown", true);
+            float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
+            throwAudio.pitch = pitch;
+            throwAudio.Play();
+            ThrowAudioServerRpc(pitch);
+            FaceForward();
         }
         public void FaceLeft()
         {
-            if (animator.GetCurrentAnimatorStateInfo(0).speed == 2.5)
+            if (triggerAnimator.GetBool("LookingRight"))
             {
-                animator.SetTrigger("LookForward");
-                animator.SetTrigger("TurnLeft");
+                FaceForward();
+                triggerAnimator.SetBool("LookingRight", false);
+                triggerAnimator.SetTrigger("LookLeft");
+                triggerAnimator.SetBool("LookingForward", false);
+                triggerAnimator.SetBool("LookingLeft", true);
             }
             else
             {
-                animator.SetTrigger("TurnLeft");
+                triggerAnimator.SetTrigger("LookLeft");
+                triggerAnimator.SetBool("LookingForward", false);
+                triggerAnimator.SetBool("LookingLeft", true);
             }
-            WildCardMod.Log.LogDebug(animator.GetCurrentAnimatorStateInfo(0).fullPathHash.ToString());
         }
         public void FaceRight()
         {
-            if (animator.GetCurrentAnimatorStateInfo(0).speed == 2.5)
+            if (triggerAnimator.GetBool("LookingLeft"))
             {
-                animator.SetTrigger("LookForward");
-                animator.SetTrigger("TurnRight");
+                FaceForward();
+                triggerAnimator.SetBool("LookingLeft", false);
+                triggerAnimator.SetTrigger("LookRight");
+                triggerAnimator.SetBool("LookingForward", false);
+                triggerAnimator.SetBool("LookingRight", true);
             }
             else
             {
-                animator.SetTrigger("TurnRight");
+                triggerAnimator.SetTrigger("LookRight");
+                triggerAnimator.SetBool("LookingForward", false);
+                triggerAnimator.SetBool("LookingRight", true);
             }
-            WildCardMod.Log.LogDebug(animator.GetCurrentAnimatorStateInfo(0).fullPathHash.ToString());
         }
         public void FaceForward()
         {
-            if (animator.GetCurrentAnimatorStateInfo(0).speed != 1)
+            if (!triggerAnimator.GetBool("LookingForward"))
             {
-                animator.SetTrigger("LookForward");
+                triggerAnimator.SetTrigger("LookForward");
+                triggerAnimator.SetBool("LookingForward", true);
+                triggerAnimator.SetBool("LookingLeft", false);
+                triggerAnimator.SetBool("LookingRight", false);
             }
-            WildCardMod.Log.LogDebug(animator.GetCurrentAnimatorStateInfo(0).fullPathHash.ToString());
+        }
+        public override int GetItemDataToSave()
+        {
+            return isCollected;
+        }
+        public override void LoadItemSaveData(int saveData)
+        {
+            isCollected = saveData;
+        }
+        [ServerRpc(RequireOwnership = false)]
+        public void ThrowAudioServerRpc(float pitch)
+        {
+            ThrowAudioClientRpc(pitch);
+        }
+        [ClientRpc]
+        public void ThrowAudioClientRpc(float pitch)
+        {
+            throwAudio.pitch = pitch;
+            throwAudio.Play();
         }
     }
 }

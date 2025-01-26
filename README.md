@@ -17,6 +17,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>Wormted Poster</summary>
 	
 	Original design by [Giwi](https://www.twitch.tv/giwi)
+	Can you find it?
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
 	
@@ -26,6 +27,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>NBickles</summary>
 	
 	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social)
+	They're non-binary
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
 	
@@ -35,6 +37,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>Moo Cow</summary>
 	
 	Original design by [Kael](https://www.twitch.tv/kael)
+	Squeeze it
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png)
 	
@@ -44,6 +47,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>Pixel Jar</summary>
 	
 	Original designs by [Kael](https://www.twitch.tv/kael)
+	Collect them all
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/PixelJarPreview.png)
 	
@@ -53,6 +57,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>Alolan Vulpixie</summary>
 	
 	Original model by [Game Freak](https://www.gamefreak.co.jp)
+	Squash it
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/VulpixiePreview.png)
 	
@@ -62,6 +67,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<summary>The Worm</summary>
 	
 	Original design by [Giwi](https://www.twitch.tv/giwi)
+	Pester it and throw it
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/TheWormPreview.png)
 	
@@ -77,6 +83,7 @@ Subscribe to [WILDCARD](https://www.youtube.com/@WILDCARDorg)!
 
 ## Extra Credits
 
+- [NinjaKittens](https://www.youtube.com/@NinjaKittens) for making [Giwi's](https://www.twitch.tv/giwi) Outro and Starting Soon music!
 - [Evaisa](https://thunderstore.io/c/lethal-company/p/Evaisa) for making the library mod this is based on!
 - [ZigZag Awaka](https://thunderstore.io/c/lethal-company/p/Zigzag) for having a solid and readable mod I could learn a lot from!
 - [WhiteSpike](https://thunderstore.io/c/lethal-company/p/WhiteSpike), [Robyn](https://thunderstore.io/c/lethal-company/p/Mom_Llama), [MattyMatty](https://thunderstore.io/c/lethal-company/p/mattymatty/), [XuXiaolan](https://thunderstore.io/c/lethal-company/p/XuXiaolan), [Zaggy](https://thunderstore.io/c/lethal-company/p/Zaggy1024), [IAmBatby](https://thunderstore.io/c/lethal-company/p/IAmBatby/) for giving me various tips and advice!
