@@ -1,3 +1,6 @@
+## 0.4.2
+- Gave The Worm an extra voice line and another scream variant
+
 ## 0.4.1
 - Granted The Worm all her rightful power
 - Added a few voice clips to Alolan Vulpixie

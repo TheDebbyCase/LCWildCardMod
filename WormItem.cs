@@ -6,12 +6,14 @@ namespace LCWildCardMod
     {
         public AudioSource spawnMusic;
         public AudioSource throwAudio;
+        public AudioClip[] throwClips;
         public int isCollected = 0;
         private System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
+            CollectedWormServerRpc(isCollected);
             if (isCollected == 0)
             {
                 spawnMusic.Play();
@@ -68,6 +70,7 @@ namespace LCWildCardMod
             triggerAnimator.SetBool("IsThrown", true);
             float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
             throwAudio.pitch = pitch;
+            throwAudio.clip = throwClips[random.Next(0, throwClips.Length)];
             throwAudio.Play();
             ThrowAudioServerRpc(pitch);
             FaceForward();
@@ -134,6 +137,16 @@ namespace LCWildCardMod
         {
             throwAudio.pitch = pitch;
             throwAudio.Play();
+        }
+        [ServerRpc(RequireOwnership = false)]
+        public void CollectedWormServerRpc(int collected)
+        {
+            CollectedWormClientRpc(collected);
+        }
+        [ClientRpc]
+        public void CollectedWormClientRpc(int collected)
+        {
+            isCollected = collected;
         }
     }
 }
