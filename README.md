@@ -6,6 +6,7 @@ You can use the [Issues](https://github.com/TheDebbyCase/LCWildCardMod/issues) t
 Suggestions can also be made directly to me in the mod-release thread on the [Lethal Company Modding Discord](https://discord.com/channels/1168655651455639582/1328209352628375652)!
 
 If you wish you can also donate to me over on [Ko-Fi](https://ko-fi.com/thedebbycase)!
+Or follow me on [Bluesky](https://bsky.app/profile/thedebbycase.bsky.social)!
 
 Of course, see the Thunderstore page [here](https://thunderstore.io/c/lethal-company/p/deB/WILDCARDStuff),
 or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
