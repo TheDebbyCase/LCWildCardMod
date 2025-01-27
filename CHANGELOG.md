@@ -1,3 +1,6 @@
+## 0.5.0
+- Added Celery Pen as a scrap
+
 ## 0.4.3
 - Fixed The Worm save game issues
 

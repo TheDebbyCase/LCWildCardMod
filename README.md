@@ -72,6 +72,16 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/TheWormPreview.png)
 	
 	</details>
+
+	<details>
+	<summary>Celery Pen</summary>
+	
+	Original designs by [Kael](https://www.twitch.tv/kael)
+	Swing it
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/CeleryPenPreview.png)
+	
+	</details>
 	
 I hope to add more soon! Make suggestions in the Discord!
 
