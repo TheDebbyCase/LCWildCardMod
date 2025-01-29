@@ -1,5 +1,7 @@
-﻿using UnityEngine;
-namespace LCWildCardMod
+﻿using System;
+using Unity.Netcode;
+using UnityEngine;
+namespace LCWildCardMod.Items
 {
     public class ThrowableNoisemaker : NoisemakerProp
     {
@@ -8,6 +10,34 @@ namespace LCWildCardMod
         public AnimationCurve throwVerticalFallCurveNoBounce;
         public Ray throwRay;
         public RaycastHit throwHit;
+        public AudioSource throwAudio;
+        public AudioClip[] throwClips;
+        private readonly System.Random random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
+        public bool CheckThrowPress()
+        {
+            if (WildCardMod.wildcardKeyBinds.ThrowButton.triggered && IsOwner)
+            {
+                return true;
+            }
+            return false;
+        }
+        public virtual void Throw()
+        {
+            playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
+            float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
+            throwAudio.pitch = pitch;
+            throwAudio.clip = throwClips[random.Next(0, throwClips.Length)];
+            throwAudio.Play();
+            ThrowAudioServerRpc(pitch);
+        }
+        public override void Update()
+        {
+            base.Update();
+            if (playerHeldBy != null && playerHeldBy.currentlyHeldObjectServer == this && CheckThrowPress())
+            {
+                Throw();
+            }
+        }
         public override void FallWithCurve()
         {
             float magnitude = (startFallingPosition - targetFloorPosition).magnitude;
@@ -42,6 +72,17 @@ namespace LCWildCardMod
                 return throwHit.point + Vector3.up * 0.05f;
             }
             return throwRay.GetPoint(30f);
+        }
+        [ServerRpc(RequireOwnership = false)]
+        public void ThrowAudioServerRpc(float pitch)
+        {
+            ThrowAudioClientRpc(pitch);
+        }
+        [ClientRpc]
+        public void ThrowAudioClientRpc(float pitch)
+        {
+            throwAudio.pitch = pitch;
+            throwAudio.Play();
         }
     }
 }

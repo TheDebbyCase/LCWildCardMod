@@ -1,7 +1,7 @@
 ﻿using System;
 using Unity.Netcode;
 using UnityEngine;
-namespace LCWildCardMod
+namespace LCWildCardMod.Items
 {
     public class PixelJar : PhysicsProp
     {
@@ -71,4 +71,3 @@ namespace LCWildCardMod
         }
     }
 }
-

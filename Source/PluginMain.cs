@@ -7,6 +7,9 @@ using UnityEngine;
 using System;
 using System.Linq;
 using BepInEx.Logging;
+using HarmonyLib;
+using LCWildCardMod.Config;
+using LCWildCardMod.Utils;
 namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
@@ -16,13 +19,14 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.4.3";
+        private const string modVersion = "0.5.1";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         private static WildCardMod Instance;
+        private readonly Harmony harmony = new Harmony(modGUID);
         internal static WildCardConfig ModConfig {get; private set;} = null!;
         private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items"};
-        void Awake()
+        private void Awake()
         {
             wildcardKeyBinds = new KeyBinds();
             Log = Logger;
@@ -105,7 +109,7 @@ namespace LCWildCardMod
                         Utilities.FixMixerGroups(scrapList[i].spawnPrefab);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], null, scrapModdedWeights);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], scrapLevelWeights);
-                        foreach (KeyValuePair<Levels.LevelTypes, int> debugRarities in Items.scrapItems.LastOrDefault().levelRarities)
+                        foreach (KeyValuePair<Levels.LevelTypes, int> debugRarities in LethalLib.Modules.Items.scrapItems.LastOrDefault().levelRarities)
                         {
                             Log.LogDebug($"LethalLib Registered Weights {debugRarities}");
                         }
@@ -121,6 +125,7 @@ namespace LCWildCardMod
                     Log.LogInfo($"{scrapList[i].itemName} was disabled!");
                 }
             }
+            harmony.PatchAll();
             Log.LogInfo("WILDCARD Stuff Successfully Loaded");
         }
     }

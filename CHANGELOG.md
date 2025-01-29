@@ -1,3 +1,8 @@
+## 0.5.1
+- Changed default keybind for throwing The Worm from RMB to R
+- Fixed but where Celery Pen would hit multiple targets (it does 0 damage anyway)
+- Gave each scrap a unique default spawn weight rather than a flat 20 across the board
+
 ## 0.5.0
 - Added Celery Pen as a scrap
 

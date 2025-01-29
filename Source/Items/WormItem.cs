@@ -1,18 +1,14 @@
 ﻿using UnityEngine;
 using Unity.Netcode;
-namespace LCWildCardMod
+namespace LCWildCardMod.Items
 {
     public class WormItem : ThrowableNoisemaker
     {
         public AudioSource spawnMusic;
-        public AudioSource throwAudio;
-        public AudioClip[] throwClips;
         public int isCollected = 0;
-        private System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             WildCardMod.Log.LogDebug($"Spawned isCollected id is: {isCollected}");
             if (IsServer)
             {
@@ -48,28 +44,11 @@ namespace LCWildCardMod
             throwAudio.Stop();
             triggerAnimator.SetBool("IsThrown", false);
         }
-        public override void Update()
+        public override void Throw()
         {
-            base.Update();
-            if (playerHeldBy != null && playerHeldBy.currentlyHeldObjectServer == this)
-            {
-                CheckThrowPress();
-            }
-        }
-        public void CheckThrowPress()
-        {
-            if (!WildCardMod.wildcardKeyBinds.ThrowButton.triggered || !IsOwner)
-            {
-                return;
-            }
-            playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
+            base.Throw();
             triggerAnimator.SetBool("IsHeld", false);
             triggerAnimator.SetBool("IsThrown", true);
-            float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
-            throwAudio.pitch = pitch;
-            throwAudio.clip = throwClips[random.Next(0, throwClips.Length)];
-            throwAudio.Play();
-            ThrowAudioServerRpc(pitch);
             FaceForward();
         }
         public void FaceLeft()
@@ -136,20 +115,8 @@ namespace LCWildCardMod
             isCollected = saveData;
         }
         [ServerRpc(RequireOwnership = false)]
-        public void ThrowAudioServerRpc(float pitch)
-        {
-            ThrowAudioClientRpc(pitch);
-        }
-        [ClientRpc]
-        public void ThrowAudioClientRpc(float pitch)
-        {
-            throwAudio.pitch = pitch;
-            throwAudio.Play();
-        }
-        [ServerRpc(RequireOwnership = false)]
         public void CollectedWormServerRpc()
         {
-            WildCardMod.Log.LogDebug($"Server isCollected id is: {isCollected}");
             CollectedWormClientRpc(isCollected);
         }
         [ClientRpc]
@@ -157,7 +124,6 @@ namespace LCWildCardMod
         {
             isCollected = id;
             BeginMusic(isCollected);
-            WildCardMod.Log.LogDebug($"Client isCollected id is: {id}");
         }
     }
 }
