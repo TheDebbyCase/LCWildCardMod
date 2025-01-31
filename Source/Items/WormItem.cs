@@ -1,47 +1,40 @@
 ﻿using UnityEngine;
 using Unity.Netcode;
+using System.Collections.Generic;
 namespace LCWildCardMod.Items
 {
     public class WormItem : ThrowableNoisemaker
     {
-        public AudioSource spawnMusic;
-        public int isCollected = 0;
-        public override void OnNetworkSpawn()
+        public override void BeginMusic()
         {
-            base.OnNetworkSpawn();
-            WildCardMod.Log.LogDebug($"Spawned isCollected id is: {isCollected}");
-            if (IsServer)
+            base.BeginMusic();
+            if (isCollected == 1)
             {
-                BeginMusic(isCollected);
+                triggerAnimator.SetBool("OnFloor", false);
             }
-            CollectedWormServerRpc();
         }
         public override void EquipItem()
         {
             base.EquipItem();
             triggerAnimator.SetBool("IsHeld", true);
             triggerAnimator.SetBool("OnFloor", false);
-            spawnMusic.Stop();
-            throwAudio.Stop();
-            isCollected = 1;
-            FaceLeft();
+            FaceDirection("Left");
         }
         public override void PocketItem()
         {
             base.PocketItem();
             triggerAnimator.SetBool("IsHeld", true);
-            FaceForward();
+            FaceDirection("Forward");
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
             triggerAnimator.SetBool("IsHeld", false);
-            FaceForward();
+            FaceDirection("Forward");
         }
         public override void OnHitGround()
         {
             base.OnHitGround();
-            throwAudio.Stop();
             triggerAnimator.SetBool("IsThrown", false);
         }
         public override void Throw()
@@ -49,81 +42,60 @@ namespace LCWildCardMod.Items
             base.Throw();
             triggerAnimator.SetBool("IsHeld", false);
             triggerAnimator.SetBool("IsThrown", true);
-            FaceForward();
+            FaceDirection("Forward");
         }
-        public void FaceLeft()
+        public void FaceDirection(string direction)
         {
-            if (triggerAnimator.GetBool("LookingRight"))
+            switch (direction)
             {
-                FaceForward();
-                triggerAnimator.SetBool("LookingRight", false);
-                triggerAnimator.SetTrigger("LookLeft");
-                triggerAnimator.SetBool("LookingForward", false);
-                triggerAnimator.SetBool("LookingLeft", true);
+                case "Left":
+                    {
+                        if (triggerAnimator.GetBool("LookingRight"))
+                        {
+                            FaceDirection("Forward");
+                            triggerAnimator.SetBool("LookingRight", false);
+                            itemAnimator.SetTrigger("LookLeft");
+                            triggerAnimator.SetBool("LookingForward", false);
+                            triggerAnimator.SetBool("LookingLeft", true);
+                        }
+                        else
+                        {
+                            itemAnimator.SetTrigger("LookLeft");
+                            triggerAnimator.SetBool("LookingForward", false);
+                            triggerAnimator.SetBool("LookingLeft", true);
+                        }
+                        break;
+                    }
+                case "Right":
+                    {
+                        if (triggerAnimator.GetBool("LookingLeft"))
+                        {
+                            FaceDirection("Forward");
+                            triggerAnimator.SetBool("LookingLeft", false);
+                            itemAnimator.SetTrigger("LookRight");
+                            triggerAnimator.SetBool("LookingForward", false);
+                            triggerAnimator.SetBool("LookingRight", true);
+                        }
+                        else
+                        {
+                            itemAnimator.SetTrigger("LookRight");
+                            triggerAnimator.SetBool("LookingForward", false);
+                            triggerAnimator.SetBool("LookingRight", true);
+                        }
+                        break;
+                    }
+                case "Forward":
+                    {
+                        if (!triggerAnimator.GetBool("LookingForward"))
+                        {
+                            itemAnimator.SetTrigger("LookForward");
+                            triggerAnimator.SetBool("LookingForward", true);
+                            triggerAnimator.SetBool("LookingLeft", false);
+                            triggerAnimator.SetBool("LookingRight", false);
+                        }
+                        break;
+                    }
             }
-            else
-            {
-                triggerAnimator.SetTrigger("LookLeft");
-                triggerAnimator.SetBool("LookingForward", false);
-                triggerAnimator.SetBool("LookingLeft", true);
-            }
-        }
-        public void FaceRight()
-        {
-            if (triggerAnimator.GetBool("LookingLeft"))
-            {
-                FaceForward();
-                triggerAnimator.SetBool("LookingLeft", false);
-                triggerAnimator.SetTrigger("LookRight");
-                triggerAnimator.SetBool("LookingForward", false);
-                triggerAnimator.SetBool("LookingRight", true);
-            }
-            else
-            {
-                triggerAnimator.SetTrigger("LookRight");
-                triggerAnimator.SetBool("LookingForward", false);
-                triggerAnimator.SetBool("LookingRight", true);
-            }
-        }
-        public void FaceForward()
-        {
-            if (!triggerAnimator.GetBool("LookingForward"))
-            {
-                triggerAnimator.SetTrigger("LookForward");
-                triggerAnimator.SetBool("LookingForward", true);
-                triggerAnimator.SetBool("LookingLeft", false);
-                triggerAnimator.SetBool("LookingRight", false);
-            }
-        }
-        public void BeginMusic(int id)
-        {
-            if (id == 0)
-            {
-                spawnMusic.Play();
-            }
-            else
-            {
-                triggerAnimator.SetBool("OnFloor", false);
-            }
-        }
-        public override int GetItemDataToSave()
-        {
-            return isCollected;
-        }
-        public override void LoadItemSaveData(int saveData)
-        {
-            isCollected = saveData;
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void CollectedWormServerRpc()
-        {
-            CollectedWormClientRpc(isCollected);
-        }
-        [ClientRpc]
-        public void CollectedWormClientRpc(int id)
-        {
-            isCollected = id;
-            BeginMusic(isCollected);
         }
     }
 }

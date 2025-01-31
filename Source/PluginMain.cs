@@ -19,7 +19,7 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.5.1";
+        private const string modVersion = "0.5.2";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         private static WildCardMod Instance;
@@ -125,7 +125,7 @@ namespace LCWildCardMod
                     Log.LogInfo($"{scrapList[i].itemName} was disabled!");
                 }
             }
-            harmony.PatchAll();
+            //harmony.PatchAll();
             Log.LogInfo("WILDCARD Stuff Successfully Loaded");
         }
     }

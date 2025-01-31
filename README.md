@@ -17,7 +17,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Wormted Poster</summary>
 	
-	Original design by [Giwi](https://www.twitch.tv/giwi)
+	Original design by [Giwi](https://www.twitch.tv/giwi), 
 	Can you find it?
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
@@ -27,7 +27,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>NBickles</summary>
 	
-	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social)
+	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social), 
 	They're non-binary
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
@@ -37,7 +37,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Moo Cow</summary>
 	
-	Original design by [Kael](https://www.twitch.tv/kael)
+	Original design by [Kael](https://www.twitch.tv/kael), 
 	Squeeze it
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png)
@@ -47,7 +47,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Pixel Jar</summary>
 	
-	Original designs by [Kael](https://www.twitch.tv/kael)
+	Original designs by [Kael](https://www.twitch.tv/kael), 
 	Collect them all
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/PixelJarPreview.png)
@@ -57,7 +57,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Alolan Vulpixie</summary>
 	
-	Original model by [Game Freak](https://www.gamefreak.co.jp)
+	Original model by [Game Freak](https://www.gamefreak.co.jp), 
 	Squash it
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/VulpixiePreview.png)
@@ -67,7 +67,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>The Worm</summary>
 	
-	Original design by [Giwi](https://www.twitch.tv/giwi)
+	Original design by [Giwi](https://www.twitch.tv/giwi), 
 	Pester it and throw it
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/TheWormPreview.png)
@@ -75,12 +75,12 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	</details>
 
 	<details>
-	<summary>Celery Pen</summary>
+	<summary>Leek Pen</summary>
 	
-	Original designs by [Kael](https://www.twitch.tv/kael)
+	Original designs by [Kael](https://www.twitch.tv/kael), 
 	Swing it
 	
-	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/CeleryPenPreview.png)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/LeekPenPreview.png)
 	
 	</details>
 	

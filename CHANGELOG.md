@@ -1,3 +1,8 @@
+## 0.5.2
+- Improved animation syncing for The Worm
+- Added accessories to Alolan Vulpixie
+- Renamed Celery Pen to Leek Pen (oops)
+
 ## 0.5.1
 - Changed default keybind for throwing The Worm from RMB to R
 - Fixed but where Celery Pen would hit multiple targets (it does 0 damage anyway)
