@@ -125,7 +125,7 @@ namespace LCWildCardMod
                     Log.LogInfo($"{scrapList[i].itemName} was disabled!");
                 }
             }
-            //harmony.PatchAll();
+            harmony.PatchAll();
             Log.LogInfo("WILDCARD Stuff Successfully Loaded");
         }
     }

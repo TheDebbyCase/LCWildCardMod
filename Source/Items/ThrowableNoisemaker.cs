@@ -2,6 +2,8 @@
 using Unity.Netcode;
 using UnityEngine;
 using Unity.Netcode.Components;
+using System.Collections.Generic;
+using UnityEngine.InputSystem;
 namespace LCWildCardMod.Items
 {
     public class ThrowableNoisemaker : NoisemakerProp
@@ -16,11 +18,20 @@ namespace LCWildCardMod.Items
         public AudioClip[] throwClips;
         public NetworkAnimator itemAnimator;
         public int isCollected = 0;
+        internal static HashSet<int> validParameters = new HashSet<int>();
         private System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            WildCardMod.wildcardKeyBinds.ThrowButton.performed += ThrowButton;
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
+            if (itemAnimator != null )
+            {
+                foreach (AnimatorControllerParameter parameter in itemAnimator.Animator.parameters)
+                {
+                    validParameters.Add(Animator.StringToHash(parameter.name));
+                }
+            }
             if (spawnMusic != null && spawnMusic.clip != null)
             {
                 if (IsServer)
@@ -39,7 +50,7 @@ namespace LCWildCardMod.Items
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
-            if (!(GameNetworkManager.Instance.localPlayerController == null))
+            if (GameNetworkManager.Instance.localPlayerController != null && noiseSFX.Length > 0)
             {
                 int num = random.Next(0, noiseSFX.Length);
                 float num2 = (float)random.Next((int)(minLoudness * 100f), (int)(maxLoudness * 100f)) / 100f;
@@ -51,8 +62,7 @@ namespace LCWildCardMod.Items
                     noiseAudioFar.pitch = pitch;
                     noiseAudioFar.PlayOneShot(noiseSFXFar[num], num2);
                 }
-
-                if (itemAnimator != null)
+                if (itemAnimator != null && validParameters.Contains(Animator.StringToHash("Activate")))
                 {
                     itemAnimator.SetTrigger("Activate");
                 }
@@ -65,16 +75,20 @@ namespace LCWildCardMod.Items
                 }
             }
         }
-        public virtual void Throw()
+        public void ThrowButton(InputAction.CallbackContext throwContext)
         {
-            playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
-            if (throwAudio != null && throwClips.Length > 0)
+            if (playerHeldBy != null && playerHeldBy.currentlyHeldObjectServer == this)
             {
-                float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
-                throwAudio.pitch = pitch;
-                throwAudio.clip = throwClips[random.Next(0, throwClips.Length)];
-                throwAudio.Play();
-                ThrowAudioServerRpc(pitch);
+                playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
+                if (throwAudio != null && throwClips.Length > 0)
+                {
+                    float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
+                    throwAudio.pitch = pitch;
+                    throwAudio.clip = throwClips[random.Next(0, throwClips.Length)];
+                    throwAudio.Play();
+                    ThrowAudioServerRpc(pitch);
+                }
+                Throw();
             }
         }
         public override void OnHitGround()
@@ -92,13 +106,8 @@ namespace LCWildCardMod.Items
             spawnMusic.Stop();
             throwAudio.Stop();
         }
-        public override void Update()
+        public virtual void Throw()
         {
-            base.Update();
-            if (playerHeldBy != null && playerHeldBy.currentlyHeldObjectServer == this && WildCardMod.wildcardKeyBinds.ThrowButton.triggered && IsOwner)
-            {
-                Throw();
-            }
         }
         public override void FallWithCurve()
         {
