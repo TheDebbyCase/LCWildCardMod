@@ -33,7 +33,6 @@ namespace LCWildCardMod.Items
             WildCardMod.wildcardKeyBinds.ThrowButton.performed += ThrowButton;
             spinParticle.gameObject.SetActive(false);
             BeginMusicServerRpc();
-            
         }
         public void BeginMusic()
         {
@@ -236,7 +235,7 @@ namespace LCWildCardMod.Items
         [ServerRpc(RequireOwnership = false)]
         public void ThrowCurveServerRpc(Vector3 position)
         {
-            ThrowCurveClientRpc(parentComponent.transform.position);
+            ThrowCurveClientRpc(position);
         }
         [ClientRpc]
         public void ThrowCurveClientRpc(Vector3 position)

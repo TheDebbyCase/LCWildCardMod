@@ -1,3 +1,6 @@
+## 0.6.2
+- Fixed Halo throwing desync!
+
 ## 0.6.1
 - Fixed most issues with the Halo
 - Halo now damages enemies
