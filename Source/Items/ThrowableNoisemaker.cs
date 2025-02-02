@@ -1,9 +1,9 @@
-﻿using System;
-using Unity.Netcode;
+﻿using Unity.Netcode;
 using UnityEngine;
 using Unity.Netcode.Components;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
+using GameNetcodeStuff;
 namespace LCWildCardMod.Items
 {
     public class ThrowableNoisemaker : NoisemakerProp
@@ -18,6 +18,7 @@ namespace LCWildCardMod.Items
         public AudioClip[] throwClips;
         public NetworkAnimator itemAnimator;
         public int isCollected = 0;
+        internal Vector3 handPosition;
         internal static HashSet<int> validParameters = new HashSet<int>();
         private System.Random random;
         public override void OnNetworkSpawn()
@@ -79,6 +80,8 @@ namespace LCWildCardMod.Items
         {
             if (playerHeldBy != null && playerHeldBy.currentlyHeldObjectServer == this)
             {
+                handPosition = base.transform.localPosition;
+                WildCardMod.Log.LogDebug($"handPosition: {handPosition}");
                 playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
                 if (throwAudio != null && throwClips.Length > 0)
                 {
@@ -106,6 +109,11 @@ namespace LCWildCardMod.Items
             spawnMusic.Stop();
             throwAudio.Stop();
         }
+        public override void DiscardItem()
+        {
+            base.DiscardItem();
+            handPosition = base.transform.localPosition;
+        }
         public virtual void Throw()
         {
         }
@@ -122,12 +130,11 @@ namespace LCWildCardMod.Items
             {
                 base.transform.localPosition = Vector3.Lerp(new Vector3(base.transform.localPosition.x, startFallingPosition.y, base.transform.localPosition.z), new Vector3(base.transform.localPosition.x, targetFloorPosition.y, base.transform.localPosition.z), throwVerticalFallCurve.Evaluate(fallTime));
             }
-
-            fallTime += Mathf.Abs(Time.deltaTime * 12f / magnitude);
+            fallTime += Mathf.Abs(Time.deltaTime * 1.2f / magnitude);
         }
         public virtual Vector3 GetThrowDestination()
         {
-            Vector3 position = base.transform.position;
+            Vector3 position = handPosition;
             throwRay = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
             if (Physics.Raycast(throwRay, out throwHit, 20f, StartOfRound.Instance.allPlayersCollideWithMask, QueryTriggerInteraction.Ignore))
             {

@@ -1,8 +1,4 @@
-﻿using UnityEngine;
-using Unity.Netcode;
-using System.Collections.Generic;
-using UnityEngine.InputSystem;
-namespace LCWildCardMod.Items
+﻿namespace LCWildCardMod.Items
 {
     public class WormItem : ThrowableNoisemaker
     {

@@ -1,3 +1,8 @@
+## 0.6.0
+- Added Smith's Halo. Usable as a weapon!
+- Halo has not been extensively tested and may have issues, let me know!
+- Expect strange behaviour when throwing the Halo inside the ship
+
 ## 0.5.2
 - Improved animation syncing for The Worm
 - Added accessories to Alolan Vulpixie

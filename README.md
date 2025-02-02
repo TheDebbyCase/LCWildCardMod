@@ -84,6 +84,17 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 	
+	<details>
+	<summary>Halo</summary>
+	
+	Original designs by [Kael](https://www.twitch.tv/kael), 
+	Throw it and die! Or don't?
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/HaloPreview.png)
+	
+	</details>
+	
+	
 I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD
