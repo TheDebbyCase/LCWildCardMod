@@ -3,7 +3,6 @@ using UnityEngine;
 using Unity.Netcode.Components;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
-using GameNetcodeStuff;
 namespace LCWildCardMod.Items
 {
     public class ThrowableNoisemaker : NoisemakerProp
