@@ -1,3 +1,10 @@
+## 0.6.1
+- Fixed most issues with the Halo
+- Halo now damages enemies
+- Halono longer damages the same target multiple times
+- Halo no longer desyncs positions when in the ship
+- SOME PLAYERS MAY NOT BE ABLE TO SEE THE HALO BEING THROWN BY ANOTHER PLAYER, TRYING TO FIX IT
+
 ## 0.6.0
 - Added Smith's Halo. Usable as a weapon!
 - Halo has not been extensively tested and may have issues, let me know!
