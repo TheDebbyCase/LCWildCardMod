@@ -10,16 +10,18 @@ namespace LCWildCardMod.Config
         internal readonly List<ConfigEntry<bool>> isScrapEnabled = new List<ConfigEntry<bool>>();
         internal readonly List<ConfigEntry<string>> scrapSpawnWeights = new List<ConfigEntry<string>>();
         internal string defaultRarities;
+        internal bool defaultEnabled;
         internal WildCardConfig(ConfigFile cfg, List<Item> scrapList)
         {
             cfg.SaveOnConfigSet = false;
             foreach (Item scrapListItem in scrapList)
             {
+                defaultEnabled = scrapListItem.spawnPrefab.GetComponent<AdditionalInfo>().defaultEnabled;
                 defaultRarities = scrapListItem.spawnPrefab.GetComponent<AdditionalInfo>().defaultRarities;
                 isScrapEnabled.Add(cfg.Bind(
                     "Scrap",
                     $"Enable {scrapListItem.itemName}",
-                    true,
+                    defaultEnabled,
                     $"Whether or not to allow {scrapListItem.itemName} to spawn!"
                     ));
                 scrapSpawnWeights.Add(cfg.Bind(

@@ -18,7 +18,7 @@ namespace LCWildCardMod.Patches
             }
             return true;
         }
-        [HarmonyPatch("Discard_performed")]
+        [HarmonyPatch(nameof(PlayerControllerB.Discard_performed))]
         [HarmonyPrefix]
         public static bool PreventDropping(PlayerControllerB __instance)
         {
@@ -32,7 +32,7 @@ namespace LCWildCardMod.Patches
                 return true;
             }
         }
-        [HarmonyPatch("ScrollMouse_performed")]
+        [HarmonyPatch(nameof(PlayerControllerB.ScrollMouse_performed))]
         [HarmonyPrefix]
         public static bool PreventSwitching(PlayerControllerB __instance)
         {

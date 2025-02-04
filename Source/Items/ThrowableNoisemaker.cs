@@ -23,7 +23,7 @@ namespace LCWildCardMod.Items
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            WildCardMod.wildcardKeyBinds.ThrowButton.performed += ThrowButton;
+            WildCardMod.wildcardKeyBinds.ExtraButton.performed += ThrowButton;
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             if (itemAnimator != null )
             {
@@ -34,10 +34,6 @@ namespace LCWildCardMod.Items
             }
             if (spawnMusic != null && spawnMusic.clip != null)
             {
-                if (IsServer)
-                {
-                    BeginMusic();
-                }
                 BeginMusicServerRpc();
             }
         }

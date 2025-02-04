@@ -30,7 +30,7 @@ namespace LCWildCardMod.Items
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            WildCardMod.wildcardKeyBinds.ThrowButton.performed += ThrowButton;
+            WildCardMod.wildcardKeyBinds.ExtraButton.performed += ThrowButton;
             spinParticle.gameObject.SetActive(false);
             BeginMusicServerRpc();
         }

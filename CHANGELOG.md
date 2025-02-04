@@ -1,3 +1,7 @@
+## 0.6.3
+- Updated default rarities
+- Updated README
+
 ## 0.6.2
 - Fixed Halo throwing desync!
 
