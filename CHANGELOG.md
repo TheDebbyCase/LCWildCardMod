@@ -1,3 +1,6 @@
+## 0.6.4
+- Fixed The Worm throw speed
+
 ## 0.6.3
 - Updated default rarities
 - Updated README

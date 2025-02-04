@@ -125,7 +125,7 @@ namespace LCWildCardMod.Items
             {
                 base.transform.localPosition = Vector3.Lerp(new Vector3(base.transform.localPosition.x, startFallingPosition.y, base.transform.localPosition.z), new Vector3(base.transform.localPosition.x, targetFloorPosition.y, base.transform.localPosition.z), throwVerticalFallCurve.Evaluate(fallTime));
             }
-            fallTime += Mathf.Abs(Time.deltaTime * 1.2f / magnitude);
+            fallTime += Mathf.Abs(Time.deltaTime * 4f / magnitude);
         }
         public virtual Vector3 GetThrowDestination()
         {
