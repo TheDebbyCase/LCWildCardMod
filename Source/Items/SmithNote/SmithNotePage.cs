@@ -10,27 +10,25 @@ using Steamworks;
 using UnityEngine.UI;
 namespace LCWildCardMod.Items.SmithNote
 {
-    public class SmithNotePage : MonoBehaviour
+    public class SmithNoteInfo : MonoBehaviour
     {
-        public int id;
         public PlayerControllerB selectedPlayer;
-        public RawImage profilePic;
-        public TextMeshPro textMesh;
+        public Texture2D texture;
+        public string username;
         public SmithNote noteReference;
-        public Camera camera;
-        public RenderTexture renderTexture;
-        public void Spawn(SmithNote noteRef, PlayerControllerB player)
+        public void Spawn(SmithNote reference, PlayerControllerB player)
         {
-            noteReference = noteRef;
-            id = noteReference.pagesList.Count - 1;
+            noteReference = reference;
             selectedPlayer = player;
-            camera = this.GetComponent<Camera>();
+            username = selectedPlayer.playerUsername;
             if (!GameNetworkManager.Instance.disableSteam)
             {
-                HUDManager.FillImageWithSteamProfile(profilePic, selectedPlayer.playerSteamId);
+                GetProfilePicture();
             }
-            renderTexture = new RenderTexture(256, 256, 16, RenderTextureFormat.ARGB32);
-            camera.targetTexture = renderTexture;
+        }
+        public async void GetProfilePicture()
+        {
+            texture = HUDManager.GetTextureFromImage(await SteamFriends.GetLargeAvatarAsync(selectedPlayer.playerSteamId));
         }
     }
 }
