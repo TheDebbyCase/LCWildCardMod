@@ -1,3 +1,6 @@
+## 0.7.1
+- Fixed tooltips of Smith Note
+
 ## 0.7.0
 - Added Smith Note
 - Expect issues with this, please reach out to me if you come across any!
