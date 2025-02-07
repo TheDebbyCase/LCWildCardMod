@@ -1,3 +1,6 @@
+## 0.7.2
+- Increased volume of The Worm and Alolan Vulpixie sounds
+
 ## 0.7.1
 - Fixed tooltips of Smith Note
 
