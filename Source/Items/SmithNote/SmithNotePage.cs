@@ -25,6 +25,22 @@ namespace LCWildCardMod.Items.SmithNote
             {
                 GetProfilePicture();
             }
+            else if (username == "Player #0")
+            {
+                texture = reference.debugTextures[0];
+            }
+            else if (username == "Player #1")
+            {
+                texture = reference.debugTextures[1];
+            }
+            else if (username == "Player #2")
+            {
+                texture = reference.debugTextures[2];
+            }
+            else if (username == "Player #3")
+            {
+                texture = reference.debugTextures[3];
+            }
         }
         public async void GetProfilePicture()
         {

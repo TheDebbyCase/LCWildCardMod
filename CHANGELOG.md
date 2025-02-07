@@ -1,3 +1,7 @@
+## 0.7.0
+- Added Smith Note
+- Expect issues with this, please reach out to me if you come across any!
+
 ## 0.6.4
 - Fixed The Worm throw speed
 
