@@ -6,7 +6,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 namespace LCWildCardMod.Items
 {
-    public class Halo : PhysicsProp
+    public class SmithHalo : PhysicsProp
     {
         public ParticleSystem[] dripParticles;
         public ParticleSystem spinParticle;

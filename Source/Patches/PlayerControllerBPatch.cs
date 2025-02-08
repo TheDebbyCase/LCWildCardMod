@@ -10,7 +10,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool SavePlayer(PlayerControllerB __instance, ref CauseOfDeath causeOfDeath, ref int damageNumber)
         {
-            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<Halo>(out Halo haloRef) && haloRef.isExhausted == 0 && !(causeOfDeath == CauseOfDeath.Unknown || causeOfDeath == CauseOfDeath.Drowning || causeOfDeath == CauseOfDeath.Abandoned || causeOfDeath == CauseOfDeath.Inertia || causeOfDeath == CauseOfDeath.Suffocation) && damageNumber >= __instance.health)
+            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0 && !(causeOfDeath == CauseOfDeath.Unknown || causeOfDeath == CauseOfDeath.Drowning || causeOfDeath == CauseOfDeath.Abandoned || causeOfDeath == CauseOfDeath.Inertia || causeOfDeath == CauseOfDeath.Suffocation) && damageNumber >= __instance.health)
             {
                 WildCardMod.Log.LogDebug($"Saving Player from {causeOfDeath}");
                 __instance.health = damageNumber + 1;
@@ -22,7 +22,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool PreventDropping(PlayerControllerB __instance)
         {
-            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<Halo>(out Halo haloRef) && haloRef.isThrowing)
+            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isThrowing)
             {
                 WildCardMod.Log.LogDebug($"Preventing Drop");
                 return false;
@@ -36,7 +36,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool PreventSwitching(PlayerControllerB __instance)
         {
-            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<Halo>(out Halo haloRef) && haloRef.isThrowing)
+            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isThrowing)
             {
                 WildCardMod.Log.LogDebug($"Preventing Switch");
                 return false;

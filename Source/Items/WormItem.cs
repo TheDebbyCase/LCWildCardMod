@@ -2,6 +2,7 @@
 {
     public class WormItem : ThrowableNoisemaker
     {
+        public int lookingDirection = 0;
         public override void BeginMusic()
         {
             base.BeginMusic();
@@ -13,6 +14,7 @@
         public override void EquipItem()
         {
             base.EquipItem();
+            triggerAnimator.SetBool("IsThrown", false);
             triggerAnimator.SetBool("IsHeld", true);
             triggerAnimator.SetBool("OnFloor", false);
             FaceDirection("Left");

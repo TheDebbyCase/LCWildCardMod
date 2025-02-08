@@ -1,3 +1,7 @@
+## 0.7.3
+- Added Smith Wing
+- Potential fix for incorrect Worm animations
+
 ## 0.7.2
 - Increased volume of The Worm and Alolan Vulpixie sounds
 
