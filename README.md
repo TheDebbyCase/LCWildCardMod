@@ -3,12 +3,12 @@
 Repository for my very first mod, WILDCARD Stuff!
 
 You can use the [Issues](https://github.com/TheDebbyCase/LCWildCardMod/issues) tab to submit any problems with the mod, or any suggestions you may have.
-Suggestions can also be made directly to me in the mod-release thread on the [Lethal Company Modding Discord](https://discord.com/channels/1168655651455639582/1328209352628375652)!
+Suggestions can also be made directly to me in the mod-release thread on the [Lethal Company Modding Discord](https://discord.gg/lcmod)!
 
 If you wish you can also donate to me over on [Ko-Fi](https://ko-fi.com/thedebbycase)!
 Or follow me on [Bluesky](https://bsky.app/profile/thedebbycase.bsky.social)!
 
-Of course, see the Thunderstore page [here](https://thunderstore.io/c/lethal-company/p/deB/WILDCARDStuff),
+See the Thunderstore page [here](https://thunderstore.io/c/lethal-company/p/deB/WILDCARDStuff),
 or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 
 ## Content so far!
@@ -103,6 +103,18 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 
+	</details>
+
+	<details>
+	<summary>Wing</summary>
+
+	Original designs by [Kael](https://www.twitch.tv/kael), 
+	You feel lighter already!
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WingPreview.png)
+	
+	</details>
+
 I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD
@@ -115,10 +127,12 @@ Subscribe to [WILDCARD](https://www.youtube.com/@WILDCARDorg)!
 
 - [SunflowerSmith](https://www.twitch.tv/sunflowersmith) for adding the mod to their group's modpack, playing with it on-stream, and making suggestions directly!
 - [iamfixated](https://bsky.app/profile/iamfixated.bsky.social) for the emote I used for the inventory icon of the Smith Note!
+- [Trashfourlife](https://bsky.app/profile/trashfourlife.bsky.social) for finding some Vulpixie voice clips!
+- [Raindrop](https://discord.gg/TgXEcxUemF) for finding and editing the Smith Note giggle sound effect!
 - [NinjaKittens](https://www.youtube.com/@NinjaKittens) for making [Giwi's](https://www.twitch.tv/giwi) Outro and Starting Soon music!
 - [Evaisa](https://thunderstore.io/c/lethal-company/p/Evaisa) for making the library mod this is based on!
 - [ZigZag Awaka](https://thunderstore.io/c/lethal-company/p/Zigzag) for having a solid and readable mod I could learn a lot from, and for finding an issue I couldn't!
 - [WhiteSpike](https://thunderstore.io/c/lethal-company/p/WhiteSpike), [Robyn](https://thunderstore.io/c/lethal-company/p/Mom_Llama), [MattyMatty](https://thunderstore.io/c/lethal-company/p/mattymatty/), [XuXiaolan](https://thunderstore.io/c/lethal-company/p/XuXiaolan), [Zaggy](https://thunderstore.io/c/lethal-company/p/Zaggy1024), [IAmBatby](https://thunderstore.io/c/lethal-company/p/IAmBatby/) for giving me various tips and advice!
 - [qwbarch](https://thunderstore.io/c/lethal-company/p/qwbarch) for being the reason I got into modding Lethal Company in the first place, courtesy of [Mirage](https://thunderstore.io/c/lethal-company/p/qwbarch/Mirage)!
 - [Lunxara](https://www.twitch.tv/lunxara) for keeping my interest alive and letting me play with her!
-- Everyone in the [Modding Discord](https://discord.com/channels/1168655651455639582/) for being and making such a great community, and letting me be a part of it!
+- Everyone in the [Modding Discord](https://discord.gg/lcmod) for being and making such a great community, and letting me be a part of it!

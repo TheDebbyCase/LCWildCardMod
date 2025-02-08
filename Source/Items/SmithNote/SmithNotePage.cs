@@ -14,7 +14,9 @@ namespace LCWildCardMod.Items.SmithNote
     {
         public PlayerControllerB selectedPlayer;
         public Texture2D texture;
+        public Color colour = Color.white;
         public string username;
+        public bool isDead = false;
         public SmithNote noteReference;
         public void Spawn(SmithNote reference, PlayerControllerB player)
         {

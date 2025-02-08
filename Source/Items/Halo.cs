@@ -116,6 +116,7 @@ namespace LCWildCardMod.Items
             parentComponent.transform.localPosition = Vector3.zero;
             this.transform.localPosition = itemProperties.positionOffset;
             itemAnimator.Animator.SetBool("BeingHeld", true);
+            spawnMusic.Stop();
         }
         public void Throw()
         {

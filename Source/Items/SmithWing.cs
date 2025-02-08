@@ -13,6 +13,14 @@ namespace LCWildCardMod.Items
             originalSpeed = lastPlayer.movementSpeed;
             lastPlayer.movementSpeed *= 1.5f;
         }
+        public override void EquipItem()
+        {
+            base.EquipItem();
+            if (lastPlayer != null)
+            {
+                lastPlayer.movementSpeed *= 1.5f;
+            }
+        }
         public override void PocketItem()
         {
             base.PocketItem();

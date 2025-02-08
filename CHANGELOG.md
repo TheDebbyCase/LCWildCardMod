@@ -1,3 +1,14 @@
+## 0.7.4
+- Fixed syncing issues with Smith Note
+- Added some feedback sound effects and visuals to Smith Note
+- Increased volume of some Smith Note sound effects
+- Edited Smith Note tooltips slightly
+- Changed Smith Note preview image
+- Fixed Halo shine continuing to play once picked up
+- Fixed Wing not always providing speed boost
+- Added more credits to README
+- Added Wing entry to README
+
 ## 0.7.3
 - Added Smith Wing
 - Potential fix for incorrect Worm animations
