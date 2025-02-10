@@ -103,8 +103,6 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 
-	</details>
-
 	<details>
 	<summary>Wing</summary>
 
@@ -112,6 +110,16 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	You feel lighter already!
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WingPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Cojiro</summary>
+
+	Original designs by [Nintendo](https://www.nintendo.com), 
+	You feel lighter already, but again!
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/CojiroPreview.png)
 	
 	</details>
 

@@ -46,5 +46,19 @@ namespace LCWildCardMod.Patches
                 return true;
             }
         }
+        [HarmonyPatch(nameof(PlayerControllerB.PlayerHitGroundEffects))]
+        [HarmonyPrefix]
+        public static bool PreventFallDamage(PlayerControllerB __instance)
+        {
+            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<Cojiro>(out Cojiro cojiroRef) && cojiroRef.isFloating)
+            {
+                WildCardMod.Log.LogDebug($"Preventing Fall Damage");
+                __instance.GetCurrentMaterialStandingOn();
+                __instance.movementAudio.PlayOneShot(StartOfRound.Instance.playerHitGroundSoft, 1f);
+                __instance.LandFromJumpServerRpc(false);
+                return false;
+            }
+            return true;
+        }
     }
 }

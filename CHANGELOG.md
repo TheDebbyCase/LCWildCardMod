@@ -1,3 +1,6 @@
+## 0.8.0
+- Added Cojiro the Cucco
+
 ## 0.7.4
 - Fixed syncing issues with Smith Note
 - Added some feedback sound effects and visuals to Smith Note
