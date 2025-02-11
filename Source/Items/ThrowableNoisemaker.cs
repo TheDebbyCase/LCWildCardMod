@@ -47,23 +47,23 @@ namespace LCWildCardMod.Items
         {
             if (GameNetworkManager.Instance.localPlayerController != null && noiseSFX.Length > 0)
             {
-                int num = random.Next(0, noiseSFX.Length);
-                float num2 = (float)random.Next((int)(minLoudness * 100f), (int)(maxLoudness * 100f)) / 100f;
+                int noiseIndex = random.Next(0, noiseSFX.Length);
+                float volume = (float)random.Next((int)(minLoudness * 100f), (int)(maxLoudness * 100f)) / 100f;
                 float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
                 noiseAudio.pitch = pitch;
-                noiseAudio.PlayOneShot(noiseSFX[num], num2);
+                noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
                 if (noiseAudioFar != null)
                 {
                     noiseAudioFar.pitch = pitch;
-                    noiseAudioFar.PlayOneShot(noiseSFXFar[num], num2);
+                    noiseAudioFar.PlayOneShot(noiseSFXFar[noiseIndex], volume);
                 }
-                if (itemAnimator != null && validParameters.Contains(Animator.StringToHash("Activate")))
+                if (itemAnimator != null && validParameters.Contains(Animator.StringToHash("Activate")) && base.IsServer)
                 {
                     itemAnimator.SetTrigger("Activate");
                 }
 
-                WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[num], num2);
-                RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, num2, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+                WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
+                RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                 if (minLoudness >= 0.6f && playerHeldBy != null)
                 {
                     playerHeldBy.timeSinceMakingLoudNoise = 0f;

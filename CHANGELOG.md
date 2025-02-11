@@ -1,3 +1,7 @@
+## 0.8.2
+- Fixed animation desyncs with all animated scrap
+- Refactored some code for consistency
+
 ## 0.8.1
 - Refactored Smith Note code to be nicer
 - Removed redundant code

@@ -55,7 +55,7 @@ namespace LCWildCardMod.Items.SmithNote
             }
             else if (GameNetworkManager.Instance.localPlayerController == playerHeldBy)
             {
-                NewPage(playerHeldBy.playerClientId);
+                NewPageServerRpc(playerHeldBy.playerClientId);
             }
         }
         public override void PocketItem()
@@ -149,7 +149,7 @@ namespace LCWildCardMod.Items.SmithNote
                             }
                             if (!playerNotes.ContainsKey(currentHit.transform.GetComponent<PlayerControllerB>()))
                             {
-                                NewPage(currentHit.transform.GetComponent<PlayerControllerB>().playerClientId);
+                                NewPageServerRpc(currentHit.transform.GetComponent<PlayerControllerB>().playerClientId);
                             }
                             else
                             {
@@ -163,11 +163,6 @@ namespace LCWildCardMod.Items.SmithNote
                     }
                 }
             }
-        }
-        public void NewPage(ulong id)
-        {
-            HUDManager.Instance.UIAudio.PlayOneShot(selectSounds[random.Next(0, selectSounds.Length)], 3f);
-            NewPageServerRpc(id);
         }
         public void SetPages()
         {
@@ -189,14 +184,20 @@ namespace LCWildCardMod.Items.SmithNote
             textMeshList[0].text = currentElement.Value.username;
             rawImageList[0].texture = currentElement.Value.texture;
             rawImageList[0].color = currentElement.Value.colour;
-            itemAnimator.SetTrigger("OpenBook");
+            if (base.IsServer)
+            {
+                itemAnimator.SetTrigger("OpenBook");
+            }
         }
         public void StartClosing()
         {
             textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
             isFlippable = false;
-            itemAnimator.SetTrigger("CloseBook");
+            if (base.IsServer)
+            {
+                itemAnimator.SetTrigger("CloseBook");
+            }
         }
         public void StartFlipping()
         {
@@ -209,7 +210,10 @@ namespace LCWildCardMod.Items.SmithNote
             rawImageList[1].color = currentElement.Value.colour;
             SetPages();
             textMeshList[1].text = currentElement.Value.username;
-            itemAnimator.SetTrigger("Activate");
+            if (base.IsServer)
+            {
+                itemAnimator.SetTrigger("Activate");
+            }
         }
         public void FinishOpening()
         {
@@ -296,6 +300,10 @@ namespace LCWildCardMod.Items.SmithNote
             if (!isPocketed)
             {
                 StartOpening();
+            }
+            if (playerHeldBy == GameNetworkManager.Instance.localPlayerController)
+            {
+                HUDManager.Instance.UIAudio.PlayOneShot(selectSounds[random.Next(0, selectSounds.Length)], 3f);
             }
         }
         [ServerRpc(RequireOwnership = false)]

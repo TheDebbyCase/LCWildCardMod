@@ -115,14 +115,20 @@ namespace LCWildCardMod.Items
             base.EquipItem();
             parentComponent.transform.localPosition = Vector3.zero;
             this.transform.localPosition = itemProperties.positionOffset;
-            itemAnimator.Animator.SetBool("BeingHeld", true);
+            if (base.IsServer)
+            {
+                itemAnimator.Animator.SetBool("BeingHeld", true);
+            }
             spawnMusic.Stop();
         }
         public void Throw()
         {
             throwTime = 0;
             isThrowing = true;
-            itemAnimator.Animator.SetBool("BeingThrown", true);
+            if (base.IsServer)
+            {
+                itemAnimator.Animator.SetBool("BeingThrown", true);
+            }
             if (base.IsOwner)
             {
                 if (hitList.Count > 0)
@@ -148,7 +154,10 @@ namespace LCWildCardMod.Items
             this.transform.localPosition = itemProperties.positionOffset;
             this.transform.position = playerHeldBy.localItemHolder.transform.position;
             isThrowing = false;
-            itemAnimator.Animator.SetBool("BeingThrown", false);
+            if (base.IsServer)
+            {
+                itemAnimator.Animator.SetBool("BeingThrown", false);
+            }
             throwAudio.Stop();
             if (isExhausted == 0)
             {
@@ -162,7 +171,10 @@ namespace LCWildCardMod.Items
         public override void DiscardItem()
         {
             base.DiscardItem();
-            itemAnimator.Animator.SetBool("BeingHeld", false);
+            if (base.IsServer)
+            {
+                itemAnimator.Animator.SetBool("BeingHeld", false);
+            }
         }
         public override void PocketItem()
         {

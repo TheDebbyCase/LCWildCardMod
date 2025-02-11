@@ -5,7 +5,7 @@
         public override void BeginMusic()
         {
             base.BeginMusic();
-            if (hasBeenHeld)
+            if (hasBeenHeld && base.IsServer)
             {
                 triggerAnimator.SetBool("OnFloor", false);
             }
@@ -13,34 +13,49 @@
         public override void EquipItem()
         {
             base.EquipItem();
-            triggerAnimator.SetBool("IsThrown", false);
-            triggerAnimator.SetBool("IsHeld", true);
-            triggerAnimator.SetBool("OnFloor", false);
-            FaceDirection("Left");
+            if (base.IsServer)
+            {
+                triggerAnimator.SetBool("IsThrown", false);
+                triggerAnimator.SetBool("IsHeld", true);
+                triggerAnimator.SetBool("OnFloor", false);
+                FaceDirection("Left");
+            }
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            triggerAnimator.SetBool("IsHeld", false);
-            FaceDirection("Forward");
+            if (base.IsServer)
+            {
+                triggerAnimator.SetBool("IsHeld", false);
+                FaceDirection("Forward");
+            }
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
-            triggerAnimator.SetBool("IsHeld", false);
-            FaceDirection("Forward");
+            if (base.IsServer)
+            {
+                triggerAnimator.SetBool("IsHeld", false);
+                FaceDirection("Forward");
+            }
         }
         public override void OnHitGround()
         {
             base.OnHitGround();
-            triggerAnimator.SetBool("IsThrown", false);
+            if (base.IsServer)
+            {
+                triggerAnimator.SetBool("IsThrown", false);
+            }
         }
         public override void Throw()
         {
             base.Throw();
-            triggerAnimator.SetBool("IsHeld", false);
-            triggerAnimator.SetBool("IsThrown", true);
-            FaceDirection("Forward");
+            if (base.IsServer)
+            {
+                triggerAnimator.SetBool("IsHeld", false);
+                triggerAnimator.SetBool("IsThrown", true);
+                FaceDirection("Forward");
+            }
         }
         public void FaceDirection(string direction)
         {

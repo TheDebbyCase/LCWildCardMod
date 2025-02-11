@@ -7,6 +7,21 @@ namespace LCWildCardMod.Items
         public AudioSource flapSource;
         public NetworkAnimator itemAnimator;
         public bool isFloating;
+        public override void ItemActivate(bool used, bool buttonDown = true)
+        {
+            int noiseIndex = noisemakerRandom.Next(0, noiseSFX.Length);
+            float volume = (float)noisemakerRandom.Next((int)(minLoudness * 100f), (int)(maxLoudness * 100f)) / 100f;
+            float pitch = (float)noisemakerRandom.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
+            noiseAudio.pitch = pitch;
+            noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
+            if (base.IsServer)
+            {
+                triggerAnimator.SetTrigger("playAnim");
+            }
+            WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
+            RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            playerHeldBy.timeSinceMakingLoudNoise = 0f;
+        }
         public override void Update()
         {
             base.Update();
@@ -15,7 +30,10 @@ namespace LCWildCardMod.Items
                 if (!isFloating)
                 {
                     isFloating = true;
-                    itemAnimator.Animator.SetBool("Floating", true);
+                    if (base.IsServer)
+                    {
+                        itemAnimator.Animator.SetBool("Floating", true);
+                    }
                     flapSource.Play();
                 }
                 playerHeldBy.fallValue *= 0.9f;
@@ -23,7 +41,10 @@ namespace LCWildCardMod.Items
             else if (isFloating)
             {
                 isFloating = false;
-                itemAnimator.Animator.SetBool("Floating", false);
+                if (base.IsServer)
+                {
+                    itemAnimator.Animator.SetBool("Floating", false);
+                }
                 flapSource.Stop();
             }
         }
