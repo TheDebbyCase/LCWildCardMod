@@ -19,7 +19,7 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.8.0";
+        private const string modVersion = "0.8.1";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         private static WildCardMod Instance;
@@ -109,11 +109,11 @@ namespace LCWildCardMod
                         Utilities.FixMixerGroups(scrapList[i].spawnPrefab);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], null, scrapModdedWeights);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], scrapLevelWeights);
+                        Log.LogDebug($"{scrapList[i].itemName} was loaded!");
                         foreach (KeyValuePair<Levels.LevelTypes, int> debugRarities in LethalLib.Modules.Items.scrapItems.LastOrDefault().levelRarities)
                         {
                             Log.LogDebug($"LethalLib Registered Weights {debugRarities}");
                         }
-                        Log.LogDebug($"{scrapList[i].itemName} was loaded!");
                     }
                     else
                     {

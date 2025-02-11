@@ -1,5 +1,4 @@
 ﻿using GameNetcodeStuff;
-
 namespace LCWildCardMod.Items
 {
     public class SmithWing : PhysicsProp

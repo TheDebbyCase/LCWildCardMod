@@ -30,7 +30,7 @@ namespace LCWildCardMod.Items
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            WildCardMod.wildcardKeyBinds.ExtraButton.performed += ThrowButton;
+            WildCardMod.wildcardKeyBinds.WildCardButton.performed += ThrowButton;
             spinParticle.gameObject.SetActive(false);
             BeginMusicServerRpc();
         }
@@ -40,11 +40,11 @@ namespace LCWildCardMod.Items
             {
                 this.GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
                 spinParticle.gameObject.SetActive(false);
-                StopDrip();
+                StopDripServerRpc();
             }
             else
             {
-                StartDrip();
+                StartDripServerRpc();
                 spawnMusic.Play();
             }
         }
@@ -139,7 +139,7 @@ namespace LCWildCardMod.Items
                     targetPosition = ray.GetPoint(10f);
                 }
                 SyncThrowDestinationServerRpc(targetPosition);
-                StopDrip();
+                StopDripServerRpc();
             }
         }
         public void ThrowEnd()
@@ -152,7 +152,7 @@ namespace LCWildCardMod.Items
             throwAudio.Stop();
             if (isExhausted == 0)
             {
-                StartDrip();
+                StartDripServerRpc();
             }
             else
             {
@@ -169,16 +169,8 @@ namespace LCWildCardMod.Items
             base.PocketItem();
             if (isExhausted == 0 && base.IsOwner)
             {
-                StopDrip();
+                StopDripServerRpc();
             }
-        }
-        public void StopDrip()
-        {
-            StopDripServerRpc();
-        }
-        public void StartDrip()
-        {
-            StartDripServerRpc();
         }
         public void ExhaustHalo()
         {
@@ -189,7 +181,7 @@ namespace LCWildCardMod.Items
             if (base.IsOwner)
             {
                 ThrowEndServerRpc();
-                StopDrip();
+                StopDripServerRpc();
             }
         }
         public override int GetItemDataToSave()

@@ -27,10 +27,7 @@ namespace LCWildCardMod.Patches
                 WildCardMod.Log.LogDebug($"Preventing Drop");
                 return false;
             }
-            else
-            {
-                return true;
-            }
+            return true;
         }
         [HarmonyPatch(nameof(PlayerControllerB.ScrollMouse_performed))]
         [HarmonyPrefix]
@@ -41,10 +38,7 @@ namespace LCWildCardMod.Patches
                 WildCardMod.Log.LogDebug($"Preventing Switch");
                 return false;
             }
-            else
-            {
-                return true;
-            }
+            return true;
         }
         [HarmonyPatch(nameof(PlayerControllerB.PlayerHitGroundEffects))]
         [HarmonyPrefix]

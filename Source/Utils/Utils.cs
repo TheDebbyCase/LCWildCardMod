@@ -5,8 +5,8 @@ namespace LCWildCardMod.Utils
 {
     public class KeyBinds : LcInputActions
     {
-        [InputAction("<Keyboard>/r", Name = "ExtraUse")]
-        public InputAction ExtraButton { get; set; }
+        [InputAction("<Keyboard>/r", Name = "WildCardUse")]
+        public InputAction WildCardButton { get; set; }
     }
     public class AdditionalInfo : MonoBehaviour
     {

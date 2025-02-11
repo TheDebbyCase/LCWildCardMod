@@ -1,13 +1,6 @@
-﻿using Unity.Netcode;
-using UnityEngine;
-using Unity.Netcode.Components;
-using System.Collections.Generic;
-using UnityEngine.InputSystem;
+﻿using UnityEngine;
 using GameNetcodeStuff;
-using TMPro;
-using System;
 using Steamworks;
-using UnityEngine.UI;
 namespace LCWildCardMod.Items.SmithNote
 {
     public class SmithNoteInfo : MonoBehaviour

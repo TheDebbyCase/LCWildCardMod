@@ -5,13 +5,9 @@ using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using GameNetcodeStuff;
 using TMPro;
-using System;
 using System.Linq;
 using UnityEngine.UI;
-using System.Threading.Tasks;
-using LethalLib.Modules;
 using System.Collections;
-using System.Reflection;
 namespace LCWildCardMod.Items.SmithNote
 {
     public class SmithNote : NoisemakerProp
@@ -23,76 +19,52 @@ namespace LCWildCardMod.Items.SmithNote
         public AudioClip countdownSound;
         public AudioClip[] selectSounds;
         public NetworkAnimator itemAnimator;
-        public List<PlayerControllerB> playersList = new List<PlayerControllerB>();
-        public List<SmithNoteInfo> infoComponents = new List<SmithNoteInfo>();
-        public int pageIndex;
-        public GameObject Name1;
-        public GameObject Pfp1;
-        public GameObject Name2;
-        public GameObject Pfp2;
-        public GameObject coverText;
+        public Dictionary<PlayerControllerB, SmithNoteInfo> playerNotes = new Dictionary<PlayerControllerB, SmithNoteInfo>();
+        public KeyValuePair<PlayerControllerB, SmithNoteInfo> currentElement;
+        public List<TextMeshProUGUI> textMeshList;
+        public List<RawImage> rawImageList;
         public GameObject infoPrefab;
-        public int isCollected = 0;
         public float playerSelectCooldown = 0;
-        public bool flippable = false;
+        public bool isFlippable = false;
         public PlayerControllerB killingPlayer;
-        public List<Component> canvasComponents;
+        public bool isKillRunning = false;
         internal Coroutine killCoroutine;
-        internal bool isKillRunning = false;
-        internal static HashSet<int> validParameters = new HashSet<int>();
         private System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            canvasComponents = new List<Component>();
-            canvasComponents.Add(Name1.GetComponentInChildren<TextMeshProUGUI>());
-            canvasComponents.Add(Name2.GetComponentInChildren<TextMeshProUGUI>());
-            canvasComponents.Add(Pfp1.GetComponentInChildren<RawImage>());
-            canvasComponents.Add(Pfp2.GetComponentInChildren<RawImage>());
-            coverText.SetActive(true);
-            WildCardMod.wildcardKeyBinds.ExtraButton.performed += SelectPage;
-            foreach (AnimatorControllerParameter parameter in itemAnimator.Animator.parameters)
-            {
-                validParameters.Add(Animator.StringToHash(parameter.name));
-            }
+            textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
+            WildCardMod.wildcardKeyBinds.WildCardButton.performed += SelectPage;
             if (base.IsOwner)
             {
                 BeginMusicServerRpc();
             }
         }
-        public void BeginMusic()
-        {
-            if (isCollected == 0)
-            {
-                spawnMusic.Play();
-            }
-        }
         public override void EquipItem()
         {
-            base.EquipItem();
-            coverText.SetActive(true);
-            if (isCollected == 0)
+            if (!hasBeenHeld)
             {
-                isCollected = 1;
                 spawnMusic.Stop();
             }
-            if (playersList.Contains(playerHeldBy))
+            base.EquipItem();
+            textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
+            if (playerNotes.ContainsKey(playerHeldBy))
             {
                 StartOpening();
             }
             else if (GameNetworkManager.Instance.localPlayerController == playerHeldBy)
             {
-                NewPage(playerHeldBy.playerClientId, true);
+                NewPage(playerHeldBy.playerClientId);
             }
         }
         public override void PocketItem()
         {
-            StartClosing();
-            Name1.SetActive(false);
-            Pfp1.SetActive(false);
-            coverText.SetActive(false);
             base.PocketItem();
+            StartClosing();
+            textMeshList[0].rectTransform.parent.gameObject.SetActive(false);
+            rawImageList[0].rectTransform.parent.gameObject.SetActive(false);
+            textMeshList[2].rectTransform.parent.gameObject.SetActive(false);
         }
         public override void DiscardItem()
         {
@@ -101,7 +73,7 @@ namespace LCWildCardMod.Items.SmithNote
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
-            if (flippable)
+            if (isFlippable)
             {
                 int noiseIndex = random.Next(0, noiseSFX.Length);
                 float volume = (float)random.Next((int)(minLoudness * 100f), (int)(maxLoudness * 100f)) / 100f;
@@ -112,6 +84,36 @@ namespace LCWildCardMod.Items.SmithNote
                 WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
                 RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                 playerHeldBy.timeSinceMakingLoudNoise = 0f;
+            }
+        }
+        public override void Update()
+        {
+            base.Update();
+            if (killingPlayer != null && killingPlayer.isPlayerDead && isKillRunning == true)
+            {
+                StopCoroutine(killCoroutine);
+                killCoroutine = null;
+                isKillRunning = false;
+                killingPlayer = null;
+            }
+            if (playerSelectCooldown > 0)
+            {
+                playerSelectCooldown -= Mathf.Abs(Time.deltaTime);
+            }
+            else if (playerSelectCooldown < 0)
+            {
+                playerSelectCooldown = 0;
+            }
+        }
+        public override void LoadItemSaveData(int saveData)
+        {
+            hasBeenHeld = true;
+        }
+        public void BeginMusic()
+        {
+            if (!hasBeenHeld)
+            {
+                spawnMusic.Play();
             }
         }
         public void SelectPage(InputAction.CallbackContext throwContext)
@@ -145,9 +147,9 @@ namespace LCWildCardMod.Items.SmithNote
                                     currentHit = hit;
                                 }
                             }
-                            if (!playersList.Contains(currentHit.transform.GetComponent<PlayerControllerB>()))
+                            if (!playerNotes.ContainsKey(currentHit.transform.GetComponent<PlayerControllerB>()))
                             {
-                                NewPage(currentHit.transform.GetComponent<PlayerControllerB>().playerClientId, false);
+                                NewPage(currentHit.transform.GetComponent<PlayerControllerB>().playerClientId);
                             }
                             else
                             {
@@ -157,168 +159,141 @@ namespace LCWildCardMod.Items.SmithNote
                     }
                     else
                     {
-                        KillServerRpc(playersList[pageIndex].playerClientId);
+                        KillServerRpc(currentElement.Key.playerClientId);
                     }
                 }
             }
         }
-        public void NewPage(ulong id, bool open)
+        public void NewPage(ulong id)
         {
             HUDManager.Instance.UIAudio.PlayOneShot(selectSounds[random.Next(0, selectSounds.Length)], 3f);
-            NewPageServerRpc(id, open);
+            NewPageServerRpc(id);
         }
         public void SetPages()
         {
-            if (infoComponents.Count == 1)
+            int index = playerNotes.Keys.ToList().IndexOf(currentElement.Key);
+            if (playerNotes.Count > 1 && index < playerNotes.Count - 1)
             {
-                pageIndex = 0;
+                index++;
+                currentElement = playerNotes.ElementAt(index);
+                WildCardMod.Log.LogDebug($"playerNotes index: {index}");
+                return;
             }
-            else
-            {
-                pageIndex++;
-                if (pageIndex >= playersList.Count)
-                {
-                    pageIndex = 0;
-                }
-            }
-            WildCardMod.Log.LogDebug($"index: {pageIndex}");
+            currentElement = playerNotes.ElementAt(0);
         }
         public void StartOpening()
         {
-            pageIndex = 0;
-            Name1.SetActive(true);
-            Pfp1.SetActive(true);
-            Name1.GetComponentInChildren<TextMeshProUGUI>().text = infoComponents[pageIndex].username;
-            Pfp1.GetComponentInChildren<RawImage>().texture = infoComponents[pageIndex].texture;
-            Pfp1.GetComponentInChildren<RawImage>().color = infoComponents[pageIndex].colour;
+            currentElement = playerNotes.ElementAt(0);
+            textMeshList[0].rectTransform.parent.gameObject.SetActive(true);
+            rawImageList[0].rectTransform.parent.gameObject.SetActive(true);
+            textMeshList[0].text = currentElement.Value.username;
+            rawImageList[0].texture = currentElement.Value.texture;
+            rawImageList[0].color = currentElement.Value.colour;
             itemAnimator.SetTrigger("OpenBook");
         }
         public void StartClosing()
         {
-            Name2.SetActive(false);
-            Pfp2.SetActive(false);
-            flippable = false;
+            textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
+            rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
+            isFlippable = false;
             itemAnimator.SetTrigger("CloseBook");
         }
         public void StartFlipping()
         {
             CheckDead();
-            flippable = false;
-            Name2.SetActive(true);
-            Pfp2.SetActive(true);
-            Pfp1.SetActive(false);
-            Pfp2.GetComponentInChildren<RawImage>().texture = infoComponents[pageIndex].texture;
-            Pfp2.GetComponentInChildren<RawImage>().color = infoComponents[pageIndex].colour;
+            isFlippable = false;
+            textMeshList[1].rectTransform.parent.gameObject.SetActive(true);
+            rawImageList[1].rectTransform.parent.gameObject.SetActive(true);
+            rawImageList[0].rectTransform.parent.gameObject.SetActive(false);
+            rawImageList[1].texture = currentElement.Value.texture;
+            rawImageList[1].color = currentElement.Value.colour;
             SetPages();
-            Name2.GetComponentInChildren<TextMeshProUGUI>().text = infoComponents[pageIndex].username;
+            textMeshList[1].text = currentElement.Value.username;
             itemAnimator.SetTrigger("Activate");
         }
         public void FinishOpening()
         {
-            flippable = true;
+            isFlippable = true;
         }
         public void FinishClosing()
         {
             if (!isHeld)
             {
-                Name1.SetActive(false);
-                Pfp1.SetActive(false);
+                textMeshList[0].rectTransform.parent.gameObject.SetActive(false);
+                rawImageList[0].rectTransform.parent.gameObject.SetActive(false);
             }
         }
         public void FinishFlipping()
         {
-            Name1.GetComponentInChildren<TextMeshProUGUI>().text = infoComponents[pageIndex].username;
-            Name2.SetActive(false);
-            Pfp2.SetActive(false);
-            flippable = true;
+            textMeshList[0].text = currentElement.Value.username;
+            textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
+            rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
+            isFlippable = true;
         }
         public void PfpFrameUpdate()
         {
-            Pfp1.SetActive(true);
-            Pfp1.GetComponentInChildren<RawImage>().texture = infoComponents[pageIndex].texture;
-            Pfp1.GetComponentInChildren<RawImage>().color = infoComponents[pageIndex].colour;
+            rawImageList[0].rectTransform.parent.gameObject.SetActive(true);
+            rawImageList[0].texture = currentElement.Value.texture;
+            rawImageList[0].color = currentElement.Value.colour;
         }
         public void CheckDead()
         {
-            foreach (PlayerControllerB player in playersList)
+            foreach (KeyValuePair<PlayerControllerB, SmithNoteInfo> pair in playerNotes)
             {
-                SmithNoteInfo info = infoComponents[playersList.IndexOf(player)];
+                PlayerControllerB player = pair.Key;
+                SmithNoteInfo info = pair.Value;
                 if (player.isPlayerDead || killingPlayer == player)
                 {
                     if (!info.isDead)
                     {
-                        string tempUser = info.username;
-                        info.username = $"<s>{tempUser}";
+                        string user = info.username;
+                        info.username = $"<s>{user}";
                         info.colour = new Color(1f, 0.5f, 0.5f);
                         info.isDead = true;
-                        foreach (Component component in canvasComponents)
+                        for (int i = 0; i < 2; i++)
                         {
-                            if (component.TryGetComponent<TextMeshProUGUI>(out TextMeshProUGUI tempTextMesh) && tempTextMesh.text == tempUser)
+                            TextMeshProUGUI text = textMeshList[i];
+                            if (text.text == user)
                             {
-                                tempTextMesh.text = info.username;
+                                text.text = info.username;
                             }
-                            else if (component.TryGetComponent<RawImage>(out RawImage tempRawImage) && tempRawImage.texture == info.texture)
+                        }
+                        for (int i = 0;i < 2; i++)
+                        {
+                            RawImage image = rawImageList[i];
+                            if (image.texture == info.texture)
                             {
-                                tempRawImage.color = info.colour;
+                                image.color = info.colour;
                             }
                         }
                     }
                 }
             }
         }
-        public override void Update()
-        {
-            base.Update();
-            if (killingPlayer != null && killingPlayer.isPlayerDead && isKillRunning == true)
-            {
-                StopCoroutine(killCoroutine);
-                killCoroutine = null;
-                isKillRunning = false;
-                killingPlayer = null;
-            }
-            if (playerSelectCooldown > 0)
-            {
-                playerSelectCooldown -= Mathf.Abs(Time.deltaTime);
-            }
-            else if (playerSelectCooldown < 0)
-            {
-                playerSelectCooldown = 0;
-            }
-        }
-        public override int GetItemDataToSave()
-        {
-            return isCollected;
-        }
-        public override void LoadItemSaveData(int saveData)
-        {
-            isCollected = saveData;
-        }
         [ServerRpc(RequireOwnership = false)]
         public void BeginMusicServerRpc()
         {
-            BeginMusicClientRpc(isCollected);
+            BeginMusicClientRpc(hasBeenHeld);
         }
         [ClientRpc]
-        public void BeginMusicClientRpc(int id)
+        public void BeginMusicClientRpc(bool held)
         {
-            isCollected = id;
+            hasBeenHeld = held;
             BeginMusic();
         }
         [ServerRpc(RequireOwnership = false)]
-        public void NewPageServerRpc(ulong id, bool open)
+        public void NewPageServerRpc(ulong id)
         {
-            WildCardMod.Log.LogDebug($"NewPageServerRpc, id: {id}");
-            NewPageClientRpc(id, open);
+            NewPageClientRpc(id);
         }
         [ClientRpc]
-        public void NewPageClientRpc(ulong id, bool open)
+        public void NewPageClientRpc(ulong id)
         {
-            WildCardMod.Log.LogDebug($"NewPageClientRpc, id: {id}");
-            WildCardMod.Log.LogDebug($"Adding player {StartOfRound.Instance.allPlayerScripts[id].playerUsername} to players list!");
-            playersList.Add(StartOfRound.Instance.allPlayerScripts[id]);
-            infoComponents.Add(Instantiate<SmithNoteInfo>(infoPrefab.GetComponent<SmithNoteInfo>(), base.transform));
-            infoComponents[^1].Spawn(this, StartOfRound.Instance.allPlayerScripts[id]);
-            if (open)
+            PlayerControllerB selectingPlayer = StartOfRound.Instance.allPlayerScripts[id];
+            WildCardMod.Log.LogDebug($"Adding player {selectingPlayer.playerUsername} to players list!");
+            playerNotes.Add(selectingPlayer, Instantiate<SmithNoteInfo>(infoPrefab.GetComponent<SmithNoteInfo>(), base.transform));
+            playerNotes.GetValueOrDefault(selectingPlayer).Spawn(this, selectingPlayer);
+            if (!isPocketed)
             {
                 StartOpening();
             }

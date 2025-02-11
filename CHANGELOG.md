@@ -1,3 +1,9 @@
+## 0.8.1
+- Refactored Smith Note code to be nicer
+- Removed redundant code
+- Reordered some debug code
+- Increased the frequency at which you can interact with Cojiro
+
 ## 0.8.0
 - Added Cojiro the Cucco
 

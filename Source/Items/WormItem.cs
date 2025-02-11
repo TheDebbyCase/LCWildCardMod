@@ -2,11 +2,10 @@
 {
     public class WormItem : ThrowableNoisemaker
     {
-        public int lookingDirection = 0;
         public override void BeginMusic()
         {
             base.BeginMusic();
-            if (isCollected == 1)
+            if (hasBeenHeld)
             {
                 triggerAnimator.SetBool("OnFloor", false);
             }

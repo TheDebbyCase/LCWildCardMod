@@ -16,14 +16,13 @@ namespace LCWildCardMod.Items
         public AudioSource throwAudio;
         public AudioClip[] throwClips;
         public NetworkAnimator itemAnimator;
-        public int isCollected = 0;
         internal Vector3 handPosition;
         internal static HashSet<int> validParameters = new HashSet<int>();
         private System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            WildCardMod.wildcardKeyBinds.ExtraButton.performed += ThrowButton;
+            WildCardMod.wildcardKeyBinds.WildCardButton.performed += ThrowButton;
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             if (itemAnimator != null )
             {
@@ -39,7 +38,7 @@ namespace LCWildCardMod.Items
         }
         public virtual void BeginMusic()
         {
-            if (isCollected == 0)
+            if (!hasBeenHeld)
             {
                 spawnMusic.Play();
             }
@@ -97,10 +96,6 @@ namespace LCWildCardMod.Items
         public override void EquipItem()
         {
             base.EquipItem();
-            if (isCollected == 0)
-            {
-                isCollected = 1;
-            }
             spawnMusic.Stop();
             throwAudio.Stop();
         }
@@ -146,13 +141,9 @@ namespace LCWildCardMod.Items
             }
             return throwRay.GetPoint(30f);
         }
-        public override int GetItemDataToSave()
-        {
-            return isCollected;
-        }
         public override void LoadItemSaveData(int saveData)
         {
-            isCollected = saveData;
+            hasBeenHeld = true;
         }
         [ServerRpc(RequireOwnership = false)]
         public void ThrowAudioServerRpc(float pitch)
@@ -168,12 +159,12 @@ namespace LCWildCardMod.Items
         [ServerRpc(RequireOwnership = false)]
         public void BeginMusicServerRpc()
         {
-            BeginMusicClientRpc(isCollected);
+            BeginMusicClientRpc(hasBeenHeld);
         }
         [ClientRpc]
-        public void BeginMusicClientRpc(int id)
+        public void BeginMusicClientRpc(bool held)
         {
-            isCollected = id;
+            hasBeenHeld = held;
             BeginMusic();
         }
     }
