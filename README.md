@@ -123,6 +123,15 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 
+	<details>
+	<summary>Remaining WILDCARD members items</summary>
+
+	No functionality
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/AssortedPreview.png)
+	
+	</details>
+
 I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD

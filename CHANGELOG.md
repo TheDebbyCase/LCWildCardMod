@@ -1,3 +1,7 @@
+## 0.9.0
+- Added an item for each remaining WILDCARD member!
+- All of the new items are simple with no functionality
+
 ## 0.8.2
 - Fixed animation desyncs with all animated scrap
 - Refactored some code for consistency
