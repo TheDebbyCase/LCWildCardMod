@@ -107,7 +107,7 @@ namespace LCWildCardMod.Items
         {
             handPosition = playerHeldBy.localItemHolder.transform.position;
             parentComponent.transform.position = Vector3.Lerp(handPosition, targetPosition, throwCurve.Evaluate(throwTime));
-            throwTime += Mathf.Abs(Time.deltaTime * 0.5f);
+            throwTime += Mathf.Abs(Time.deltaTime * 0.75f);
             ThrowCurveServerRpc(parentComponent.transform.position);
         }
         public override void EquipItem()
@@ -152,7 +152,10 @@ namespace LCWildCardMod.Items
         {
             parentComponent.transform.localPosition = Vector3.zero;
             this.transform.localPosition = itemProperties.positionOffset;
-            this.transform.position = playerHeldBy.localItemHolder.transform.position;
+            if (playerHeldBy != null)
+            {
+                this.transform.position = playerHeldBy.localItemHolder.transform.position;
+            }
             isThrowing = false;
             if (base.IsServer)
             {

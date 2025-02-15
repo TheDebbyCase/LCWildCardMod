@@ -1,3 +1,7 @@
+## 0.9.3
+- Fixed an issue where if a player dies while throwing SmithHalo an error would occur
+- Slightly increased the throw speed of the SmithHalo
+
 ## 0.9.2
 - Restricted Valentine so you mist keep moving for it to increase in value
 - Made the Valentine's heartbeat attract dogs
