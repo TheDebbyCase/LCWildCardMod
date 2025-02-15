@@ -132,6 +132,15 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 
+	<details>
+	<summary>Valentine</summary>
+
+	The more you hold it, the more valuable it becomes
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ValentinePreview.png)
+	
+	</details>
+
 I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD

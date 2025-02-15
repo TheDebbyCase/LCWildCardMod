@@ -1,3 +1,6 @@
+## 0.9.1
+- Added Valentine, a heart shaped chocolate!
+
 ## 0.9.0
 - Added an item for each remaining WILDCARD member!
 - All of the new items are simple with no functionality
