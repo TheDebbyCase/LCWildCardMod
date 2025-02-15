@@ -28,6 +28,7 @@ namespace LCWildCardMod.Items.SmithNote
         public bool isFlippable = false;
         public PlayerControllerB killingPlayer;
         public bool isKillRunning = false;
+        public int lastFrameLivingPlayers;
         internal Coroutine killCoroutine;
         private System.Random random;
         public override void OnNetworkSpawn()
@@ -35,6 +36,7 @@ namespace LCWildCardMod.Items.SmithNote
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
+            lastFrameLivingPlayers = StartOfRound.Instance.livingPlayers;
             WildCardMod.wildcardKeyBinds.WildCardButton.performed += SelectPage;
             if (base.IsOwner)
             {
@@ -103,6 +105,11 @@ namespace LCWildCardMod.Items.SmithNote
             else if (playerSelectCooldown < 0)
             {
                 playerSelectCooldown = 0;
+            }
+            if (lastFrameLivingPlayers != StartOfRound.Instance.livingPlayers)
+            {
+                CheckDead();
+                lastFrameLivingPlayers = StartOfRound.Instance.livingPlayers;
             }
         }
         public override void LoadItemSaveData(int saveData)
@@ -201,7 +208,6 @@ namespace LCWildCardMod.Items.SmithNote
         }
         public void StartFlipping()
         {
-            CheckDead();
             isFlippable = false;
             textMeshList[1].rectTransform.parent.gameObject.SetActive(true);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(true);
@@ -246,29 +252,49 @@ namespace LCWildCardMod.Items.SmithNote
             {
                 PlayerControllerB player = pair.Key;
                 SmithNoteInfo info = pair.Value;
-                if (player.isPlayerDead || killingPlayer == player)
+                if ((player.isPlayerDead || killingPlayer == player) && !info.isDead)
                 {
-                    if (!info.isDead)
+                    string user = info.username;
+                    info.username = $"<s>{user}";
+                    info.colour = new Color(1f, 0.5f, 0.5f);
+                    info.isDead = true;
+                    for (int i = 0; i < 2; i++)
                     {
-                        string user = info.username;
-                        info.username = $"<s>{user}";
-                        info.colour = new Color(1f, 0.5f, 0.5f);
-                        info.isDead = true;
-                        for (int i = 0; i < 2; i++)
+                        TextMeshProUGUI text = textMeshList[i];
+                        if (text.text == user)
                         {
-                            TextMeshProUGUI text = textMeshList[i];
-                            if (text.text == user)
-                            {
-                                text.text = info.username;
-                            }
+                            text.text = info.username;
                         }
-                        for (int i = 0;i < 2; i++)
+                    }
+                    for (int i = 0; i < 2; i++)
+                    {
+                        RawImage image = rawImageList[i];
+                        if (image.texture == info.texture)
                         {
-                            RawImage image = rawImageList[i];
-                            if (image.texture == info.texture)
-                            {
-                                image.color = info.colour;
-                            }
+                            image.color = info.colour;
+                        }
+                    }
+                }
+                else if (!player.isPlayerDead && info.isDead)
+                {
+                    string user = info.username;
+                    info.username = $"{player.playerUsername}";
+                    info.colour = Color.white;
+                    info.isDead = false;
+                    for (int i = 0; i < 2; i++)
+                    {
+                        TextMeshProUGUI text = textMeshList[i];
+                        if (text.text == user)
+                        {
+                            text.text = info.username;
+                        }
+                    }
+                    for (int i = 0; i < 2; i++)
+                    {
+                        RawImage image = rawImageList[i];
+                        if (image.texture == info.texture)
+                        {
+                            image.color = info.colour;
                         }
                     }
                 }

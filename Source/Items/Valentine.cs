@@ -12,7 +12,8 @@ namespace LCWildCardMod.Items
         public Material materialRef;
         public int startingValue = 0;
         public float intensityValue;
-        public bool beginCountdown = false;
+        public Vector3 lastUpdatePosition;
+        public int standStillAmount = 0;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -25,21 +26,22 @@ namespace LCWildCardMod.Items
         public override void Update()
         {
             base.Update();
-            if (base.IsOwner)
+            if (playerHeldBy != null && !isPocketed && base.IsOwner && StartOfRound.Instance.randomMapSeed != 0 && currentUseCooldown <= 0f && standStillAmount < 3)
             {
-                if (playerHeldBy != null && StartOfRound.Instance.randomMapSeed != 0 && currentUseCooldown <= 0f && beginCountdown)
+                ScrapValueServerRpc(scanNode.scrapValue + 1);
+                currentUseCooldown = 2.5f;
+                intensityValue = Mathf.Lerp(1f, 100f, ((float)scrapValue - (float)startingValue) / ((float)startingValue * 14f));
+                SetIntensityServerRpc(intensityValue);
+                if (intensityValue >= 75f)
                 {
-                    ScrapValueServerRpc(scanNode.scrapValue + 1);
-                    currentUseCooldown = 2.5f;
-                    intensityValue = Mathf.Lerp(1f, 100f, ((float)scrapValue - (float)startingValue) / ((float)startingValue * 14f));
-                    SetIntensityServerRpc(intensityValue);
-                    if (intensityValue >= 75f)
-                    {
-                        itemAnimator.Animator.SetFloat("beatSpeed", Mathf.Max(1, (intensityValue / 20f) - 3.75f));
-                        beatAudio.pitch = Mathf.Max(1, (intensityValue / 20f) - 3.75f);
-                    }
-                    itemAnimator.Animator.SetFloat("restSpeed", Mathf.Max(1, intensityValue / 7.5f));
+                    itemAnimator.Animator.SetFloat("beatSpeed", Mathf.Max(1, (intensityValue / 20f) - 3.75f));
+                    beatAudio.pitch = Mathf.Max(1, (intensityValue / 20f) - 3.75f);
                 }
+                itemAnimator.Animator.SetFloat("restSpeed", Mathf.Max(1, intensityValue / 7.5f));
+            }
+            else if ((base.transform.position - lastUpdatePosition).magnitude >= 3f && playerHeldBy != null && !isPocketed && currentUseCooldown <= 0f && standStillAmount != 0)
+            {
+                standStillAmount = 0;
             }
             if (materialRef.GetColor("_EmissionColor") != Color.white * intensityValue)
             {
@@ -50,25 +52,37 @@ namespace LCWildCardMod.Items
         {
             base.EquipItem();
             currentUseCooldown = 2.5f;
-            beginCountdown = true;
+            lastUpdatePosition = base.transform.position;
+            standStillAmount = 0;
             itemAnimator.Animator.SetBool("isHeld", true);
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            beginCountdown = false;
+            standStillAmount = 0;
             itemAnimator.Animator.SetBool("isHeld", false);
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
-            beginCountdown = false;
+            standStillAmount = 0;
             itemAnimator.Animator.SetBool("isHeld", false);
         }
         public void HeartBeat()
         {
             beatAudio.Stop();
             beatAudio.Play();
+            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, standStillAmount, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            playerHeldBy.timeSinceMakingLoudNoise = 0f;
+            if ((base.transform.position - lastUpdatePosition).magnitude < 3f)
+            {
+                standStillAmount++;
+            }
+            else
+            {
+                standStillAmount = 0;
+            }
+            lastUpdatePosition = base.transform.position;
         }
         public override int GetItemDataToSave()
         {

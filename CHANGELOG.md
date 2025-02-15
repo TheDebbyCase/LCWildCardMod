@@ -1,3 +1,8 @@
+## 0.9.2
+- Restricted Valentine so you mist keep moving for it to increase in value
+- Made the Valentine's heartbeat attract dogs
+- Fixed an issue (hopefully) with SmithNote wherein names would remain crossed out even when players respawn
+
 ## 0.9.1
 - Added Valentine, a heart shaped chocolate!
 
