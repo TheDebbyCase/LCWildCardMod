@@ -44,13 +44,31 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool PreventFallDamage(PlayerControllerB __instance)
         {
-            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<Cojiro>(out Cojiro cojiroRef) && cojiroRef.isFloating)
+            Cojiro cojiroRef = null;
+            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<Cojiro>(out cojiroRef) && cojiroRef.isFloating && __instance.fallValue >= -38f)
             {
                 WildCardMod.Log.LogDebug($"Preventing Fall Damage");
                 __instance.GetCurrentMaterialStandingOn();
                 __instance.movementAudio.PlayOneShot(StartOfRound.Instance.playerHitGroundSoft, 1f);
                 __instance.LandFromJumpServerRpc(false);
+                cojiroRef.itemAnimator.Animator.SetBool("Floating", false);
                 return false;
+            }
+            else if (cojiroRef == null && __instance.fallValue >= -38f)
+            {
+                Cojiro[] cojiroList = UnityEngine.Object.FindObjectsOfType<Cojiro>();
+                foreach (Cojiro cojiro in cojiroList)
+                {
+                    if (cojiro.previousPlayer == __instance && cojiro.currentUseCooldown > 0)
+                    {
+                        WildCardMod.Log.LogDebug($"Preventing Fall Damage");
+                        __instance.GetCurrentMaterialStandingOn();
+                        __instance.movementAudio.PlayOneShot(StartOfRound.Instance.playerHitGroundSoft, 1f);
+                        __instance.LandFromJumpServerRpc(false);
+                        cojiro.itemAnimator.Animator.SetBool("Floating", false);
+                        return false;
+                    }
+                }
             }
             return true;
         }

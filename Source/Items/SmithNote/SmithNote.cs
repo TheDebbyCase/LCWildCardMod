@@ -300,6 +300,13 @@ namespace LCWildCardMod.Items.SmithNote
                 }
             }
         }
+        public IEnumerator KillCoroutine()
+        {
+            isKillRunning = true;
+            yield return new WaitForSeconds(4.5f);
+            GameNetworkManager.Instance.localPlayerController.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 1);
+            isKillRunning = false;
+        }
         [ServerRpc(RequireOwnership = false)]
         public void BeginMusicServerRpc()
         {
@@ -358,13 +365,6 @@ namespace LCWildCardMod.Items.SmithNote
                     HUDManager.Instance.UIAudio.PlayOneShot(writingSound, 3f);
                 }
             }
-        }
-        public IEnumerator KillCoroutine()
-        {
-            isKillRunning = true;
-            yield return new WaitForSeconds(4.5f);
-            GameNetworkManager.Instance.localPlayerController.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 1);
-            isKillRunning = false;
         }
     }
 }

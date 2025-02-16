@@ -1,3 +1,7 @@
+## 0.9.5
+- Gave The Worm an idle looking animation
+- Allowed for some leeway when putting Cojiro away mid flight so you dont take full fall damage even if you floated most of the way
+
 ## 0.9.4
 - Added an override config option to disable the bonus WILDCARD items with no animations or mechanics
 - Reduced the size of config help information

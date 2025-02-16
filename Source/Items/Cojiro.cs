@@ -1,4 +1,5 @@
-﻿using Unity.Netcode.Components;
+﻿using GameNetcodeStuff;
+using Unity.Netcode.Components;
 using UnityEngine;
 namespace LCWildCardMod.Items
 {
@@ -7,6 +8,15 @@ namespace LCWildCardMod.Items
         public AudioSource flapSource;
         public NetworkAnimator itemAnimator;
         public bool isFloating;
+        public PlayerControllerB previousPlayer;
+        public override void GrabItem()
+        {
+            base.GrabItem();
+            if (previousPlayer == null)
+            {
+                previousPlayer = playerHeldBy;
+            }
+        }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             int noiseIndex = noisemakerRandom.Next(0, noiseSFX.Length);
@@ -16,7 +26,7 @@ namespace LCWildCardMod.Items
             noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
             if (base.IsServer)
             {
-                triggerAnimator.SetTrigger("playAnim");
+                itemAnimator.SetTrigger("playAnim");
             }
             WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
             RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
@@ -46,6 +56,26 @@ namespace LCWildCardMod.Items
                     itemAnimator.Animator.SetBool("Floating", false);
                 }
                 flapSource.Stop();
+            }
+            if (currentUseCooldown < 0)
+            {
+                currentUseCooldown = 0;
+            }
+            else if (currentUseCooldown == 0f && playerHeldBy == null && previousPlayer != null)
+            {
+                previousPlayer = null;
+            }
+            else if (currentUseCooldown == 0f && playerHeldBy != null && previousPlayer != playerHeldBy)
+            {
+                previousPlayer = playerHeldBy;
+            }
+            if (currentUseCooldown < 1 && isFloating)
+            {
+                currentUseCooldown += 2 * Time.deltaTime;
+            }
+            else if (currentUseCooldown > 1)
+            {
+                currentUseCooldown = 1;
             }
         }
     }

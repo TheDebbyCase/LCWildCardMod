@@ -1,13 +1,39 @@
-﻿namespace LCWildCardMod.Items
+﻿using System.Collections;
+using UnityEngine;
+
+namespace LCWildCardMod.Items
 {
     public class WormItem : ThrowableNoisemaker
     {
+        public bool idleAnim;
+        public Coroutine idleAnimCoroutine;
         public override void BeginMusic()
         {
             base.BeginMusic();
             if (hasBeenHeld && base.IsServer)
             {
                 triggerAnimator.SetBool("OnFloor", false);
+            }
+            else if (base.IsServer)
+            {
+                idleAnimCoroutine = StartCoroutine(IdleAnimation(false));
+            }
+        }
+        public override void GrabItem()
+        {
+            base.GrabItem();
+            if (base.IsServer)
+            {
+                if (idleAnim)
+                {
+                    StopCoroutine(idleAnimCoroutine);
+                    idleAnim = false;
+                    idleAnimCoroutine = StartCoroutine(IdleAnimation(true));
+                }
+                else
+                {
+                    idleAnimCoroutine = StartCoroutine(IdleAnimation(true));
+                }
             }
         }
         public override void EquipItem()
@@ -18,7 +44,6 @@
                 triggerAnimator.SetBool("IsThrown", false);
                 triggerAnimator.SetBool("IsHeld", true);
                 triggerAnimator.SetBool("OnFloor", false);
-                FaceDirection("Left");
             }
         }
         public override void PocketItem()
@@ -27,7 +52,6 @@
             if (base.IsServer)
             {
                 triggerAnimator.SetBool("IsHeld", false);
-                FaceDirection("Forward");
             }
         }
         public override void DiscardItem()
@@ -36,6 +60,8 @@
             if (base.IsServer)
             {
                 triggerAnimator.SetBool("IsHeld", false);
+                StopCoroutine(idleAnimCoroutine);
+                idleAnim = false;
                 FaceDirection("Forward");
             }
         }
@@ -45,6 +71,7 @@
             if (base.IsServer)
             {
                 triggerAnimator.SetBool("IsThrown", false);
+                idleAnimCoroutine = StartCoroutine(IdleAnimation(false));
             }
         }
         public override void Throw()
@@ -52,9 +79,31 @@
             base.Throw();
             if (base.IsServer)
             {
-                triggerAnimator.SetBool("IsHeld", false);
                 triggerAnimator.SetBool("IsThrown", true);
-                FaceDirection("Forward");
+            }
+        }
+        public IEnumerator IdleAnimation(bool inHand)
+        {
+            while (true)
+            {
+                idleAnim = true;
+                if (inHand)
+                {
+                    FaceDirection("Left");
+                    yield return new WaitForSeconds(5f);
+                    FaceDirection("Forward");
+                    yield return new WaitForSeconds(3f);
+                    FaceDirection("Right");
+                }
+                else
+                {
+                    FaceDirection("Forward");
+                    yield return new WaitForSeconds(5f);
+                    FaceDirection("Left");
+                    yield return new WaitForSeconds(3f);
+                    FaceDirection("Right");
+                }
+                yield return new WaitForSeconds(3f);
             }
         }
         public void FaceDirection(string direction)
