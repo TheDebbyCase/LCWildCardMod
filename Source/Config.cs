@@ -9,8 +9,11 @@ namespace LCWildCardMod.Config
     {
         internal readonly List<ConfigEntry<bool>> isScrapEnabled = new List<ConfigEntry<bool>>();
         internal readonly List<ConfigEntry<string>> scrapSpawnWeights = new List<ConfigEntry<string>>();
+        internal readonly ConfigEntry<bool> assortedScrap;
+        internal string bonusString = "Affected items include";
         internal string defaultRarities;
         internal bool defaultEnabled;
+        internal bool isBonus;
         internal WildCardConfig(ConfigFile cfg, List<Item> scrapList)
         {
             cfg.SaveOnConfigSet = false;
@@ -18,22 +21,15 @@ namespace LCWildCardMod.Config
             {
                 defaultEnabled = scrapListItem.spawnPrefab.GetComponent<AdditionalInfo>().defaultEnabled;
                 defaultRarities = scrapListItem.spawnPrefab.GetComponent<AdditionalInfo>().defaultRarities;
-                isScrapEnabled.Add(cfg.Bind(
-                    "Scrap",
-                    $"Enable {scrapListItem.itemName}",
-                    defaultEnabled,
-                    $"Whether or not to allow {scrapListItem.itemName} to spawn!"
-                    ));
-                scrapSpawnWeights.Add(cfg.Bind(
-                    "Scrap",
-                    $"Spawn Weights of {scrapListItem.itemName}",
-                    defaultRarities,
-                    string.Concat($"Set the spawn weight of {scrapListItem.itemName} for each moon in the format 'Vanilla:20,Modded:30'",
-                    "\nUse 'All:' to set the weight for all moons, 'Vanilla:' for only vanilla moons, or 'Modded:' for only modded moons.",
-                    "\nSpecific moons can be referenced by typing the name (without the numbers) followed by 'Level' (this works for modded moons also), for example:",
-                    "\n'ExperimentationLevel:20'")
-                    ));
+                isBonus = scrapListItem.spawnPrefab.GetComponent<AdditionalInfo>().isBonus;
+                if (isBonus)
+                {
+                    bonusString = $"{bonusString}, {scrapListItem.itemName}";
+                }
+                isScrapEnabled.Add(cfg.Bind("Scrap", $"Enable {scrapListItem.itemName}?", defaultEnabled, ""));
+                scrapSpawnWeights.Add(cfg.Bind("Scrap", $"Spawn Weights of {scrapListItem.itemName}!", defaultRarities, "For example: All:20,Vanilla:20,Modded:20,Experimentation:20"));
             }
+            assortedScrap = cfg.Bind("Scrap", "Enable/Disable supplementary scrap overall", true, bonusString);
             ClearOrphanedEntries(cfg);
             cfg.Save();
             cfg.SaveOnConfigSet = true;

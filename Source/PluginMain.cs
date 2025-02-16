@@ -19,7 +19,7 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.9.3";
+        private const string modVersion = "0.9.4";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         private static WildCardMod Instance;
@@ -74,6 +74,11 @@ namespace LCWildCardMod
             ModConfig = new WildCardConfig(base.Config, scrapList);
             for (int i = 0; i < scrapList.Count; i++)
             {
+                if (scrapList[i].spawnPrefab.GetComponent<AdditionalInfo>().isBonus && !ModConfig.assortedScrap.Value)
+                {
+                    Log.LogInfo($"{scrapList[i].itemName} was disabled!");
+                    continue;
+                }
                 if (ModConfig.isScrapEnabled[i].Value)
                 {
                     Dictionary<Levels.LevelTypes, int> scrapLevelWeights = new Dictionary<Levels.LevelTypes, int>();

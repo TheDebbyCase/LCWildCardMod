@@ -12,5 +12,6 @@ namespace LCWildCardMod.Utils
     {
         public bool defaultEnabled;
         public string defaultRarities;
+        public bool isBonus;
     }
 }

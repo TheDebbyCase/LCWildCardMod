@@ -1,3 +1,7 @@
+## 0.9.4
+- Added an override config option to disable the bonus WILDCARD items with no animations or mechanics
+- Reduced the size of config help information
+
 ## 0.9.3
 - Fixed an issue where if a player dies while throwing SmithHalo an error would occur
 - Slightly increased the throw speed of the SmithHalo
