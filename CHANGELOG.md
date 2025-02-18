@@ -1,3 +1,6 @@
+## 0.10.0
+- Added Clover Bee, a bee with an attitude!
+
 ## 0.9.5
 - Gave The Worm an idle looking animation
 - Allowed for some leeway when putting Cojiro away mid flight so you dont take full fall damage even if you floated most of the way

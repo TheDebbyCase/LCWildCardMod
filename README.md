@@ -141,6 +141,15 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 
+	<details>
+	<summary>Clover Bee</summary>
+
+	A bee with an attitude (if anyone knows who made the original cloverinari bee design hmu)
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/CloverBeePreview.png)
+	
+	</details>
+
 I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD

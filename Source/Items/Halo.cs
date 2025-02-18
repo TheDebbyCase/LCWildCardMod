@@ -57,6 +57,7 @@ namespace LCWildCardMod.Items
                     float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
                     throwAudio.pitch = pitch;
                     int selectedClip = random.Next(0, throwClips.Length);
+                    RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                     playerHeldBy.timeSinceMakingLoudNoise = 0f;
                     ThrowAudioServerRpc(pitch, selectedClip);
                 }
@@ -97,7 +98,7 @@ namespace LCWildCardMod.Items
                         }
                     }
                 }
-                else
+                else if (parentComponent.transform.localPosition != Vector3.zero)
                 {
                     parentComponent.transform.localPosition = Vector3.zero;
                 }
