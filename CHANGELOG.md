@@ -1,3 +1,6 @@
+## 0.10.1
+- Increased volume of noisemaker items, hopefully they're loud enough now
+
 ## 0.10.0
 - Added Clover Bee, a bee with an attitude!
 
