@@ -4,31 +4,30 @@ namespace LCWildCardMod.Items
     public class SmithWing : PhysicsProp
     {
         public PlayerControllerB lastPlayer;
-        public float originalSpeed;
+        public float speedMultiplier = 1.5f;
         public override void GrabItem()
         {
             base.GrabItem();
             lastPlayer = playerHeldBy;
-            originalSpeed = lastPlayer.movementSpeed;
-            lastPlayer.movementSpeed *= 1.5f;
+            lastPlayer.movementSpeed *= speedMultiplier;
         }
         public override void EquipItem()
         {
             base.EquipItem();
             if (lastPlayer != null)
             {
-                lastPlayer.movementSpeed *= 1.5f;
+                lastPlayer.movementSpeed *= speedMultiplier;
             }
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            lastPlayer.movementSpeed = originalSpeed;
+            lastPlayer.movementSpeed /= speedMultiplier;
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
-            lastPlayer.movementSpeed = originalSpeed;
+            lastPlayer.movementSpeed /= speedMultiplier;
             lastPlayer = null;
         }
     }

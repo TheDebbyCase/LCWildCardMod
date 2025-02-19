@@ -1,3 +1,7 @@
+## 0.10.2
+- Added tooltip to Clover Bee
+- Added functionality to Fyrus Star, tasty
+
 ## 0.10.1
 - Increased volume of noisemaker items, hopefully they're loud enough now
 

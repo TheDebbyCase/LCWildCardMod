@@ -126,7 +126,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Remaining WILDCARD members items</summary>
 
-	No functionality
+	No functionality (Fyrus Star has since been upgraded)
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/AssortedPreview.png)
 	

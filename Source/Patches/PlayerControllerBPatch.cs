@@ -1,6 +1,8 @@
 ﻿using GameNetcodeStuff;
 using HarmonyLib;
 using LCWildCardMod.Items;
+using LCWildCardMod.Items.Fyrus;
+using UnityEngine;
 namespace LCWildCardMod.Patches
 {
     [HarmonyPatch(typeof(PlayerControllerB))]
@@ -10,11 +12,18 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool SavePlayer(PlayerControllerB __instance, ref CauseOfDeath causeOfDeath, ref int damageNumber)
         {
-            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0 && !(causeOfDeath == CauseOfDeath.Unknown || causeOfDeath == CauseOfDeath.Drowning || causeOfDeath == CauseOfDeath.Abandoned || causeOfDeath == CauseOfDeath.Inertia || causeOfDeath == CauseOfDeath.Suffocation) && damageNumber >= __instance.health)
+            if (!(causeOfDeath == CauseOfDeath.Unknown || causeOfDeath == CauseOfDeath.Drowning || causeOfDeath == CauseOfDeath.Abandoned || causeOfDeath == CauseOfDeath.Inertia || causeOfDeath == CauseOfDeath.Suffocation))
             {
-                WildCardMod.Log.LogDebug($"Saving Player from {causeOfDeath}");
-                __instance.health = damageNumber + 1;
-                haloRef.ExhaustHaloServerRpc();
+                if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0 && damageNumber >= __instance.health)
+                {
+                    WildCardMod.Log.LogDebug($"Saving Player from {causeOfDeath}");
+                    __instance.health = damageNumber + 1;
+                    haloRef.ExhaustHaloServerRpc();
+                }
+                if (__instance.GetComponentInChildren<FyrusAttach>() != null)
+                {
+                    damageNumber = 0;
+                }
             }
             return true;
         }

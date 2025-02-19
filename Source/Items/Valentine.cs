@@ -26,7 +26,7 @@ namespace LCWildCardMod.Items
         public override void Update()
         {
             base.Update();
-            if (playerHeldBy != null && !isPocketed && base.IsOwner && StartOfRound.Instance.randomMapSeed != 0 && currentUseCooldown <= 0f && standStillAmount < 3)
+            if (playerHeldBy != null && !isPocketed && base.IsOwner && StartOfRound.Instance.currentLevel.planetHasTime && !StartOfRound.Instance.inShipPhase && currentUseCooldown <= 0f && standStillAmount < 3)
             {
                 ScrapValueServerRpc(scanNode.scrapValue + 1);
                 currentUseCooldown = 2.5f;
