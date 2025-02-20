@@ -43,7 +43,7 @@ namespace LCWildCardMod.Items
                 }
                 if (stateId == 1)
                 {
-                    float multiplier = Mathf.Max(1f, (float)agitate);
+                    float multiplier = Mathf.Max(1f, (float)agitate / 2);
                     useCooldown = 0.5f / multiplier;
                     itemAnimator.Animator.SetFloat("Intensity", multiplier);
                 }
@@ -89,11 +89,11 @@ namespace LCWildCardMod.Items
         public IEnumerator AgitateCounter()
         {
             agitating = true;
-            while (agitate < 5 || StartOfRound.Instance.inShipPhase)
+            while (agitate < 10 || StartOfRound.Instance.inShipPhase)
             {
-                yield return new WaitForSeconds((float)random.Next(10, 50) / 10f);
+                yield return new WaitForSeconds((float)random.Next(5, 50) / 10f);
                 agitate++;
-                if (agitate >= 5)
+                if (agitate >= 10)
                 {
                     agitate = 5;
                 }
