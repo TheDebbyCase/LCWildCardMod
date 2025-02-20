@@ -1,3 +1,7 @@
+## 0.11.0
+- Added Clauvio Mouse, a mouse! With an attitude! Again!
+- Turns out I've had my audio all fucked up for all my scraps, I have since (hopefully) repaired this
+
 ## 0.10.2
 - Added tooltip to Clover Bee
 - Added functionality to Fyrus Star, tasty

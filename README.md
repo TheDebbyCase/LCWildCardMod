@@ -144,9 +144,20 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Clover Bee</summary>
 
-	A bee with an attitude (if anyone knows who made the original cloverinari bee design hmu)
+	Original design by [Cloverinari](https://bsky.app/profile/cloverinari.net), 
+	A bee with an attitude
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/CloverBeePreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Clauvio Mouse</summary>
+
+	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social)
+	A mouse with an attitude
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMousePreview.png)
 	
 	</details>
 
