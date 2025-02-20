@@ -9,6 +9,7 @@ namespace LCWildCardMod.Items
         public NetworkAnimator itemAnimator;
         public MeshRenderer meshRenderer;
         public ParticleSystem particleSystem;
+        public AnimationCurve sleebCurve;
         public Texture[] particleTextures;
         public Texture[] faceTextures;
         public AudioSource passiveSource;
@@ -124,10 +125,13 @@ namespace LCWildCardMod.Items
             passiveSource.clip = passiveClips[stateId];
             if (stateId == 0)
             {
+                passiveSource.rolloffMode = AudioRolloffMode.Custom;
+                passiveSource.SetCustomCurve(AudioSourceCurveType.CustomRolloff, sleebCurve);
                 passiveSource.volume = 0.1f;
             }
             else if (stateId == 1)
             {
+                passiveSource.rolloffMode = AudioRolloffMode.Linear;
                 passiveSource.volume = 1f;
             }
             passiveSource.Play();

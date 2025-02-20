@@ -1,3 +1,6 @@
+## 0.11.2
+- Added the ability to lift Clauvio's Mask while standing still
+
 ## 0.11.1
 - Added Clauvio's Sleep Mask, ironically I stayed up until 7AM to finish this
 

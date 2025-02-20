@@ -1,37 +1,85 @@
-﻿using UnityEngine;
+﻿using GameNetcodeStuff;
+using System.Collections;
+using Unity.Netcode;
+using UnityEngine;
+using UnityEngine.InputSystem;
 namespace LCWildCardMod.Items
 {
     public class ClauvioMask : PhysicsProp
     {
         public Transform meshTransform;
+        public Animator maskAnimator;
+        public Coroutine peekCoroutine;
+        public PlayerControllerB previousPlayer;
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            WildCardMod.wildcardKeyBinds.WildCardButton.started += MaskPeek;
+        }
         public override void EquipItem()
         {
             base.EquipItem();
             if (base.IsOwner)
             {
                 meshTransform.parent = playerHeldBy.gameplayCamera.transform;
-                meshTransform.localPosition = new Vector3(0f, 0.05f, 0.1f);
+                maskAnimator.SetBool("isOwner", true);
             }
             else
             {
                 meshTransform.parent = playerHeldBy.bodyParts[0];
-                meshTransform.localPosition = new Vector3(0f, 0.25f, 0.175f);
+                maskAnimator.SetBool("isOwner", false);
             }
-            meshTransform.localRotation = Quaternion.Euler(0f, 90f, 90f);
+            previousPlayer = playerHeldBy;
+            maskAnimator.SetBool("isHeld", true);
         }
         public override void PocketItem()
         {
             base.PocketItem();
             meshTransform.parent = this.transform;
-            meshTransform.localPosition = new Vector3(0f, 0.075f, 0f);
-            meshTransform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            maskAnimator.SetBool("isHeld", false);
+            if (peekCoroutine != null)
+            {
+                StopCoroutine(peekCoroutine);
+                peekCoroutine = null;
+            }
         }
         public override void DiscardItem()
         {
             meshTransform.parent = this.transform;
-            meshTransform.localPosition = new Vector3(0f, 0.075f, 0f);
-            meshTransform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            maskAnimator.SetBool("isHeld", false);
+            if (peekCoroutine != null)
+            {
+                StopCoroutine(peekCoroutine);
+                peekCoroutine = null;
+            }
             base.DiscardItem();
+        }
+        public void MaskPeek(InputAction.CallbackContext throwContext)
+        {
+            if (base.IsOwner && playerHeldBy != null && playerHeldBy.moveInputVector == Vector2.zero)
+            {
+                WildCardMod.Log.LogDebug("Mask Beginning Coroutine");
+                peekCoroutine = StartCoroutine(PeekCoroutine(throwContext));
+            }
+        }
+        public IEnumerator PeekCoroutine(InputAction.CallbackContext throwContext)
+        {
+            AnimTriggerServerRpc("Lift");
+            WildCardMod.Log.LogDebug("Waiting for Button Release");
+            yield return new WaitUntil(() => (!throwContext.action.IsPressed() || playerHeldBy == null || playerHeldBy.moveInputVector != Vector2.zero));
+            WildCardMod.Log.LogDebug("Button Released");
+            AnimTriggerServerRpc("Lower");
+            peekCoroutine = null;
+        }
+        [ServerRpc(RequireOwnership = false)]
+        public void AnimTriggerServerRpc(string name)
+        {
+            AnimTriggerClientRpc(name);
+        }
+        [ClientRpc]
+        public void AnimTriggerClientRpc(string name)
+        {
+            maskAnimator.SetTrigger(name);
         }
     }
 }
