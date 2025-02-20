@@ -1,3 +1,6 @@
+## 0.11.1
+- Added Clauvio's Sleep Mask, ironically I stayed up until 7AM to finish this
+
 ## 0.11.0
 - Added Clauvio Mouse, a mouse! With an attitude! Again!
 - Turns out I've had my audio all fucked up for all my scraps, I have since (hopefully) repaired this

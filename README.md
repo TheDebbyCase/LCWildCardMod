@@ -154,10 +154,20 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Clauvio Mouse</summary>
 
-	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social)
+	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social), 
 	A mouse with an attitude
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMousePreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Clauvio Mask</summary>
+
+	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social), 
+	Bring it back to the ship, I dare you
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMaskPreview.png)
 	
 	</details>
 
