@@ -126,6 +126,7 @@ namespace LCWildCardMod.Items
         {
             throwTime = 0;
             isThrowing = true;
+            playerHeldBy.throwingObject = true;
             if (base.IsServer)
             {
                 itemAnimator.Animator.SetBool("BeingThrown", true);
@@ -153,6 +154,7 @@ namespace LCWildCardMod.Items
         {
             parentComponent.transform.localPosition = Vector3.zero;
             this.transform.localPosition = itemProperties.positionOffset;
+            playerHeldBy.throwingObject = false;
             if (playerHeldBy != null)
             {
                 this.transform.position = playerHeldBy.localItemHolder.transform.position;

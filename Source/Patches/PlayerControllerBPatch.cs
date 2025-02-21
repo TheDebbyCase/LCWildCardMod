@@ -27,28 +27,6 @@ namespace LCWildCardMod.Patches
             }
             return true;
         }
-        [HarmonyPatch(nameof(PlayerControllerB.Discard_performed))]
-        [HarmonyPrefix]
-        public static bool PreventDropping(PlayerControllerB __instance)
-        {
-            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isThrowing)
-            {
-                WildCardMod.Log.LogDebug($"Preventing Drop");
-                return false;
-            }
-            return true;
-        }
-        [HarmonyPatch(nameof(PlayerControllerB.ScrollMouse_performed))]
-        [HarmonyPrefix]
-        public static bool PreventSwitching(PlayerControllerB __instance)
-        {
-            if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isThrowing)
-            {
-                WildCardMod.Log.LogDebug($"Preventing Switch");
-                return false;
-            }
-            return true;
-        }
         [HarmonyPatch(nameof(PlayerControllerB.PlayerHitGroundEffects))]
         [HarmonyPrefix]
         public static bool PreventFallDamage(PlayerControllerB __instance)
