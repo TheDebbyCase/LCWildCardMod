@@ -1,3 +1,7 @@
+## 0.11.3
+- Optimised Halo throwing preventing players from switching/discarding/picking up a new item mid-throw
+- Stopped Halo scan node from following thrown Halo
+
 ## 0.11.2
 - Added the ability to lift Clauvio's Mask while standing still
 
