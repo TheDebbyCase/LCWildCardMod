@@ -19,16 +19,21 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.11.3";
+        private const string modVersion = "0.12.0";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
+        internal static SkinsClass skinsClass;
         private static WildCardMod Instance;
         private readonly Harmony harmony = new Harmony(modGUID);
         internal static WildCardConfig ModConfig {get; private set;} = null!;
-        private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items"};
+        private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items", "assets/my creations/skins"};
+        public static List<Item> scrapList = new List<Item>();
+        public static List<Skin> skinList = new List<Skin>();
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "<Pending>")]
         private void Awake()
         {
             wildcardKeyBinds = new KeyBinds();
+            skinsClass = new SkinsClass();
             Log = Logger;
             if (Instance == null)
             {
@@ -48,7 +53,6 @@ namespace LCWildCardMod
                 }
             }
             AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "wildcardmod"));
-            List<Item> scrapList = new List<Item>();
             foreach (string assetPath in bundle.GetAllAssetNames())
             {
                 if (declaredAssetPaths.Contains(assetPath[..assetPath.LastIndexOf("/")]))
@@ -58,6 +62,11 @@ namespace LCWildCardMod
                         case "assets/my creations/scrap items":
                             {
                                 scrapList.Add(bundle.LoadAsset<Item>(assetPath));
+                                break;
+                            }
+                        case "assets/my creations/skins":
+                            {
+                                skinList.Add(bundle.LoadAsset<Skin>(assetPath));
                                 break;
                             }
                         default:
@@ -71,12 +80,12 @@ namespace LCWildCardMod
                     Log.LogWarning($"\"{assetPath}\" is not a known asset path, skipping.");
                 }
             }
-            ModConfig = new WildCardConfig(base.Config, scrapList);
+            ModConfig = new WildCardConfig(base.Config, scrapList, skinList);
             for (int i = 0; i < scrapList.Count; i++)
             {
                 if (scrapList[i].spawnPrefab.GetComponent<AdditionalInfo>().isBonus && !ModConfig.assortedScrap.Value)
                 {
-                    Log.LogInfo($"{scrapList[i].itemName} was disabled!");
+                    Log.LogInfo($"{scrapList[i].itemName} scrap was disabled!");
                     continue;
                 }
                 if (ModConfig.isScrapEnabled[i].Value)
@@ -114,24 +123,28 @@ namespace LCWildCardMod
                         Utilities.FixMixerGroups(scrapList[i].spawnPrefab);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], null, scrapModdedWeights);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], scrapLevelWeights);
-                        Log.LogDebug($"{scrapList[i].itemName} was loaded!");
+                        Log.LogDebug($"{scrapList[i].itemName} scrap was loaded!");
                         foreach (KeyValuePair<Levels.LevelTypes, int> debugRarities in LethalLib.Modules.Items.scrapItems.LastOrDefault().levelRarities)
                         {
-                            Log.LogDebug($"LethalLib Registered Weights {debugRarities}");
+                            Log.LogDebug($"LethalLib Scrap Weights {debugRarities}");
                         }
                     }
                     else
                     {
-                        Log.LogWarning($"{scrapList[i].itemName} was not loaded as its config was not set up correctly!");
+                        Log.LogWarning($"{scrapList[i].itemName} scrap was not loaded as its config was not set up correctly!");
                     }
                 }
                 else
                 {
-                    Log.LogInfo($"{scrapList[i].itemName} was disabled!");
+                    Log.LogInfo($"{scrapList[i].itemName} scrap was disabled!");
                 }
             }
             harmony.PatchAll();
             Log.LogInfo("WILDCARD Stuff Successfully Loaded");
+        }
+        public void SetSkin(Skin skin)
+        {
+
         }
     }
 }

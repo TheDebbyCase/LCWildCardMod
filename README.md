@@ -171,6 +171,17 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 
+- Reskins
+	<details>
+	<summary>Clauvio Mask</summary>
+
+	Original design by [Giwi](https://www.twitch.tv/giwi), 
+	She is hungry
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/SandGiwiPreview.png)
+	
+	</details>
+
 I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD

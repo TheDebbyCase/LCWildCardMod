@@ -1,3 +1,6 @@
+## 0.12.0
+- Changed the Earth Leviathan 3D model and some audio assets to Giwi >:)
+
 ## 0.11.3
 - Optimised Halo throwing preventing players from switching/discarding/picking up a new item mid-throw
 - Stopped Halo scan node from following thrown Halo
