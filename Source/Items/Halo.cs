@@ -1,4 +1,5 @@
 ﻿using GameNetcodeStuff;
+using System.Collections;
 using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Netcode.Components;
@@ -24,6 +25,7 @@ namespace LCWildCardMod.Items
         public float throwTime = 0;
         public Vector3 handPosition;
         public Vector3 targetPosition;
+        public Coroutine exhaustCoroutine;
         public List<IHittable> hitList = new List<IHittable>();
         private System.Random random;
         public override void OnNetworkSpawn()
@@ -190,9 +192,8 @@ namespace LCWildCardMod.Items
                 StopDripServerRpc();
             }
         }
-        public void ExhaustHalo()
+        public IEnumerator ExhaustCoroutine()
         {
-            isExhausted = 1;
             this.GetComponent<AudioSource>().clip = breakSound;
             this.GetComponent<AudioSource>().Play();
             this.GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
@@ -201,6 +202,8 @@ namespace LCWildCardMod.Items
                 ThrowEndServerRpc();
                 StopDripServerRpc();
             }
+            yield return new WaitForSeconds(1f);
+            isExhausted = 1;
         }
         public override int GetItemDataToSave()
         {
@@ -281,7 +284,7 @@ namespace LCWildCardMod.Items
         [ClientRpc]
         public void ExhaustHaloClientRpc()
         {
-            ExhaustHalo();
+            exhaustCoroutine = StartCoroutine(ExhaustCoroutine());
         }
         [ServerRpc(RequireOwnership = false)]
         public void StopDripServerRpc()

@@ -1,3 +1,7 @@
+## 0.12.1
+- Added a small grace period for Smith Halo death save
+- Fixed Clauvio Mouse not getting angry
+
 ## 0.12.0
 - Changed the Earth Leviathan 3D model and some audio assets to Giwi >:)
 

@@ -90,15 +90,12 @@ namespace LCWildCardMod.Items
         public IEnumerator AgitateCounter()
         {
             agitating = true;
-            while (agitate < 10 || StartOfRound.Instance.inShipPhase)
+            while (agitate < 10)
             {
                 yield return new WaitForSeconds((float)random.Next(5, 50) / 10f);
                 agitate++;
-                if (agitate >= 10)
-                {
-                    agitate = 5;
-                }
             }
+            yield return new WaitUntil(() => !StartOfRound.Instance.inShipPhase);
             ChangeStateServerRpc(1);
             cryingCoroutine = StartCoroutine(CryingCoroutine());
             agitating = false;
