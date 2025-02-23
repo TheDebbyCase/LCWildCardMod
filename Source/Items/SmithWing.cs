@@ -3,6 +3,7 @@ namespace LCWildCardMod.Items
 {
     public class SmithWing : PhysicsProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public PlayerControllerB lastPlayer;
         public float speedMultiplier = 1.5f;
         public override void GrabItem()

@@ -2,11 +2,13 @@
 using HarmonyLib;
 using LCWildCardMod.Items;
 using LCWildCardMod.Items.Fyrus;
+using System.Linq;
 namespace LCWildCardMod.Patches
 {
     [HarmonyPatch(typeof(PlayerControllerB))]
     public static class PlayerControllerBPatch
     {
+        static readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyPrefix]
         public static bool SavePlayerDamage(PlayerControllerB __instance, ref CauseOfDeath causeOfDeath, ref int damageNumber)
@@ -15,12 +17,12 @@ namespace LCWildCardMod.Patches
             {
                 if (__instance.GetComponentInChildren<FyrusAttach>() != null)
                 {
-                    WildCardMod.Log.LogDebug($"Saving Player from {causeOfDeath}");
+                    log.LogDebug($"FyrusStar Saving Player from {causeOfDeath}");
                     damageNumber = 0;
                 }
                 else if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0 && damageNumber >= __instance.health)
                 {
-                    WildCardMod.Log.LogDebug($"Saving Player from {causeOfDeath}");
+                    log.LogDebug($"Halo Saving Player from {causeOfDeath}");
                     __instance.health = damageNumber + 1;
                     if (haloRef.exhaustCoroutine == null)
                     {
@@ -38,12 +40,12 @@ namespace LCWildCardMod.Patches
             {
                 if (__instance.GetComponentInChildren<FyrusAttach>() != null)
                 {
-                    WildCardMod.Log.LogDebug($"Saving Player from {causeOfDeath}");
+                    log.LogDebug($"FyrusStar Saving Player from {causeOfDeath}");
                     return false;
                 }
                 else if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0)
                 {
-                    WildCardMod.Log.LogDebug($"Saving Player from {causeOfDeath}");
+                    log.LogDebug($"Halo Saving Player from {causeOfDeath}");
                     __instance.health = 1;
                     if (haloRef.exhaustCoroutine == null)
                     {
@@ -61,7 +63,7 @@ namespace LCWildCardMod.Patches
             Cojiro cojiroRef = null;
             if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<Cojiro>(out cojiroRef) && cojiroRef.isFloating && __instance.fallValue >= -38f)
             {
-                WildCardMod.Log.LogDebug($"Preventing Fall Damage");
+                log.LogDebug($"Cojiro Preventing Fall Damage");
                 __instance.fallValue = -10f;
                 __instance.fallValueUncapped = -10f;
                 cojiroRef.itemAnimator.Animator.SetBool("Floating", false);
@@ -69,14 +71,14 @@ namespace LCWildCardMod.Patches
             else if (cojiroRef == null && __instance.fallValue >= -38f)
             {
                 Cojiro[] cojiroList = UnityEngine.Object.FindObjectsOfType<Cojiro>();
-                foreach (Cojiro cojiro in cojiroList)
+                for (int i = 0; i < cojiroList.Length; i++)
                 {
-                    if (cojiro.previousPlayer == __instance && cojiro.currentUseCooldown > 0)
+                    if (cojiroList[i].previousPlayer == __instance && cojiroList[i].currentUseCooldown > 0)
                     {
-                        WildCardMod.Log.LogDebug($"Preventing Fall Damage");
+                        log.LogDebug($"Cojiro Preventing Fall Damage");
                         __instance.fallValue = -10f;
                         __instance.fallValueUncapped = -10f;
-                        cojiro.itemAnimator.Animator.SetBool("Floating", false);
+                        cojiroList[i].itemAnimator.Animator.SetBool("Floating", false);
                     }
                 }
             }

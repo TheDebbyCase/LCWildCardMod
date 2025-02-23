@@ -6,6 +6,7 @@ namespace LCWildCardMod.Items
 {
     public class ClauvioMouse : PhysicsProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public NetworkAnimator itemAnimator;
         public MeshRenderer meshRenderer;
         public ParticleSystem particleSystem;
@@ -106,7 +107,7 @@ namespace LCWildCardMod.Items
             int cryingTime = 0;
             while (stateId == 1)
             {
-                DogNoiseServerRpc(cryingTime);
+                DogNoiseServerRpc();
                 cryingTime++;
                 yield return new WaitForSeconds(1f);
             }
@@ -148,14 +149,14 @@ namespace LCWildCardMod.Items
             ChangeState(id);
         }
         [ServerRpc(RequireOwnership = false)]
-        public void DogNoiseServerRpc(int times)
+        public void DogNoiseServerRpc()
         {
-            DogNoiseClientRpc(times);
+            DogNoiseClientRpc();
         }
         [ClientRpc]
-        public void DogNoiseClientRpc(int times)
+        public void DogNoiseClientRpc()
         {
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 1f, times, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 1f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             if (playerHeldBy != null)
             {
                 playerHeldBy.timeSinceMakingLoudNoise = 0f;

@@ -1,3 +1,8 @@
+## 0.12.3
+- Reworked Valentine and Clauvio Mouse noise mechanics to make them more forgiving in the case of dogs
+- Slightly improved code efficiency and debug logging
+- Made skin system more robust and prepared for additional skins
+
 ## 0.12.2
 - Tried to fix Worm and Valentine animation issues
 - Loosened Halo save requirements

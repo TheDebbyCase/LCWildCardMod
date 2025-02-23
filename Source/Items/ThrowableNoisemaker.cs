@@ -3,10 +3,12 @@ using UnityEngine;
 using Unity.Netcode.Components;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
+using System.Data.Common;
 namespace LCWildCardMod.Items
 {
     public class ThrowableNoisemaker : NoisemakerProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public AnimationCurve throwFallCurve;
         public AnimationCurve throwVerticalFallCurve;
         public AnimationCurve throwVerticalFallCurveNoBounce;
@@ -26,9 +28,9 @@ namespace LCWildCardMod.Items
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             if (itemAnimator != null )
             {
-                foreach (AnimatorControllerParameter parameter in itemAnimator.Animator.parameters)
+                for (int i = 0; i < itemAnimator.Animator.parameters.Length; i++)
                 {
-                    validParameters.Add(Animator.StringToHash(parameter.name));
+                    validParameters.Add(Animator.StringToHash(itemAnimator.Animator.parameters[i].name));
                 }
             }
             if (spawnMusic != null && spawnMusic.clip != null)
@@ -75,7 +77,7 @@ namespace LCWildCardMod.Items
             if (playerHeldBy != null && playerHeldBy.currentlyHeldObjectServer == this)
             {
                 handPosition = base.transform.localPosition;
-                WildCardMod.Log.LogDebug($"handPosition: {handPosition}");
+                log.LogDebug($"\"{this.itemProperties.itemName}\" Vector in Player Hand: {handPosition}");
                 playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
                 if (throwAudio != null && throwClips.Length > 0)
                 {

@@ -5,6 +5,7 @@ namespace LCWildCardMod.Items
 {
     public class PixelJar : PhysicsProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public Texture[] floaterVariants;
         public Texture floaterCurrent;
         private int textureIndex = new int();
@@ -29,7 +30,7 @@ namespace LCWildCardMod.Items
         public void SetTexture(Texture texture)
         {
             this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture = texture;
-            WildCardMod.Log.LogDebug($"Pixel Jar texture: {this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture.name}");
+            log.LogDebug($"Chosen Pixel Jar texture: \"{this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture.name}\"");
         }
         public override void EquipItem()
         {

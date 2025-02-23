@@ -7,6 +7,7 @@ namespace LCWildCardMod.Items
 {
     public class ClauvioMask : PhysicsProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public Transform meshTransform;
         public Animator maskAnimator;
         public Coroutine peekCoroutine;
@@ -58,16 +59,16 @@ namespace LCWildCardMod.Items
         {
             if (base.IsOwner && playerHeldBy != null && playerHeldBy.moveInputVector == Vector2.zero)
             {
-                WildCardMod.Log.LogDebug("Mask Beginning Coroutine");
+                log.LogDebug($"\"{this.itemProperties.itemName}\" Beginning Peek");
                 peekCoroutine = StartCoroutine(PeekCoroutine(throwContext));
             }
         }
         public IEnumerator PeekCoroutine(InputAction.CallbackContext throwContext)
         {
             AnimTriggerServerRpc("Lift");
-            WildCardMod.Log.LogDebug("Waiting for Button Release");
+            log.LogDebug($"\"{this.itemProperties.itemName}\" Waiting for Button Release");
             yield return new WaitUntil(() => (!throwContext.action.IsPressed() || playerHeldBy == null || playerHeldBy.moveInputVector != Vector2.zero));
-            WildCardMod.Log.LogDebug("Button Released");
+            log.LogDebug($"\"{this.itemProperties.itemName}\" Button Released");
             AnimTriggerServerRpc("Lower");
             peekCoroutine = null;
         }

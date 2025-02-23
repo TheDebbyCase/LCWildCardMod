@@ -19,7 +19,7 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.12.2";
+        private const string modVersion = "0.12.3";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;
@@ -33,40 +33,40 @@ namespace LCWildCardMod
         private void Awake()
         {
             wildcardKeyBinds = new KeyBinds();
-            skinsClass = new SkinsClass();
             Log = Logger;
             if (Instance == null)
             {
                 Instance = this;
             }
             Type[] assemblyTypes = Assembly.GetExecutingAssembly().GetTypes();
-            foreach (Type currentType in assemblyTypes)
+            for (int i = 0; i < assemblyTypes.Length; i++)
             {
-                MethodInfo[] typeMethods = currentType.GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
-                foreach (MethodInfo currentMethod in typeMethods)
+                MethodInfo[] typeMethods = assemblyTypes[i].GetMethods(BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.Static);
+                for (int j = 0; j < typeMethods.Length; j++)
                 {
-                    object[] methodAttributes = currentMethod.GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
+                    object[] methodAttributes = typeMethods[j].GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
                     if (methodAttributes.Length > 0)
                     {
-                        currentMethod.Invoke(null, null);
+                        typeMethods[j].Invoke(null, null);
                     }
                 }
             }
             AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "wildcardmod"));
-            foreach (string assetPath in bundle.GetAllAssetNames())
+            string[] allAssetPaths = bundle.GetAllAssetNames();
+            for (int i = 0; i < allAssetPaths.Length; i++)
             {
-                if (declaredAssetPaths.Contains(assetPath[..assetPath.LastIndexOf("/")]))
+                if (declaredAssetPaths.Contains(allAssetPaths[i][..allAssetPaths[i].LastIndexOf("/")]))
                 {
-                    switch (assetPath[..assetPath.LastIndexOf("/")])
+                    switch (allAssetPaths[i][..allAssetPaths[i].LastIndexOf("/")])
                     {
                         case "assets/my creations/scrap items":
                             {
-                                scrapList.Add(bundle.LoadAsset<Item>(assetPath));
+                                scrapList.Add(bundle.LoadAsset<Item>(allAssetPaths[i]));
                                 break;
                             }
                         case "assets/my creations/skins":
                             {
-                                skinList.Add(bundle.LoadAsset<Skin>(assetPath));
+                                skinList.Add(bundle.LoadAsset<Skin>(allAssetPaths[i]));
                                 break;
                             }
                         default:
@@ -77,15 +77,17 @@ namespace LCWildCardMod
                 }
                 else
                 {
-                    Log.LogWarning($"\"{assetPath}\" is not a known asset path, skipping.");
+                    Log.LogWarning($"\"{allAssetPaths[i]}\" is not a known asset path, skipping.");
                 }
+
             }
             ModConfig = new WildCardConfig(base.Config, scrapList, skinList);
+            skinsClass = new SkinsClass();
             for (int i = 0; i < scrapList.Count; i++)
             {
                 if (scrapList[i].spawnPrefab.GetComponent<AdditionalInfo>().isBonus && !ModConfig.assortedScrap.Value)
                 {
-                    Log.LogInfo($"{scrapList[i].itemName} scrap was disabled!");
+                    Log.LogInfo($"\"{scrapList[i].itemName}\" scrap was disabled!");
                     continue;
                 }
                 if (ModConfig.isScrapEnabled[i].Value)
@@ -94,9 +96,9 @@ namespace LCWildCardMod
                     Dictionary<string, int> scrapModdedWeights = new Dictionary<string, int>();
                     string[] configScrapStringArray = ModConfig.scrapSpawnWeights[i].Value.Split(",");
                     bool isScrapConfigStringValid = new bool();
-                    foreach (string configScrapStringCheck in configScrapStringArray)
+                    for (int j = 0; j < configScrapStringArray.Length; j++)
                     {
-                        if ((configScrapStringCheck.Contains(":") && int.TryParse(configScrapStringCheck.Split(":")[1], out _)))
+                        if (configScrapStringArray[j].Contains(":") && int.TryParse(configScrapStringArray[j].Split(":")[1], out _))
                         {
                             isScrapConfigStringValid = true;
                         }
@@ -108,43 +110,55 @@ namespace LCWildCardMod
                     }
                     if (isScrapConfigStringValid)
                     {
-                        foreach (string configScrapString in configScrapStringArray)
+                        for (int j = 0; j < configScrapStringArray.Length; j++)
                         {
-                            if (Levels.LevelTypes.TryParse(configScrapString.Split(":")[0], out Levels.LevelTypes configScrapLevel))
+                            if (Levels.LevelTypes.TryParse(configScrapStringArray[j].Split(":")[0], out Levels.LevelTypes configScrapLevel))
                             {
-                                scrapLevelWeights.Add(configScrapLevel, int.Parse(configScrapString.Split(":")[1]));
+                                scrapLevelWeights.Add(configScrapLevel, int.Parse(configScrapStringArray[j].Split(":")[1]));
                             }
                             else
                             {
-                                scrapModdedWeights.Add(configScrapString, int.Parse(configScrapString.Split(":")[1]));
+                                scrapModdedWeights.Add(configScrapStringArray[j], int.Parse(configScrapStringArray[j].Split(":")[1]));
                             }
+
                         }
                         NetworkPrefabs.RegisterNetworkPrefab(scrapList[i].spawnPrefab);
                         Utilities.FixMixerGroups(scrapList[i].spawnPrefab);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], null, scrapModdedWeights);
                         LethalLib.Modules.Items.RegisterScrap(scrapList[i], scrapLevelWeights);
-                        Log.LogDebug($"{scrapList[i].itemName} scrap was loaded!");
-                        foreach (KeyValuePair<Levels.LevelTypes, int> debugRarities in LethalLib.Modules.Items.scrapItems.LastOrDefault().levelRarities)
+                        Log.LogDebug($"\"{scrapList[i].itemName}\" scrap was loaded!");
+                        for (int j = 0; j < LethalLib.Modules.Items.scrapItems.LastOrDefault().levelRarities.Count; j++)
                         {
-                            Log.LogDebug($"LethalLib Scrap Weights {debugRarities}");
+                            Log.LogDebug($"LethalLib Scrap Weights \"{LethalLib.Modules.Items.scrapItems.LastOrDefault().levelRarities.ToArray()[j]}\"");
                         }
                     }
                     else
                     {
-                        Log.LogWarning($"{scrapList[i].itemName} scrap was not loaded as its config was not set up correctly!");
+                        Log.LogWarning($"\"{scrapList[i].itemName}\" scrap was not loaded as its config was not set up correctly!");
                     }
                 }
                 else
                 {
-                    Log.LogInfo($"{scrapList[i].itemName} scrap was disabled!");
+                    Log.LogInfo($"\"{scrapList[i].itemName}\" scrap was disabled!");
+                    scrapList.Remove(scrapList[i]);
+                    i--;
+                }
+            }
+            for (int i = 0; i < skinList.Count; i++)
+            {
+                if (ModConfig.isSkinEnabled[i].Value)
+                {
+                    Log.LogDebug($"\"{skinList[i].skinName}\" skin was loaded!");
+                }
+                else
+                {
+                    Log.LogInfo($"\"{skinList[i].skinName}\" skin was disabled!");
+                    skinList.Remove(skinList[i]);
+                    i--;
                 }
             }
             harmony.PatchAll();
             Log.LogInfo("WILDCARD Stuff Successfully Loaded");
-        }
-        public void SetSkin(Skin skin)
-        {
-
         }
     }
 }

@@ -5,10 +5,12 @@ using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using static UnityEngine.ParticleSystem;
 namespace LCWildCardMod.Items
 {
     public class SmithHalo : PhysicsProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public ParticleSystem[] dripParticles;
         public ParticleSystem spinParticle;
         public AudioSource spawnMusic;
@@ -89,9 +91,9 @@ namespace LCWildCardMod.Items
                         else
                         {
                             RaycastHit[] objectsHit = Physics.SphereCastAll(parentComponent.transform.position, 0.5f, playerHeldBy.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
-                            foreach (RaycastHit hit in objectsHit)
+                            for (int i = 0; i < objectsHit.Length; i++)
                             {
-                                if (hit.transform.TryGetComponent<IHittable>(out var hitComponent) && !hitList.Contains(hitComponent) && playerHeldBy.transform != hit.transform && (hit.transform.GetComponent<PlayerControllerB>() || hit.transform.GetComponent<EnemyAICollisionDetect>()))
+                                if (objectsHit[i].transform.TryGetComponent<IHittable>(out var hitComponent) && !hitList.Contains(hitComponent) && playerHeldBy.transform != objectsHit[i].transform && (objectsHit[i].transform.GetComponent<PlayerControllerB>() || objectsHit[i].transform.GetComponent<EnemyAICollisionDetect>()))
                                 {
                                     hitList.Add(hitComponent);
                                     hitComponent.Hit(2, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
@@ -294,9 +296,9 @@ namespace LCWildCardMod.Items
         [ClientRpc]
         public void StopDripClientRpc()
         {
-            foreach (ParticleSystem particle in dripParticles)
+            for (int i = 0; i < dripParticles.Length; i++)
             {
-                particle.gameObject.SetActive(false);
+                dripParticles[i].gameObject.SetActive(false);
             }
             if (isExhausted == 0 && itemAnimator.Animator.GetBool("BeingThrown"))
             {
@@ -314,10 +316,10 @@ namespace LCWildCardMod.Items
         {
             if (isExhausted == 0)
             {
-                foreach (ParticleSystem particle in dripParticles)
+                for (int i = 0; i < dripParticles.Length; i++)
                 {
-                    particle.gameObject.SetActive(true);
-                    particle.Play();
+                    dripParticles[i].gameObject.SetActive(true);
+                    dripParticles[i].Play();
                 }
             }
             spinParticle.gameObject.SetActive(false);

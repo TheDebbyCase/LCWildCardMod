@@ -6,6 +6,7 @@ namespace LCWildCardMod.Items
 {
     public class Valentine : PhysicsProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public ScanNodeProperties scanNode;
         public MeshRenderer meshRenderer;
         public NetworkAnimator itemAnimator;
@@ -81,9 +82,9 @@ namespace LCWildCardMod.Items
         {
             beatAudio.Stop();
             beatAudio.Play();
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, standStillAmount, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
-            if ((base.transform.position - lastUpdatePosition).magnitude < 11f)
+            if ((base.transform.position - lastUpdatePosition).magnitude < 3f)
             {
                 standStillAmount++;
             }
@@ -91,6 +92,7 @@ namespace LCWildCardMod.Items
             {
                 standStillAmount = 0;
             }
+            log.LogDebug($"Valentine Stand Still Amount: {standStillAmount}, Value: {scrapValue}");
             lastUpdatePosition = base.transform.position;
         }
         public override int GetItemDataToSave()

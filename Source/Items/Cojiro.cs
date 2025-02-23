@@ -5,6 +5,7 @@ namespace LCWildCardMod.Items
 {
     public class Cojiro : NoisemakerProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public AudioSource flapSource;
         public NetworkAnimator itemAnimator;
         public bool isFloating;

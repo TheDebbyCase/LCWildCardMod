@@ -5,6 +5,7 @@ namespace LCWildCardMod.Items.Fyrus
 {
     public class FyrusStar : PhysicsProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public Transform musicAudioObject;
         public AudioSource musicSource;
         public AudioClip consumeClip;

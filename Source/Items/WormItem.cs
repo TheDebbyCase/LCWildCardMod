@@ -4,6 +4,7 @@ namespace LCWildCardMod.Items
 {
     public class WormItem : ThrowableNoisemaker
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public bool idleAnim;
         public Coroutine idleAnimCoroutine;
         public override void BeginMusic()

@@ -4,10 +4,12 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
+using UnityEngine.InputSystem.HID;
 namespace LCWildCardMod.Items
 {
     public class CloverBee : PhysicsProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public NetworkAnimator itemAnimator;
         public AudioSource buzzSource;
         public AudioSource shootSource;
@@ -79,9 +81,9 @@ namespace LCWildCardMod.Items
                 else if (base.IsOwner)
                 {
                     RaycastHit[] objectsHit = Physics.SphereCastAll(stinger.position, 0.25f, lastPlayer.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
-                    foreach (RaycastHit hit in objectsHit)
+                    for (int i = 0; i < objectsHit.Length; i++)
                     {
-                        if (hit.transform.TryGetComponent<IHittable>(out var hitComponent) && !hitList.Contains(hitComponent) && lastPlayer.transform != hit.transform && (hit.transform.GetComponent<PlayerControllerB>() || hit.transform.GetComponent<EnemyAICollisionDetect>()))
+                        if (objectsHit[i].transform.TryGetComponent<IHittable>(out var hitComponent) && !hitList.Contains(hitComponent) && lastPlayer.transform != objectsHit[i].transform && (objectsHit[i].transform.GetComponent<PlayerControllerB>() || objectsHit[i].transform.GetComponent<EnemyAICollisionDetect>()))
                         {
                             hitList.Add(hitComponent);
                             hitComponent.Hit(1, lastPlayer.gameplayCamera.transform.forward, lastPlayer, true, 1);
