@@ -173,7 +173,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 
 - Reskins
 	<details>
-	<summary>Clauvio Mask</summary>
+	<summary>Giwi Leviathan</summary>
 
 	Original design by [Giwi](https://www.twitch.tv/giwi), 
 	She is hungry

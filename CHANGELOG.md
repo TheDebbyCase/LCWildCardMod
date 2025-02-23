@@ -1,3 +1,7 @@
+## 0.12.2
+- Tried to fix Worm and Valentine animation issues
+- Loosened Halo save requirements
+
 ## 0.12.1
 - Added a small grace period for Smith Halo death save
 - Fixed Clauvio Mouse not getting angry
