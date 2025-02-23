@@ -1,4 +1,5 @@
-﻿using Unity.Netcode;
+﻿using System.Collections;
+using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 namespace LCWildCardMod.Items
@@ -14,34 +15,33 @@ namespace LCWildCardMod.Items
         public float intensityValue;
         public Vector3 lastUpdatePosition;
         public int standStillAmount = 0;
+        public Coroutine startingValueCoroutine;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            if (!StartOfRound.Instance.inShipPhase)
+            {
+                startingValueCoroutine = StartCoroutine(StartingValueCoroutine());
+            }
+            materialRef = meshRenderer.material;
+        }
+        public IEnumerator StartingValueCoroutine()
+        {
+            yield return new WaitUntil(() => RoundManager.Instance.dungeonFinishedGeneratingForAllPlayers);
             if (startingValue == 0)
             {
                 startingValue = scrapValue;
             }
-            materialRef = meshRenderer.material;
         }
         public override void Update()
         {
             base.Update();
-            if (playerHeldBy != null && !isPocketed && base.IsOwner && StartOfRound.Instance.currentLevel.planetHasTime && !StartOfRound.Instance.inShipPhase && currentUseCooldown <= 0f && standStillAmount < 3)
+            if (base.IsOwner && playerHeldBy != null && !isPocketed && StartOfRound.Instance.currentLevel.planetHasTime && !StartOfRound.Instance.inShipPhase && currentUseCooldown <= 0f && standStillAmount < 11)
             {
                 ScrapValueServerRpc(scanNode.scrapValue + 1);
                 currentUseCooldown = 2.5f;
                 intensityValue = Mathf.Lerp(1f, 100f, ((float)scrapValue - (float)startingValue) / ((float)startingValue * 14f));
                 SetIntensityServerRpc(intensityValue);
-                if (intensityValue >= 75f)
-                {
-                    itemAnimator.Animator.SetFloat("beatSpeed", Mathf.Max(1, (intensityValue / 20f) - 3.75f));
-                    beatAudio.pitch = Mathf.Max(1, (intensityValue / 20f) - 3.75f);
-                }
-                itemAnimator.Animator.SetFloat("restSpeed", Mathf.Max(1, intensityValue / 7.5f));
-            }
-            else if ((base.transform.position - lastUpdatePosition).magnitude >= 3f && playerHeldBy != null && !isPocketed && currentUseCooldown <= 0f && standStillAmount != 0)
-            {
-                standStillAmount = 0;
             }
             if (materialRef.GetColor("_EmissionColor") != Color.white * intensityValue)
             {
@@ -54,19 +54,28 @@ namespace LCWildCardMod.Items
             currentUseCooldown = 2.5f;
             lastUpdatePosition = base.transform.position;
             standStillAmount = 0;
-            itemAnimator.Animator.SetBool("isHeld", true);
+            if (base.IsServer)
+            {
+                itemAnimator.Animator.SetBool("isHeld", true);
+            }
         }
         public override void PocketItem()
         {
             base.PocketItem();
             standStillAmount = 0;
-            itemAnimator.Animator.SetBool("isHeld", false);
+            if (base.IsServer)
+            {
+                itemAnimator.Animator.SetBool("isHeld", false);
+            }
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
             standStillAmount = 0;
-            itemAnimator.Animator.SetBool("isHeld", false);
+            if (base.IsServer)
+            {
+                itemAnimator.Animator.SetBool("isHeld", false);
+            }
         }
         public void HeartBeat()
         {
@@ -74,7 +83,7 @@ namespace LCWildCardMod.Items
             beatAudio.Play();
             RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, standStillAmount, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
-            if ((base.transform.position - lastUpdatePosition).magnitude < 3f)
+            if ((base.transform.position - lastUpdatePosition).magnitude < 11f)
             {
                 standStillAmount++;
             }
@@ -105,12 +114,25 @@ namespace LCWildCardMod.Items
         [ServerRpc(RequireOwnership = false)]
         public void SetIntensityServerRpc(float intensity)
         {
+            intensityValue = intensity;
+            if (intensityValue > 95f)
+            {
+                itemAnimator.Animator.SetFloat("beatSpeed", (intensityValue / 20f) - 3.75f);
+            }
+            else if (intensityValue > 7.5f)
+            {
+                itemAnimator.Animator.SetFloat("restSpeed", intensityValue / 7.5f);
+            }
             SetIntensityClientRpc(intensity);
         }
         [ClientRpc]
         public void SetIntensityClientRpc(float intensity)
         {
             intensityValue = intensity;
+            if (intensityValue > 95f)
+            {
+                beatAudio.pitch = (intensityValue / 20f) - 3.75f;
+            }
         }
     }
 }

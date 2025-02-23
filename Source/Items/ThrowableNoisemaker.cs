@@ -83,7 +83,6 @@ namespace LCWildCardMod.Items
                     throwAudio.pitch = pitch;
                     throwAudio.clip = throwClips[random.Next(0, throwClips.Length)];
                     throwAudio.Play();
-                    ThrowAudioServerRpc(pitch);
                 }
                 Throw();
             }
@@ -144,17 +143,6 @@ namespace LCWildCardMod.Items
         public override void LoadItemSaveData(int saveData)
         {
             hasBeenHeld = true;
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void ThrowAudioServerRpc(float pitch)
-        {
-            ThrowAudioClientRpc(pitch);
-        }
-        [ClientRpc]
-        public void ThrowAudioClientRpc(float pitch)
-        {
-            throwAudio.pitch = pitch;
-            throwAudio.Play();
         }
         [ServerRpc(RequireOwnership = false)]
         public void BeginMusicServerRpc()

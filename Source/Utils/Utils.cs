@@ -1,5 +1,4 @@
 ﻿using LethalCompanyInputUtils.Api;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEngine.InputSystem;
 namespace LCWildCardMod.Utils

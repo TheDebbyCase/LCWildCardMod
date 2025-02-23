@@ -1,6 +1,5 @@
 ﻿using System.Collections;
 using UnityEngine;
-
 namespace LCWildCardMod.Items
 {
     public class WormItem : ThrowableNoisemaker
@@ -10,12 +9,12 @@ namespace LCWildCardMod.Items
         public override void BeginMusic()
         {
             base.BeginMusic();
-            if (hasBeenHeld && base.IsServer)
+            if (base.IsServer)
             {
-                triggerAnimator.SetBool("OnFloor", false);
-            }
-            else if (base.IsServer)
-            {
+                if (hasBeenHeld)
+                {
+                    triggerAnimator.SetBool("OnFloor", false);
+                }
                 idleAnimCoroutine = StartCoroutine(IdleAnimation(false));
             }
         }
@@ -24,6 +23,8 @@ namespace LCWildCardMod.Items
             base.GrabItem();
             if (base.IsServer)
             {
+                triggerAnimator.SetBool("OnFloor", false);
+                triggerAnimator.SetBool("IsThrown", false);
                 if (idleAnim)
                 {
                     StopCoroutine(idleAnimCoroutine);
@@ -41,9 +42,7 @@ namespace LCWildCardMod.Items
             base.EquipItem();
             if (base.IsServer)
             {
-                triggerAnimator.SetBool("IsThrown", false);
                 triggerAnimator.SetBool("IsHeld", true);
-                triggerAnimator.SetBool("OnFloor", false);
             }
         }
         public override void PocketItem()
