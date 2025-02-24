@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using LethalLib;
-using LethalLib.Modules;
 namespace LCWildCardMod.Utils
 {
     public class KeyBinds : LcInputActions
@@ -17,7 +15,7 @@ namespace LCWildCardMod.Utils
         public string defaultRarities;
         public bool isBonus;
     }
-    public class SkinsClass
+    public class SkinsClass : MonoBehaviour
     {
         BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         List<BepInEx.Configuration.ConfigEntry<int>> configChances = WildCardMod.ModConfig.skinApplyChance;
@@ -89,20 +87,25 @@ namespace LCWildCardMod.Utils
                         case "Clown horn":
                             {
                                 log.LogDebug($"Skin \"{skinToApply.skinName}\" is being applied!");
-                                item.itemProperties.itemName = skinToApply.skinName;
-                                item.itemProperties.isConductiveMetal = false;
-                                item.itemProperties.grabSFX = skinToApply.newAudioClips[0];
-                                item.itemProperties.dropSFX = skinToApply.newAudioClips[1];
-                                item.itemProperties.toolTips[0] = "Squeeze : [LMB]";
-                                item.itemProperties.positionOffset = new Vector3(0.05f, 0.15f, -0.05f);
+                                Item newProperties = Instantiate(item.itemProperties);
+                                newProperties.itemName = skinToApply.skinName;
+                                newProperties.isConductiveMetal = false;
+                                newProperties.grabSFX = skinToApply.newAudioClips[0];
+                                newProperties.dropSFX = skinToApply.newAudioClips[1];
+                                newProperties.toolTips[0] = "Squeeze : [LMB]";
+                                newProperties.positionOffset = new Vector3(0.05f, 0.15f, -0.05f);
                                 item.useCooldown = 0.5f;
+                                newProperties.spawnPrefab.GetComponent<MeshFilter>().mesh = skinToApply.newMesh;
+                                item.transform.GetComponent<MeshFilter>().mesh = skinToApply.newMesh;
+                                item.transform.GetComponent<MeshRenderer>().material = skinToApply.newMaterial;
+                                newProperties.spawnPrefab.GetComponent<MeshFilter>().sharedMesh = skinToApply.newMesh;
                                 item.transform.GetComponent<MeshFilter>().sharedMesh = skinToApply.newMesh;
-                                item.itemProperties.spawnPrefab.GetComponent<MeshFilter>().sharedMesh = skinToApply.newMesh;
                                 item.transform.GetComponent<MeshRenderer>().sharedMaterial = skinToApply.newMaterial;
                                 item.transform.Find("ScanNode").GetComponent<ScanNodeProperties>().headerText = skinToApply.skinName;
                                 Animator anim = item.gameObject.AddComponent<Animator>();
                                 anim.runtimeAnimatorController = skinToApply.newAnimationController;
                                 item.transform.GetComponent<NoisemakerProp>().triggerAnimator = anim;
+                                item.itemProperties = newProperties;
                                 break;
                             }
                         default:
