@@ -16,15 +16,15 @@ namespace LCWildCardMod.Patches
             List<Skin> skinList = WildCardMod.skinList;
             for (int i = 0; i < skinList.Count; i++)
             {
-                if (__instance.enemyType.enemyName == skinList[i].targetEnemy.enemyName)
+                if (skinList[i].targetEnemy != null && __instance.enemyType.enemyName == skinList[i].targetEnemy.enemyName)
                 {
                     skins.Add(skinList[i]);
                 }
             }
             if (skins.Count > 0)
             {
-                log.LogDebug($"An \"{__instance.enemyType.enemyName}\" has spawned with potential skins!");
-                WildCardMod.skinsClass.SetSkin(__instance, skins);
+                log.LogDebug($"A \"{__instance.enemyType.enemyName}\" has spawned with potential skins!");
+                WildCardMod.skinsClass.SetSkin(skins, __instance);
             }
         }
     }

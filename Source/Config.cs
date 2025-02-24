@@ -36,7 +36,16 @@ namespace LCWildCardMod.Config
                 bool defaultEnabled = skinList[i].skinEnabled;
                 int defaultChance = skinList[i].skinChance;
                 isSkinEnabled.Add(cfg.Bind("Skins", $"Enable {skinList[i].skinName}?", defaultEnabled, ""));
-                skinApplyChance.Add(cfg.Bind("Skins", $"Weighted chance that {skinList[i].targetEnemy.enemyName} will spawn as {skinList[i].skinName}", defaultChance, "Must be an integer greater than, or equal to, 0"));
+                string skinTargetName = "";
+                if (skinList[i].targetEnemy != null)
+                {
+                    skinTargetName = skinList[i].targetEnemy.enemyName;
+                }
+                else if (skinList[i].targetItem != null)
+                {
+                    skinTargetName = skinList[i].targetItem.itemName;
+                }
+                skinApplyChance.Add(cfg.Bind("Skins", $"Weighted chance that {skinTargetName} will spawn as {skinList[i].skinName}", defaultChance, "Must be an integer greater than, or equal to, 0. The chance that no skin will be applied is 100 subtracted by this weight"));
             }
             ClearOrphanedEntries(cfg);
             cfg.Save();

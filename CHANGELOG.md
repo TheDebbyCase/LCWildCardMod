@@ -1,3 +1,6 @@
+## 0.12.4
+- Added iamfixated's clown nose as a reskin of the Clown Horn!
+
 ## 0.12.3
 - Reworked Valentine and Clauvio Mouse noise mechanics to make them more forgiving in the case of dogs
 - Slightly improved code efficiency and debug logging

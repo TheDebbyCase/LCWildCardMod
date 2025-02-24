@@ -19,7 +19,7 @@ namespace LCWildCardMod
     {
         private const string modGUID = "deB.WildCard";
         private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.12.3";
+        private const string modVersion = "0.12.4";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;
@@ -79,7 +79,6 @@ namespace LCWildCardMod
                 {
                     Log.LogWarning($"\"{allAssetPaths[i]}\" is not a known asset path, skipping.");
                 }
-
             }
             ModConfig = new WildCardConfig(base.Config, scrapList, skinList);
             skinsClass = new SkinsClass();
