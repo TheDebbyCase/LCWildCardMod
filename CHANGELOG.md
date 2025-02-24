@@ -1,3 +1,6 @@
+## 0.12.5
+- Added LobbyCompatibility as a soft dependency!
+
 ## 0.12.4
 - Added iamfixated's clown nose as a reskin of the Clown Horn!
 

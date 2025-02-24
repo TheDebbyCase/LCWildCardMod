@@ -10,16 +10,20 @@ using BepInEx.Logging;
 using HarmonyLib;
 using LCWildCardMod.Config;
 using LCWildCardMod.Utils;
+using static BepInEx.BepInDependency;
+using LobbyCompatibility.Enums;
+using LobbyCompatibility.Features;
 namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
-    [BepInDependency(LethalLib.Plugin.ModGUID)]
-    [BepInDependency("com.rune580.LethalCompanyInputUtils", BepInDependency.DependencyFlags.HardDependency)]
+    [BepInDependency("BMX.LobbyCompatibility", DependencyFlags.SoftDependency)]
+    [BepInDependency("evaisa.lethallib", DependencyFlags.HardDependency)]
+    [BepInDependency("com.rune580.LethalCompanyInputUtils", DependencyFlags.HardDependency)]
     public class WildCardMod : BaseUnityPlugin
     {
-        private const string modGUID = "deB.WildCard";
-        private const string modName = "WILDCARD Stuff";
-        private const string modVersion = "0.12.4";
+        internal const string modGUID = "deB.WildCard";
+        internal const string modName = "WILDCARD Stuff";
+        internal const string modVersion = "0.12.4";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;
@@ -32,6 +36,10 @@ namespace LCWildCardMod
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "<Pending>")]
         private void Awake()
         {
+            if (BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            {
+                SoftDepHelper.LobCompatRegister();
+            }
             wildcardKeyBinds = new KeyBinds();
             Log = Logger;
             if (Instance == null)

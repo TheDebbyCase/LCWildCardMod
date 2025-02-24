@@ -1,4 +1,7 @@
 ﻿using LethalCompanyInputUtils.Api;
+using LobbyCompatibility.Enums;
+using LobbyCompatibility.Features;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -9,6 +12,13 @@ namespace LCWildCardMod.Utils
         [InputAction("<Keyboard>/r", Name = "WildCardUse")]
         public InputAction WildCardButton { get; set; }
     }
+    public class SoftDepHelper
+    {
+        public static void LobCompatRegister()
+        {
+            PluginHelper.RegisterPlugin(WildCardMod.modGUID, new Version(WildCardMod.modVersion), CompatibilityLevel.Everyone, VersionStrictness.Patch);
+        }
+    }
     public class AdditionalInfo : MonoBehaviour
     {
         public bool defaultEnabled;
@@ -17,9 +27,9 @@ namespace LCWildCardMod.Utils
     }
     public class SkinsClass : MonoBehaviour
     {
-        BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
-        List<BepInEx.Configuration.ConfigEntry<int>> configChances = WildCardMod.ModConfig.skinApplyChance;
-        List<Skin> allSkins = WildCardMod.skinList;
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
+        readonly List<BepInEx.Configuration.ConfigEntry<int>> configChances = WildCardMod.ModConfig.skinApplyChance;
+        readonly List<Skin> allSkins = WildCardMod.skinList;
         public void SetSkin(List<Skin> potentialSkins, EnemyAI enemy = null, GrabbableObject item = null)
         {
             System.Random random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
