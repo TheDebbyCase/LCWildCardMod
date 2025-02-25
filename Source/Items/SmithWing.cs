@@ -11,6 +11,7 @@ namespace LCWildCardMod.Items
             base.GrabItem();
             lastPlayer = playerHeldBy;
             lastPlayer.movementSpeed *= speedMultiplier;
+            log.LogDebug($"Wing Set {lastPlayer.playerUsername} Movement Speed to {lastPlayer.movementSpeed}");
         }
         public override void EquipItem()
         {
@@ -18,17 +19,20 @@ namespace LCWildCardMod.Items
             if (lastPlayer != null)
             {
                 lastPlayer.movementSpeed *= speedMultiplier;
+                log.LogDebug($"Wing Set {lastPlayer.playerUsername} Movement Speed to {lastPlayer.movementSpeed}");
             }
         }
         public override void PocketItem()
         {
             base.PocketItem();
             lastPlayer.movementSpeed /= speedMultiplier;
+            log.LogDebug($"Wing Set {lastPlayer.playerUsername} Movement Speed to {lastPlayer.movementSpeed}");
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
             lastPlayer.movementSpeed /= speedMultiplier;
+            log.LogDebug($"Wing Set {lastPlayer.playerUsername} Movement Speed to {lastPlayer.movementSpeed}");
             lastPlayer = null;
         }
     }

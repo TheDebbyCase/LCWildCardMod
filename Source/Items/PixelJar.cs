@@ -8,11 +8,16 @@ namespace LCWildCardMod.Items
         readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public Texture[] floaterVariants;
         public Texture floaterCurrent;
+        public ParticleSystem particle;
+        public ParticleSystemRenderer particleRenderer;
         private int textureIndex = new int();
-        private System.Random randomIndex = new System.Random();
+        private System.Random randomIndex;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            particle = this.GetComponentInChildren<ParticleSystem>();
+            particleRenderer = this.GetComponentInChildren<ParticleSystemRenderer>();
+            randomIndex = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             if (IsServer)
             {
                 if (floaterCurrent == null)
@@ -24,31 +29,31 @@ namespace LCWildCardMod.Items
                 {
                     textureIndex = Array.IndexOf(floaterVariants, floaterCurrent);
                 }
+                TextureUpdateServerRpc();
             }
-            TextureUpdateServerRpc();
-        }
-        public void SetTexture(Texture texture)
-        {
-            this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture = texture;
-            log.LogDebug($"Chosen Pixel Jar texture: \"{this.GetComponentInChildren<ParticleSystemRenderer>().material.mainTexture.name}\"");
         }
         public override void EquipItem()
         {
             base.EquipItem();
-            if (!this.GetComponentInChildren<ParticleSystem>().isPlaying)
+            if (!particle.isPlaying)
             {
-                this.GetComponentInChildren<ParticleSystem>().Emit(1);
-                this.GetComponentInChildren<ParticleSystem>().Play();
+                particle.Emit(1);
+                particle.Play();
             }
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            if (this.GetComponentInChildren<ParticleSystem>().isPlaying)
+            if (particle.isPlaying)
             {
-                this.GetComponentInChildren<ParticleSystem>().Stop();
-                this.GetComponentInChildren<ParticleSystem>().Clear();
+                particle.Stop();
+                particle.Clear();
             }
+        }
+        public void SetTexture(Texture texture)
+        {
+            particleRenderer.material.mainTexture = texture;
+            log.LogDebug($"Chosen Pixel Jar texture: \"{particleRenderer.material.mainTexture.name}\"");
         }
         public override int GetItemDataToSave()
         {

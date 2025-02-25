@@ -46,6 +46,7 @@ namespace LCWildCardMod.Items
                         itemAnimator.Animator.SetBool("Floating", true);
                     }
                     flapSource.Play();
+                    WalkieTalkie.TransmitOneShotAudio(flapSource, flapSource.clip);
                 }
                 playerHeldBy.fallValue *= 0.9f;
             }
@@ -57,6 +58,7 @@ namespace LCWildCardMod.Items
                     itemAnimator.Animator.SetBool("Floating", false);
                 }
                 flapSource.Stop();
+                WalkieTalkie.TransmitOneShotAudio(flapSource, flapSource.clip);
             }
             if (currentUseCooldown < 0)
             {

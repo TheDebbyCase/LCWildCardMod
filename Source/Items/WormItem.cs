@@ -158,6 +158,7 @@ namespace LCWildCardMod.Items
                         break;
                     }
             }
+            log.LogDebug($"Worm Turning {direction}");
         }
     }
 }

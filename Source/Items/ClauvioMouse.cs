@@ -56,7 +56,10 @@ namespace LCWildCardMod.Items
                 }
                 itemAnimator.SetTrigger("Pet");
             }
-            this.GetComponent<AudioSource>().PlayOneShot(squeakClips[random.Next(0, squeakClips.Length)], 1f);
+            AudioSource audioSource = this.GetComponent<AudioSource>();
+            int index = random.Next(0, squeakClips.Length);
+            audioSource.PlayOneShot(squeakClips[index], 1f);
+            WalkieTalkie.TransmitOneShotAudio(audioSource, squeakClips[index]);
         }
         public override void GrabItem()
         {
@@ -94,6 +97,7 @@ namespace LCWildCardMod.Items
             while (agitate < 10)
             {
                 yield return new WaitForSeconds((float)random.Next(5, 50) / 10f);
+                WalkieNoiseServerRpc();
                 agitate++;
             }
             yield return new WaitUntil(() => !StartOfRound.Instance.inShipPhase);
@@ -108,6 +112,7 @@ namespace LCWildCardMod.Items
             while (stateId == 1)
             {
                 DogNoiseServerRpc();
+                WalkieNoiseServerRpc();
                 cryingTime++;
                 yield return new WaitForSeconds(1f);
             }
@@ -133,6 +138,7 @@ namespace LCWildCardMod.Items
                 passiveSource.volume = 1f;
             }
             passiveSource.Play();
+            WalkieNoiseServerRpc();
         }
         public override void LoadItemSaveData(int saveData)
         {
@@ -161,6 +167,16 @@ namespace LCWildCardMod.Items
             {
                 playerHeldBy.timeSinceMakingLoudNoise = 0f;
             }
+        }
+        [ServerRpc(RequireOwnership = false)]
+        public void WalkieNoiseServerRpc()
+        {
+            WalkieClientRpc();
+        }
+        [ClientRpc]
+        public void WalkieClientRpc()
+        {
+            WalkieTalkie.TransmitOneShotAudio(passiveSource, passiveSource.clip);
         }
     }
 }

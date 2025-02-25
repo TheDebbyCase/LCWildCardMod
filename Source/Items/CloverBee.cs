@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
-using UnityEngine.InputSystem.HID;
 namespace LCWildCardMod.Items
 {
     public class CloverBee : PhysicsProp
@@ -112,6 +111,7 @@ namespace LCWildCardMod.Items
         {
             buzzSource.pitch = pitch;
             buzzSource.Play();
+            WalkieTalkie.TransmitOneShotAudio(buzzSource, buzzSource.clip);
         }
         [ServerRpc(RequireOwnership = false)]
         public void ShootServerRpc(Vector3 target, float pitch)
@@ -126,6 +126,7 @@ namespace LCWildCardMod.Items
             isShooting = true;
             shootSource.pitch = pitch;
             shootSource.Play();
+            WalkieTalkie.TransmitOneShotAudio(shootSource, shootSource.clip);
             if (insertedBattery.charge <= 0 && !insertedBattery.empty)
             {
                 insertedBattery.empty = true;

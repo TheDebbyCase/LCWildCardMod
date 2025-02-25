@@ -3,7 +3,6 @@ using UnityEngine;
 using Unity.Netcode.Components;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
-using System.Data.Common;
 namespace LCWildCardMod.Items
 {
     public class ThrowableNoisemaker : NoisemakerProp
@@ -63,7 +62,6 @@ namespace LCWildCardMod.Items
                 {
                     itemAnimator.SetTrigger("Activate");
                 }
-
                 WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
                 RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                 if (minLoudness >= 0.6f && playerHeldBy != null)
@@ -85,6 +83,7 @@ namespace LCWildCardMod.Items
                     throwAudio.pitch = pitch;
                     throwAudio.clip = throwClips[random.Next(0, throwClips.Length)];
                     throwAudio.Play();
+                    WalkieTalkie.TransmitOneShotAudio(throwAudio, throwAudio.clip);
                 }
                 Throw();
             }

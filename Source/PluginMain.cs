@@ -11,8 +11,6 @@ using HarmonyLib;
 using LCWildCardMod.Config;
 using LCWildCardMod.Utils;
 using static BepInEx.BepInDependency;
-using LobbyCompatibility.Enums;
-using LobbyCompatibility.Features;
 namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
@@ -36,15 +34,16 @@ namespace LCWildCardMod
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "<Pending>")]
         private void Awake()
         {
-            if (BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
-            {
-                SoftDepHelper.LobCompatRegister();
-            }
             wildcardKeyBinds = new KeyBinds();
             Log = Logger;
             if (Instance == null)
             {
                 Instance = this;
+            }
+            if (BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
+            {
+                Log.LogDebug("Registering with LobbyCompatibility");
+                SoftDepHelper.LobCompatRegister();
             }
             Type[] assemblyTypes = Assembly.GetExecutingAssembly().GetTypes();
             for (int i = 0; i < assemblyTypes.Length; i++)

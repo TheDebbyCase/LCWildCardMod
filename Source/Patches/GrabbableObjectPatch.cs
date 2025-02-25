@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
-
 namespace LCWildCardMod.Patches
 {
     [HarmonyPatch(typeof(GrabbableObject))]

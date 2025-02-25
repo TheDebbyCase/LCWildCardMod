@@ -28,9 +28,10 @@ namespace LCWildCardMod.Config
                 }
                 isScrapEnabled.Add(cfg.Bind("Scrap", $"Enable {scrapList[i].itemName}?", defaultEnabled, ""));
                 scrapSpawnWeights.Add(cfg.Bind("Scrap", $"Spawn Weights of {scrapList[i].itemName}!", defaultRarities, "For example: All:20,Vanilla:20,Modded:20,Experimentation:20"));
-
+                log.LogDebug($"Added config for {scrapList[i].itemName}");
             }
             assortedScrap = cfg.Bind("Scrap", "Enable/Disable supplementary scrap overall", true, bonusString);
+            log.LogDebug("Added config for Assorted Scrap items");
             for (int i = 0; i < skinList.Count; i++)
             {
                 bool defaultEnabled = skinList[i].skinEnabled;
@@ -46,6 +47,7 @@ namespace LCWildCardMod.Config
                     skinTargetName = skinList[i].targetItem.itemName;
                 }
                 skinApplyChance.Add(cfg.Bind("Skins", $"Weighted chance that {skinTargetName} will spawn as {skinList[i].skinName}", defaultChance, "Must be an integer greater than, or equal to, 0. The chance that no skin will be applied is 100 subtracted by this weight"));
+                log.LogDebug($"Added config for {skinList[i].skinName}");
             }
             ClearOrphanedEntries(cfg);
             cfg.Save();

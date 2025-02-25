@@ -2,7 +2,6 @@
 using HarmonyLib;
 using LCWildCardMod.Items;
 using LCWildCardMod.Items.Fyrus;
-using System.Linq;
 namespace LCWildCardMod.Patches
 {
     [HarmonyPatch(typeof(PlayerControllerB))]
