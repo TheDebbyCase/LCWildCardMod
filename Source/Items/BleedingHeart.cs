@@ -45,10 +45,6 @@ namespace LCWildCardMod.Items
                     intensityValue = ((float)startingValue - (float)scrapValue) / ((float)startingValue);
                     SetIntensityServerRpc(intensityValue);
                 }
-                else if (hasBeenHeld)
-                {
-                    StartCoroutine(ExplodeCoroutine());
-                }
                 currentUseCooldown = 3f;
             }
             else if (playerHeldBy != null)
@@ -76,6 +72,10 @@ namespace LCWildCardMod.Items
                     startWeight = -1f;
                     weightOverTime = 0f;
                 }
+            }
+            if (scrapValue <= 0 && hasBeenHeld)
+            {
+                StartCoroutine(ExplodeCoroutine());
             }
         }
         public override void EquipItem()
