@@ -171,6 +171,16 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 
+	<details>
+	<summary>Bleeding Heart</summary>
+
+	Based on an original design by [iamfixated](https://bsky.app/profile/iamfixated.bsky.social), 
+	Honk
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/BleedingHeartPreview.png)
+	
+	</details>
+
 - Reskins
 	<details>
 	<summary>Giwi Leviathan</summary>

@@ -1,3 +1,9 @@
+## 0.13.0
+- Added Bleeding Heart, an item based on an iamfixated art piece!
+- Let most sounds be able to be heard over the WalkieTalkie
+- Reduced the damage Smith Halo does to players
+- Improved Pixel Jar code
+
 ## 0.12.5
 - Added LobbyCompatibility as a soft dependency!
 
