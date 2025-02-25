@@ -1,3 +1,6 @@
+## 0.13.2
+- Changed the bleeding heart to reduce in value even when held, and altered other mechanics to accommodate
+
 ## 0.13.1
 - Fixed a small bug with Bleeding Heart destruction
 

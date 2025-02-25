@@ -1,4 +1,6 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
+using System.Linq;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
@@ -20,9 +22,13 @@ namespace LCWildCardMod.Items
         public float weightOverTime = 0f;
         public float playerMovementMag;
         public int playerSensitivity;
+        public int levelLayerIndex;
+        public int sloshLayerIndex;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            levelLayerIndex = itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer");
+            sloshLayerIndex = itemAnimator.Animator.GetLayerIndex("SloshingLayer");
             StartCoroutine(StartingValueCoroutine());
         }
         public IEnumerator StartingValueCoroutine()
@@ -36,7 +42,7 @@ namespace LCWildCardMod.Items
         public override void Update()
         {
             base.Update();
-            if (base.IsServer && playerHeldBy == null && currentUseCooldown <= 0f && startingValue > 0)
+            if (base.IsServer && currentUseCooldown <= 0f && startingValue > 0)
             {
                 playerMovementMag = 0f;
                 if (scrapValue > 0)
@@ -47,27 +53,28 @@ namespace LCWildCardMod.Items
                 }
                 currentUseCooldown = 3f;
             }
-            else if (playerHeldBy != null)
+            if (playerHeldBy != null)
             {
                 if (playerHeldBy == GameNetworkManager.Instance.localPlayerController)
                 {
-                    playerMovementMag = Mathf.Clamp01(GameNetworkManager.Instance.localPlayerController.moveInputVector.magnitude);
-                    SetMagnitudeServerRpc(playerMovementMag);
+                    SetMagnitudeServerRpc(Mathf.Clamp01(GameNetworkManager.Instance.localPlayerController.moveInputVector.magnitude));
                     SetSensitivityServerRpc(IngamePlayerSettings.Instance.settings.lookSensitivity);
                 }
-                log.LogDebug($"Slosh Value: {(playerMovementMag + 0.5f) * (Mathf.Max(0.1f, playerHeldBy.playerActions.Movement.Look.ReadValue<Vector2>().magnitude / 360f)) * Mathf.Max(1f, playerSensitivity)}");
-                itemAnimator.Animator.SetLayerWeight(itemAnimator.Animator.GetLayerIndex("SloshingLayer"), Mathf.Max(0.1f, Mathf.Min(1f, (playerMovementMag + 0.5f) * (Mathf.Max(0.1f, playerHeldBy.playerActions.Movement.Look.ReadValue<Vector2>().magnitude / 360f)) * Mathf.Max(1f, playerSensitivity))));
+                log.LogDebug($"Slosh Intensity: {(playerMovementMag + 0.5f) * (Mathf.Max(0.1f, playerHeldBy.playerActions.Movement.Look.ReadValue<Vector2>().magnitude / 360f)) * Mathf.Max(1f, playerSensitivity)}");
+                itemAnimator.Animator.SetLayerWeight(sloshLayerIndex, Mathf.Max(0.1f, Mathf.Min(1f, (playerMovementMag + 0.5f) * (Mathf.Max(0.1f, playerHeldBy.playerActions.Movement.Look.ReadValue<Vector2>().magnitude / 360f)) * Mathf.Max(1f, playerSensitivity))));
             }
-            if (itemAnimator.Animator.GetLayerWeight(itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer")) < targetLiquidLevel - 0.01f || itemAnimator.Animator.GetLayerWeight(itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer")) > targetLiquidLevel + 0.01f)
+            float currentLiquidWeight = itemAnimator.Animator.GetLayerWeight(levelLayerIndex);
+            if (currentLiquidWeight < targetLiquidLevel - 0.01f || currentLiquidWeight > targetLiquidLevel + 0.01f)
             {
                 if (startWeight == -1f)
                 {
-                    startWeight = itemAnimator.Animator.GetLayerWeight(itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer"));
+                    startWeight = currentLiquidWeight;
                 }
                 weightOverTime += Time.deltaTime;
                 float lerpTarget = Mathf.Lerp(startWeight, targetLiquidLevel, weightCurve.Evaluate(weightOverTime));
-                itemAnimator.Animator.SetLayerWeight(itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer"), lerpTarget);
-                if (itemAnimator.Animator.GetLayerWeight(itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer")) > targetLiquidLevel - 0.01f && itemAnimator.Animator.GetLayerWeight(itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer")) < targetLiquidLevel + 0.01f)
+                itemAnimator.Animator.SetLayerWeight(levelLayerIndex, lerpTarget);
+                currentLiquidWeight = itemAnimator.Animator.GetLayerWeight(levelLayerIndex);
+                if (currentLiquidWeight > targetLiquidLevel - 0.01f && currentLiquidWeight < targetLiquidLevel + 0.01f)
                 {
                     startWeight = -1f;
                     weightOverTime = 0f;
@@ -82,6 +89,7 @@ namespace LCWildCardMod.Items
         {
             base.EquipItem();
             dripParticles.Play();
+            dripParticles.Emit(2);
             if (base.IsServer)
             {
                 itemAnimator.Animator.SetBool("isHeld", true);
@@ -97,7 +105,8 @@ namespace LCWildCardMod.Items
         {
             base.DiscardItem();
             dripParticles.Play();
-            itemAnimator.Animator.SetLayerWeight(itemAnimator.Animator.GetLayerIndex("SloshingLayer"), 0.1f);
+            dripParticles.Emit(2);
+            itemAnimator.Animator.SetLayerWeight(sloshLayerIndex, 0.1f);
             if (base.IsServer)
             {
                 itemAnimator.Animator.SetBool("isHeld", false);
@@ -112,11 +121,25 @@ namespace LCWildCardMod.Items
                 RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                 WalkieTalkie.TransmitOneShotAudio(beatAudio, beatAudio.clip);
             }
+            else if (itemAnimator.Animator.GetBool("isHeld"))
+            {
+                itemAnimator.Animator.SetBool("isHeld", false);
+            }
         }
         public IEnumerator ExplodeCoroutine()
         {
+            if (playerHeldBy != null)
+            {
+                if (playerHeldBy.currentlyHeldObjectServer != this)
+                {
+                    playerHeldBy.SwitchToItemSlot(Array.FindIndex(playerHeldBy.ItemSlots, x => x == this));
+                }
+                playerHeldBy.DiscardHeldObject();
+            }
+            yield return new WaitForSeconds(0.1f);
             EnableItemMeshes(false);
             beatAudio.PlayOneShot(smashClip);
+            yield return new WaitForSeconds(0.1f);
             Landmine.SpawnExplosion(this.transform.position + Vector3.up, true, 5f, 10f, 25, 10f);
             yield return new WaitForSeconds(0.5f);
             this.NetworkObject.Despawn();
