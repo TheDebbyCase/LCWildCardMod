@@ -1,3 +1,6 @@
+## 0.13.1
+- Fixed a small bug with Bleeding Heart destruction
+
 ## 0.13.0
 - Added Bleeding Heart, an item based on an iamfixated art piece!
 - Let most sounds be able to be heard over the WalkieTalkie
