@@ -17,7 +17,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Wormted Poster</summary>
 	
-	Original design by [Giwi](https://www.twitch.tv/giwi), 
+	Original design by [Giwi](https://www.twitch.tv/giwi),  
 	Can you find it?
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormtedPosterPreview.png)
@@ -27,7 +27,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>NBickles</summary>
 	
-	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social), 
+	Original 3D model by [Zeekerss](https://bsky.app/profile/zeekerss.bsky.social),  
 	They're non-binary
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/NBicklesPreview.png)
@@ -37,7 +37,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Moo Cow</summary>
 	
-	Original design by [Kael](https://www.twitch.tv/kael), 
+	Original design by [Kael](https://www.twitch.tv/kael),  
 	Squeeze it
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MooCowPreview.png)
@@ -47,7 +47,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Pixel Jar</summary>
 	
-	Original designs by [Kael](https://www.twitch.tv/kael), 
+	Original designs by [Kael](https://www.twitch.tv/kael),  
 	Collect them all
 
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/PixelJarPreview.png)
@@ -57,7 +57,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Alolan Vulpixie</summary>
 	
-	Original model by [Game Freak](https://www.gamefreak.co.jp), 
+	Original model by [Game Freak](https://www.gamefreak.co.jp),  
 	Squash it
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/VulpixiePreview.png)
@@ -67,7 +67,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>The Worm</summary>
 	
-	Original design by [Giwi](https://www.twitch.tv/giwi), 
+	Original design by [Giwi](https://www.twitch.tv/giwi),  
 	Pester it and throw it
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/TheWormPreview.png)
@@ -77,7 +77,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Leek Pen</summary>
 	
-	Original designs by [Kael](https://www.twitch.tv/kael), 
+	Original designs by [Kael](https://www.twitch.tv/kael),  
 	Swing it
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/LeekPenPreview.png)
@@ -87,7 +87,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Halo</summary>
 	
-	Original designs by [Kael](https://www.twitch.tv/kael), 
+	Original designs by [Kael](https://www.twitch.tv/kael),  
 	Throw it and die! Or don't?
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/HaloPreview.png)
@@ -106,7 +106,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Wing</summary>
 
-	Original designs by [Kael](https://www.twitch.tv/kael), 
+	Original designs by [Kael](https://www.twitch.tv/kael),  
 	You feel lighter already!
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WingPreview.png)
@@ -116,7 +116,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Cojiro</summary>
 
-	Original designs by [Nintendo](https://www.nintendo.com), 
+	Original designs by [Nintendo](https://www.nintendo.com),  
 	You feel lighter already, but again!
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/CojiroPreview.png)
@@ -144,17 +144,27 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Clover Bee</summary>
 
-	Original design by [Cloverinari](https://bsky.app/profile/cloverinari.net), 
+	Original design by [Cloverinari](https://bsky.app/profile/cloverinari.net),  
 	A bee with an attitude
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/CloverBeePreview.png)
+	
+	</details>
+ 
+	<details>
+	<summary>Honeycomb Pendant</summary>
+
+	Original design by [Cloverinari](https://bsky.app/profile/cloverinari.net),  
+	Take control of the bees
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/HoneycombPendantPreview.png)
 	
 	</details>
 
 	<details>
 	<summary>Clauvio Mouse</summary>
 
-	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social), 
+	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social),  
 	A mouse with an attitude
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMousePreview.png)
@@ -164,7 +174,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Clauvio Mask</summary>
 
-	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social), 
+	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social),  
 	Bring it back to the ship, I dare you
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMaskPreview.png)
@@ -174,8 +184,8 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Bleeding Heart</summary>
 
-	Based on an original design by [iamfixated](https://bsky.app/profile/iamfixated.bsky.social), 
-	Honk
+	Based on an original design by [iamfixated](https://bsky.app/profile/iamfixated.bsky.social),  
+	Where did I even get this?
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/BleedingHeartPreview.png)
 	
@@ -185,7 +195,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Giwi Leviathan</summary>
 
-	Original design by [Giwi](https://www.twitch.tv/giwi), 
+	Original design by [Giwi](https://www.twitch.tv/giwi),  
 	She is hungry
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/SandGiwiPreview.png)
@@ -195,7 +205,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Fixated Nose</summary>
 
-	Original design by [iamfixated](https://bsky.app/profile/iamfixated.bsky.social), 
+	Original design by [iamfixated](https://bsky.app/profile/iamfixated.bsky.social),  
 	Honk
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/FixatedNosePreview.png)

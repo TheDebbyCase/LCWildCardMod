@@ -27,7 +27,7 @@ namespace LCWildCardMod.Items
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            ChangeState(0);
+            ChangeStateServerRpc(0);
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
@@ -101,6 +101,7 @@ namespace LCWildCardMod.Items
                 agitate++;
             }
             yield return new WaitUntil(() => !StartOfRound.Instance.inShipPhase);
+            log.LogDebug($"Clauvio Mouse Crying");
             ChangeStateServerRpc(1);
             cryingCoroutine = StartCoroutine(CryingCoroutine());
             agitating = false;
@@ -116,6 +117,7 @@ namespace LCWildCardMod.Items
                 cryingTime++;
                 yield return new WaitForSeconds(1f);
             }
+            log.LogDebug($"Clauvio Mouse Sleebing");
             agitateCounter = StartCoroutine(AgitateCounter());
             crying = false;
         }

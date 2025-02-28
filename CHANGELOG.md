@@ -1,5 +1,11 @@
+## 0.14.0
+- Added Cloverinari's Necklace/Pendant! Take control of the bees
+
+## 0.13.3
+- Fixed a small bug with the Bleeding Heart where if it was destroyed while in the player's pockets and the player was holding a two handed item, the player would be able to switch slots despite holding a two handed item
+
 ## 0.13.2
-- Changed the bleeding heart to reduce in value even when held, and altered other mechanics to accommodate
+- Changed the Bleeding Heart to reduce in value even when held, and altered other mechanics to accommodate
 
 ## 0.13.1
 - Fixed a small bug with Bleeding Heart destruction

@@ -19,7 +19,9 @@ namespace LCWildCardMod.Items.Fyrus
             base.ItemActivate(used, buttonDown);
             musicAudioObject.parent = playerHeldBy.transform;
             musicAudioObject.localPosition = new Vector3(0f, 1f, -1f);
-            itemProperties.dropSFX = null;
+            Item newProperties = Instantiate(itemProperties);
+            newProperties.dropSFX = null;
+            itemProperties = newProperties;
             starCoroutine = StartCoroutine(StarCoroutine(playerHeldBy));
             playerHeldBy.DiscardHeldObject();
             this.EnableItemMeshes(false);

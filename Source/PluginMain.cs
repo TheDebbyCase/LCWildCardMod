@@ -21,16 +21,19 @@ namespace LCWildCardMod
     {
         internal const string modGUID = "deB.WildCard";
         internal const string modName = "WILDCARD Stuff";
-        internal const string modVersion = "0.13.2";
+        internal const string modVersion = "0.13.3";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;
+        internal static MapObjectHelper mapClass;
         private static WildCardMod Instance;
         private readonly Harmony harmony = new Harmony(modGUID);
         internal static WildCardConfig ModConfig {get; private set;} = null!;
-        private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items", "assets/my creations/skins"};
+        private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items", "assets/my creations/skins", "assets/my creations/map objects"};
         public static List<Item> scrapList = new List<Item>();
         public static List<Skin> skinList = new List<Skin>();
+        public static List<MapObject> mapObjectsList = new List<MapObject>();
+        public static List<MapObject> autoMapObjectsList = new List<MapObject>();
         [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "<Pending>")]
         private void Awake()
         {
@@ -76,6 +79,19 @@ namespace LCWildCardMod
                                 skinList.Add(bundle.LoadAsset<Skin>(allAssetPaths[i]));
                                 break;
                             }
+                        case "assets/my creations/map objects":
+                            {
+                                MapObject asset = bundle.LoadAsset<MapObject>(allAssetPaths[i]);
+                                if (asset.autoHandle)
+                                {
+                                    autoMapObjectsList.Add(asset);
+                                }
+                                else
+                                {
+                                    mapObjectsList.Add(asset);
+                                }
+                                break;
+                            }
                         default:
                             {
                                 break;
@@ -87,8 +103,9 @@ namespace LCWildCardMod
                     Log.LogWarning($"\"{allAssetPaths[i]}\" is not a known asset path, skipping.");
                 }
             }
-            ModConfig = new WildCardConfig(base.Config, scrapList, skinList);
+            ModConfig = new WildCardConfig(base.Config, scrapList, skinList, mapObjectsList);
             skinsClass = new SkinsClass();
+            mapClass = new MapObjectHelper();
             for (int i = 0; i < scrapList.Count; i++)
             {
                 if (scrapList[i].spawnPrefab.GetComponent<AdditionalInfo>().isBonus && !ModConfig.assortedScrap.Value)
@@ -162,6 +179,48 @@ namespace LCWildCardMod
                     skinList.Remove(skinList[i]);
                     i--;
                 }
+            }
+            mapClass.Init(mapObjectsList, autoMapObjectsList, ModConfig);
+            for (int i = 0; i < mapObjectsList.Count; i++)
+            {
+                if (ModConfig.isMapObjectEnabled[i].Value)
+                {
+                    if (!ModConfig.useDefaultMapObjectCurve[i].Value)
+                    {
+                        mapObjectsList[i].levelCurve = mapClass.MapObjectFunc;
+                        Log.LogInfo($"Using config settings for \"{mapObjectsList[i].mapObjectName}\"'s amount curve!");
+                    }
+                    else
+                    {
+                        mapObjectsList[i].levelCurve = mapClass.MapObjectFunc;
+                    }
+                    NetworkPrefabs.RegisterNetworkPrefab(mapObjectsList[i].spawnableMapObject.prefabToSpawn);
+                    Utilities.FixMixerGroups(mapObjectsList[i].spawnableMapObject.prefabToSpawn);
+                    if (mapObjectsList[i].spawnableMapObject.prefabToSpawn.TryGetComponent<GrabbableObject>(out GrabbableObject mapObjectScrap))
+                    {
+                        LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
+                    }
+                    LethalLib.Modules.MapObjects.RegisterMapObject(mapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, mapObjectsList[i].levelCurve);
+                    Log.LogDebug($"\"{mapObjectsList[i].mapObjectName}\" map object was loaded!");
+                }
+                else
+                {
+                    mapObjectsList.Remove(mapObjectsList[i]);
+                    Log.LogInfo($"\"{mapObjectsList[i].mapObjectName}\" map object was disabled!");
+                    i--;
+                }
+            }
+            for (int i = 0; i < autoMapObjectsList.Count; i++)
+            {
+                NetworkPrefabs.RegisterNetworkPrefab(autoMapObjectsList[i].spawnableMapObject.prefabToSpawn);
+                Utilities.FixMixerGroups(autoMapObjectsList[i].spawnableMapObject.prefabToSpawn);
+                if (autoMapObjectsList[i].spawnableMapObject.prefabToSpawn.TryGetComponent<GrabbableObject>(out GrabbableObject mapObjectScrap))
+                {
+                    LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
+                }
+                autoMapObjectsList[i].levelCurve = mapClass.AutoMapObjectFunc;
+                LethalLib.Modules.MapObjects.RegisterMapObject(autoMapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, autoMapObjectsList[i].levelCurve);
+                Log.LogDebug($"\"{autoMapObjectsList[i].mapObjectName}\" is being handled automatically!");
             }
             harmony.PatchAll();
             Log.LogInfo("WILDCARD Stuff Successfully Loaded");

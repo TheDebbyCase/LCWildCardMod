@@ -1,8 +1,11 @@
-﻿using LethalCompanyInputUtils.Api;
+﻿using LCWildCardMod.Config;
+using LethalCompanyInputUtils.Api;
 using LobbyCompatibility.Enums;
 using LobbyCompatibility.Features;
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.InputSystem;
 namespace LCWildCardMod.Utils
@@ -144,5 +147,57 @@ namespace LCWildCardMod.Utils
         public Material newMaterial;
         public AudioClip[] newAudioClips;
         public RuntimeAnimatorController newAnimationController;
+    }
+    [CreateAssetMenu(menuName = "WCScriptableObjects/MapObject", order = 1)]
+    public class MapObject : ScriptableObject
+    {
+        public string mapObjectName;
+        public SpawnableMapObject spawnableMapObject;
+        public Func<SelectableLevel, AnimationCurve> levelCurve;
+        public bool autoHandle;
+    }
+    public class MapObjectHelper
+    {
+        public static WildCardConfig ModConfig;
+        public static List<MapObject> mapObjects;
+        public static List<MapObject> autoMapObjects;
+        public int levelIndex = 0;
+        public int mapIndex = 0;
+        public void Init(List<MapObject> maps, List<MapObject> autoMaps, WildCardConfig config)
+        {
+            ModConfig = config;
+            mapObjects = maps;
+            autoMapObjects = autoMaps;
+        }
+        public AnimationCurve MapObjectFunc(SelectableLevel level)
+        {
+            AnimationCurve curve = new AnimationCurve(new Keyframe(0, ModConfig.mapObjectMinNo[mapIndex].Value), new Keyframe(1, ModConfig.mapObjectMaxNo[mapIndex].Value));
+            if (levelIndex == StartOfRound.Instance.levels.Length)
+            {
+                levelIndex = 0;
+                mapIndex++;
+                if (mapIndex == mapObjects.Count)
+                {
+                    mapIndex = 0;
+                }
+            }
+            levelIndex++;
+            return curve;
+        }
+        public AnimationCurve AutoMapObjectFunc(SelectableLevel level)
+        {
+            AnimationCurve curve = autoMapObjects[mapIndex].spawnableMapObject.numberToSpawn;
+            if (levelIndex == StartOfRound.Instance.levels.Length)
+            {
+                levelIndex = 0;
+                mapIndex++;
+                if (mapIndex == autoMapObjects.Count)
+                {
+                    mapIndex = 0;
+                }
+            }
+            levelIndex++;
+            return curve;
+        }
     }
 }

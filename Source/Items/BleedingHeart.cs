@@ -1,4 +1,5 @@
-﻿using System;
+﻿using GameNetcodeStuff;
+using System;
 using System.Collections;
 using System.Linq;
 using Unity.Netcode;
@@ -130,11 +131,17 @@ namespace LCWildCardMod.Items
         {
             if (playerHeldBy != null)
             {
-                if (playerHeldBy.currentlyHeldObjectServer != this)
+                int playerOriginalSlot = playerHeldBy.currentItemSlot;
+                PlayerControllerB player = playerHeldBy;
+                if (player.currentlyHeldObjectServer != this)
                 {
-                    playerHeldBy.SwitchToItemSlot(Array.FindIndex(playerHeldBy.ItemSlots, x => x == this));
+                    player.SwitchToItemSlot(Array.FindIndex(player.ItemSlots, x => x == this));
                 }
-                playerHeldBy.DiscardHeldObject();
+                player.DiscardHeldObject();
+                if (playerOriginalSlot != player.currentItemSlot)
+                {
+                    player.SwitchToItemSlot(playerOriginalSlot);
+                }
             }
             yield return new WaitForSeconds(0.1f);
             EnableItemMeshes(false);
