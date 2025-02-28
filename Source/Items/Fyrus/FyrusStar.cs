@@ -11,18 +11,22 @@ namespace LCWildCardMod.Items.Fyrus
         public AudioClip consumeClip;
         public AudioClip oofClip;
         public TrailRenderer trailRenderer;
-        public Coroutine starCoroutine;
+        public Item newProperties;
         public bool starEffect;
         public float speedMultiplier = 1.25f;
+        public override void OnNetworkSpawn()
+        {
+            base.OnNetworkSpawn();
+            newProperties = Instantiate(itemProperties);
+            newProperties.dropSFX = null;
+        }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
             musicAudioObject.parent = playerHeldBy.transform;
             musicAudioObject.localPosition = new Vector3(0f, 1f, -1f);
-            Item newProperties = Instantiate(itemProperties);
-            newProperties.dropSFX = null;
             itemProperties = newProperties;
-            starCoroutine = StartCoroutine(StarCoroutine(playerHeldBy));
+            StartCoroutine(StarCoroutine(playerHeldBy));
             playerHeldBy.DiscardHeldObject();
             this.EnableItemMeshes(false);
         }

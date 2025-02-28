@@ -124,7 +124,7 @@ namespace LCWildCardMod.Items
         }
         public virtual Vector3 GetThrowDestination()
         {
-            Vector3 position = handPosition;
+            Vector3 position;
             throwRay = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
             if (Physics.Raycast(throwRay, out throwHit, 20f, StartOfRound.Instance.allPlayersCollideWithMask, QueryTriggerInteraction.Ignore))
             {

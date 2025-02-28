@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Reflection;
 using Unity.Netcode;
 using UnityEngine;
 namespace LCWildCardMod.Items
@@ -18,7 +19,7 @@ namespace LCWildCardMod.Items
             particle = this.GetComponentInChildren<ParticleSystem>();
             particleRenderer = this.GetComponentInChildren<ParticleSystemRenderer>();
             randomIndex = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            if (IsServer)
+            if (base.IsServer)
             {
                 if (floaterCurrent == null)
                 {
@@ -29,7 +30,7 @@ namespace LCWildCardMod.Items
                 {
                     textureIndex = Array.IndexOf(floaterVariants, floaterCurrent);
                 }
-                TextureUpdateServerRpc();
+                TextureUpdateClientRpc(textureIndex);
             }
         }
         public override void EquipItem()
@@ -50,9 +51,10 @@ namespace LCWildCardMod.Items
                 particle.Clear();
             }
         }
-        public void SetTexture(Texture texture)
+        public void SetTexture(int index)
         {
-            particleRenderer.material.mainTexture = texture;
+            floaterCurrent = floaterVariants[index];
+            particleRenderer.material.mainTexture = floaterCurrent;
             log.LogDebug($"Chosen Pixel Jar texture: \"{particleRenderer.material.mainTexture.name}\"");
         }
         public override int GetItemDataToSave()
@@ -63,17 +65,10 @@ namespace LCWildCardMod.Items
         {
             floaterCurrent = floaterVariants[saveData];
         }
-        [ServerRpc(RequireOwnership = false)]
-        private void TextureUpdateServerRpc()
-        {
-            SetTexture(floaterCurrent);
-            TextureUpdateClientRpc(textureIndex);
-        }
         [ClientRpc]
         private void TextureUpdateClientRpc(int index)
         {
-            floaterCurrent = floaterVariants[index];
-            SetTexture(floaterCurrent);
+            SetTexture(index);
         }
     }
 }

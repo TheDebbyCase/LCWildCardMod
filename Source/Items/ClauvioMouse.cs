@@ -27,17 +27,20 @@ namespace LCWildCardMod.Items
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            ChangeStateServerRpc(0);
+            if (base.IsServer)
+            {
+                ChangeStateClientRpc(0);
+            }
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            if (IsServer)
+            if (base.IsServer)
             {
                 agitate--;
                 if (agitate == 0 && stateId == 1)
                 {
-                    ChangeStateServerRpc(0);
+                    ChangeStateClientRpc(0);
                 }
                 else if (agitate < 0)
                 {
@@ -64,7 +67,7 @@ namespace LCWildCardMod.Items
         public override void GrabItem()
         {
             base.GrabItem();
-            if (IsServer && agitateCounter == null)
+            if (base.IsServer && agitateCounter == null)
             {
                 agitateCounter = StartCoroutine(AgitateCounter());
             }
@@ -97,12 +100,12 @@ namespace LCWildCardMod.Items
             while (agitate < 10)
             {
                 yield return new WaitForSeconds((float)random.Next(5, 50) / 10f);
-                WalkieNoiseServerRpc();
+                WalkieNoiseClientRpc();
                 agitate++;
             }
             yield return new WaitUntil(() => !StartOfRound.Instance.inShipPhase);
             log.LogDebug($"Clauvio Mouse Crying");
-            ChangeStateServerRpc(1);
+            ChangeStateClientRpc(1);
             cryingCoroutine = StartCoroutine(CryingCoroutine());
             agitating = false;
         }
@@ -112,8 +115,8 @@ namespace LCWildCardMod.Items
             int cryingTime = 0;
             while (stateId == 1)
             {
-                DogNoiseServerRpc();
-                WalkieNoiseServerRpc();
+                DogNoiseClientRpc();
+                WalkieNoiseClientRpc();
                 cryingTime++;
                 yield return new WaitForSeconds(1f);
             }
@@ -140,26 +143,17 @@ namespace LCWildCardMod.Items
                 passiveSource.volume = 1f;
             }
             passiveSource.Play();
-            WalkieNoiseServerRpc();
+            WalkieTalkie.TransmitOneShotAudio(passiveSource, passiveSource.clip);
         }
         public override void LoadItemSaveData(int saveData)
         {
             agitateCounter = StartCoroutine(AgitateCounter());
         }
-        [ServerRpc(RequireOwnership = false)]
-        public void ChangeStateServerRpc(int id)
-        {
-            ChangeStateClientRpc(id);
-        }
+
         [ClientRpc]
         public void ChangeStateClientRpc(int id)
         {
             ChangeState(id);
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void DogNoiseServerRpc()
-        {
-            DogNoiseClientRpc();
         }
         [ClientRpc]
         public void DogNoiseClientRpc()
@@ -170,13 +164,8 @@ namespace LCWildCardMod.Items
                 playerHeldBy.timeSinceMakingLoudNoise = 0f;
             }
         }
-        [ServerRpc(RequireOwnership = false)]
-        public void WalkieNoiseServerRpc()
-        {
-            WalkieClientRpc();
-        }
         [ClientRpc]
-        public void WalkieClientRpc()
+        public void WalkieNoiseClientRpc()
         {
             WalkieTalkie.TransmitOneShotAudio(passiveSource, passiveSource.clip);
         }

@@ -1,3 +1,6 @@
+## 0.14.1
+- Added particle effects to Clover Bee to better indicate the shot and the hit
+
 ## 0.14.0
 - Added Cloverinari's Necklace/Pendant! Take control of the bees
 

@@ -1,7 +1,6 @@
 ﻿using GameNetcodeStuff;
 using System;
 using System.Collections;
-using System.Linq;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
@@ -48,9 +47,9 @@ namespace LCWildCardMod.Items
                 playerMovementMag = 0f;
                 if (scrapValue > 0)
                 {
-                    ScrapValueServerRpc(scrapValue - 1);
+                    ScrapValueClientRpc(scrapValue - 1);
                     intensityValue = ((float)startingValue - (float)scrapValue) / ((float)startingValue);
-                    SetIntensityServerRpc(intensityValue);
+                    SetIntensityClientRpc(intensityValue);
                 }
                 currentUseCooldown = 3f;
             }
@@ -119,12 +118,15 @@ namespace LCWildCardMod.Items
             {
                 beatAudio.Stop();
                 beatAudio.Play();
-                RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                 WalkieTalkie.TransmitOneShotAudio(beatAudio, beatAudio.clip);
+                RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             }
-            else if (itemAnimator.Animator.GetBool("isHeld"))
+            if (base.IsServer)
             {
-                itemAnimator.Animator.SetBool("isHeld", false);
+                if (itemAnimator.Animator.GetBool("isHeld"))
+                {
+                    itemAnimator.Animator.SetBool("isHeld", false);
+                }
             }
         }
         public IEnumerator ExplodeCoroutine()
@@ -159,11 +161,6 @@ namespace LCWildCardMod.Items
         {
             startingValue = saveData;
         }
-        [ServerRpc(RequireOwnership = false)]
-        public void ScrapValueServerRpc(int newValue)
-        {
-            ScrapValueClientRpc(newValue);
-        }
         [ClientRpc]
         public void ScrapValueClientRpc(int newValue)
         {
@@ -172,11 +169,6 @@ namespace LCWildCardMod.Items
             {
                 log.LogDebug($"Bleeding Heart Value: {scrapValue}, Starting Value: {startingValue}");
             }
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void SetIntensityServerRpc(float intensity)
-        {
-            SetIntensityClientRpc(intensity);
         }
         [ClientRpc]
         public void SetIntensityClientRpc(float intensity)

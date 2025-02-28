@@ -35,7 +35,10 @@ namespace LCWildCardMod.Items
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             WildCardMod.wildcardKeyBinds.WildCardButton.performed += ThrowButton;
             spinParticle.gameObject.SetActive(false);
-            BeginMusicServerRpc();
+            if (base.IsServer)
+            {
+                BeginMusicClientRpc(isExhausted);
+            }
         }
         public void BeginMusic()
         {
@@ -43,11 +46,11 @@ namespace LCWildCardMod.Items
             {
                 this.GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
                 spinParticle.gameObject.SetActive(false);
-                StopDripServerRpc();
+                StopDrip();
             }
             else
             {
-                StartDripServerRpc();
+                StartDrip();
                 spawnMusic.Play();
             }
         }
@@ -58,10 +61,7 @@ namespace LCWildCardMod.Items
                 if (throwAudio != null && throwClips.Length > 0)
                 {
                     float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
-                    throwAudio.pitch = pitch;
                     int selectedClip = random.Next(0, throwClips.Length);
-                    RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
-                    playerHeldBy.timeSinceMakingLoudNoise = 0f;
                     ThrowAudioServerRpc(pitch, selectedClip);
                 }
                 ThrowServerRpc();
@@ -184,7 +184,7 @@ namespace LCWildCardMod.Items
             throwAudio.Stop();
             if (isExhausted == 0)
             {
-                StartDripServerRpc();
+                StartDrip();
             }
             else
             {
@@ -222,6 +222,30 @@ namespace LCWildCardMod.Items
             log.LogDebug("Halo Fully Exhausted");
             isExhausted = 1;
         }
+        public void StartDrip()
+        {
+            if (isExhausted == 0)
+            {
+                for (int i = 0; i < dripParticles.Length; i++)
+                {
+                    dripParticles[i].gameObject.SetActive(true);
+                    dripParticles[i].Play();
+                }
+            }
+            spinParticle.gameObject.SetActive(false);
+        }
+        public void StopDrip()
+        {
+            for (int i = 0; i < dripParticles.Length; i++)
+            {
+                dripParticles[i].gameObject.SetActive(false);
+            }
+            if (isExhausted == 0 && itemAnimator.Animator.GetBool("BeingThrown"))
+            {
+                spinParticle.gameObject.SetActive(true);
+                spinParticle.Play();
+            }
+        }
         public override int GetItemDataToSave()
         {
             return isExhausted;
@@ -253,6 +277,8 @@ namespace LCWildCardMod.Items
             throwAudio.clip = throwClips[selectedClip];
             throwAudio.Play();
             WalkieTalkie.TransmitOneShotAudio(throwAudio, throwAudio.clip);
+            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            playerHeldBy.timeSinceMakingLoudNoise = 0f;
         }
         [ServerRpc(RequireOwnership = false)]
         public void ThrowEndServerRpc()
@@ -312,33 +338,7 @@ namespace LCWildCardMod.Items
         [ClientRpc]
         public void StopDripClientRpc()
         {
-            for (int i = 0; i < dripParticles.Length; i++)
-            {
-                dripParticles[i].gameObject.SetActive(false);
-            }
-            if (isExhausted == 0 && itemAnimator.Animator.GetBool("BeingThrown"))
-            {
-                spinParticle.gameObject.SetActive(true);
-                spinParticle.Play();
-            }
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void StartDripServerRpc()
-        {
-            StartDripClientRpc();
-        }
-        [ClientRpc]
-        public void StartDripClientRpc()
-        {
-            if (isExhausted == 0)
-            {
-                for (int i = 0; i < dripParticles.Length; i++)
-                {
-                    dripParticles[i].gameObject.SetActive(true);
-                    dripParticles[i].Play();
-                }
-            }
-            spinParticle.gameObject.SetActive(false);
+            StopDrip();
         }
     }
 }

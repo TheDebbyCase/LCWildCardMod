@@ -84,8 +84,9 @@ namespace LCWildCardMod.Items.SmithNote
                 StartFlipping();
                 noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
                 WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
-                RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                 playerHeldBy.timeSinceMakingLoudNoise = 0f;
+                RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+
             }
         }
         public override void Update()

@@ -1,8 +1,6 @@
 ﻿using GameNetcodeStuff;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
@@ -14,12 +12,17 @@ namespace LCWildCardMod.Items.Clover
         public NetworkAnimator itemAnimator;
         public AudioSource buzzSource;
         public AudioSource shootSource;
+        public AudioClip shootClip;
         public Vector3 targetPosition;
         public bool isShooting;
         public float stingerTime;
         public Vector3 startingPosition;
         public Vector3 localPosition;
         public Transform stinger;
+        public ParticleSystem stingerFlash;
+        public ParticleSystem stingerHitSpark;
+        public Item activatedProperties;
+        public Item deactivatedProperties;
         public PlayerControllerB lastPlayer;
         public List<IHittable> hitList = new List<IHittable>();
         public CloverNecklace necklaceRef;
@@ -30,6 +33,9 @@ namespace LCWildCardMod.Items.Clover
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
+            activatedProperties = itemProperties;
+            deactivatedProperties = Instantiate(itemProperties);
+            deactivatedProperties.toolTips = new string[2] { $"<s>{fireString}", necklaceString };
             localPosition = stinger.localPosition;
             insertedBattery.charge = 1f;
             if (base.IsServer)
@@ -61,11 +67,11 @@ namespace LCWildCardMod.Items.Clover
                 {
                     hitList.Clear();
                 }
-                ShootServerRpc(targetPosition, (float)random.Next(80, 121) / 100f, true);
+                ShootServerRpc(targetPosition, (float)random.Next(80, 121) / 100f);
             }
             else if (base.IsOwner)
             {
-                ShootServerRpc(Vector3.zero, (float)random.Next(80, 121) / 100f, false);
+                ShootServerRpc(Vector3.zero, (float)random.Next(80, 121) / 100f);
                 playerHeldBy.DamagePlayer(25, false, true, CauseOfDeath.Stabbing);
             }
         }
@@ -83,9 +89,9 @@ namespace LCWildCardMod.Items.Clover
                         log.LogDebug("Clover Bee Resetting Projectile");
                         itemAnimator.SetTrigger("New Stinger");
                     }
+                    stingerHitSpark.Play();
                     isShooting = false;
-                    stinger.localPosition = localPosition;
-                    stingerTime = 0;
+                    StartCoroutine(WaitForParticles());
                 }
                 else if (base.IsOwner)
                 {
@@ -102,6 +108,12 @@ namespace LCWildCardMod.Items.Clover
             }
 
         }
+        public IEnumerator WaitForParticles()
+        {
+            yield return new WaitUntil(() => !stingerHitSpark.IsAlive());
+            stinger.localPosition = localPosition;
+            stingerTime = 0;
+        }
         public void SetNecklaceController(CloverNecklace necklace)
         {
             log.LogDebug($"Located {necklace.itemProperties.itemName}");
@@ -117,16 +129,13 @@ namespace LCWildCardMod.Items.Clover
         }
         public void ToggleHeld(bool held)
         {
-            Item newProperties = Instantiate(itemProperties);
             if (held)
             {
-                newProperties.toolTips = new string[1] {fireString};
-                itemProperties = newProperties;
+                itemProperties = activatedProperties;
             }
             else
             {
-                newProperties.toolTips = new string[2] {$"<s>{fireString}", necklaceString};
-                itemProperties = newProperties;
+                itemProperties = deactivatedProperties;
             }
         }
         public IEnumerator NecklaceCheck()
@@ -144,14 +153,8 @@ namespace LCWildCardMod.Items.Clover
             while (true)
             {
                 yield return new WaitForSeconds((float)random.Next(5, 51) / 10f);
-                PlayBuzzServerRpc((float)random.Next(80, 121) / 100f);
-                RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+                PlayBuzzClientRpc((float)random.Next(80, 121) / 100f);
             }
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void PlayBuzzServerRpc(float pitch)
-        {
-            PlayBuzzClientRpc(pitch);
         }
         [ClientRpc]
         public void PlayBuzzClientRpc(float pitch)
@@ -159,24 +162,30 @@ namespace LCWildCardMod.Items.Clover
             buzzSource.pitch = pitch;
             buzzSource.Play();
             WalkieTalkie.TransmitOneShotAudio(buzzSource, buzzSource.clip);
+            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
         }
         [ServerRpc(RequireOwnership = false)]
-        public void ShootServerRpc(Vector3 target, float pitch, bool hasNecklace)
+        public void ShootServerRpc(Vector3 target, float pitch)
         {
-            ShootClientRpc(target, pitch, hasNecklace);
+            ShootClientRpc(target, pitch);
         }
         [ClientRpc]
-        public void ShootClientRpc(Vector3 target, float pitch, bool hasNecklace)
+        public void ShootClientRpc(Vector3 target, float pitch)
         {
-            if (hasNecklace)
+            if (target != Vector3.zero)
             {
                 log.LogDebug("Clover Bee Shooting");
                 targetPosition = target;
                 startingPosition = stinger.position;
                 isShooting = true;
+                shootSource.clip = shootClip;
+                shootSource.volume = 0.5f;
+                stingerFlash.Play();
             }
             else
             {
+                shootSource.clip = itemProperties.dropSFX;
+                shootSource.volume = 1.5f;
                 log.LogDebug("Clover Bee Revolting");
             }
             shootSource.pitch = pitch;
