@@ -1,3 +1,7 @@
+## 0.14.4
+- Fixed an error when dying with or losing the Smith Halo being thrown
+- Improved Clauvio Mask peeking to be more user friendly
+
 ## 0.14.3
 - Finally ACTUALLY fixed The Worm's animations not syncing (12 hours straight, bruh)
 - Possibly fixed The Worm throw audio/animation not playing

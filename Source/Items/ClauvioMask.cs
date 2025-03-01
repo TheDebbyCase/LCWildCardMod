@@ -8,6 +8,7 @@ namespace LCWildCardMod.Items
     public class ClauvioMask : PhysicsProp
     {
         readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
+        public bool isLifted = false;
         public Transform meshTransform;
         public Animator maskAnimator;
         public Coroutine peekCoroutine;
@@ -57,7 +58,7 @@ namespace LCWildCardMod.Items
         }
         public void MaskPeek(InputAction.CallbackContext throwContext)
         {
-            if (base.IsOwner && playerHeldBy != null && playerHeldBy.moveInputVector == Vector2.zero)
+            if (base.IsOwner && playerHeldBy != null)
             {
                 log.LogDebug($"\"{this.itemProperties.itemName}\" Beginning Peek");
                 peekCoroutine = StartCoroutine(PeekCoroutine(throwContext));
@@ -65,20 +66,31 @@ namespace LCWildCardMod.Items
         }
         public IEnumerator PeekCoroutine(InputAction.CallbackContext throwContext)
         {
-            AnimTriggerServerRpc("Lift");
-            log.LogDebug($"\"{this.itemProperties.itemName}\" Waiting for Button Release");
-            yield return new WaitUntil(() => (!throwContext.action.IsPressed() || playerHeldBy == null || playerHeldBy.moveInputVector != Vector2.zero));
-            log.LogDebug($"\"{this.itemProperties.itemName}\" Button Released");
-            AnimTriggerServerRpc("Lower");
+            while (throwContext.action.IsPressed())
+            {
+                if (playerHeldBy != null && playerHeldBy.moveInputVector == Vector2.zero && !isLifted)
+                {
+                    isLifted = true;
+                    SetTriggerServerRpc("Lift");
+                    log.LogDebug($"\"{this.itemProperties.itemName}\" Waiting for Button Release");
+                }
+                yield return new WaitUntil(() => (!throwContext.action.IsPressed() || playerHeldBy == null || playerHeldBy.moveInputVector != Vector2.zero));
+                if (isLifted)
+                {
+                    log.LogDebug($"\"{this.itemProperties.itemName}\" Button Released");
+                    SetTriggerServerRpc("Lower");
+                    isLifted = false;
+                }
+            }
             peekCoroutine = null;
         }
         [ServerRpc(RequireOwnership = false)]
-        public void AnimTriggerServerRpc(string name)
+        public void SetTriggerServerRpc(string name)
         {
-            AnimTriggerClientRpc(name);
+            SetTriggerClientRpc(name);
         }
         [ClientRpc]
-        public void AnimTriggerClientRpc(string name)
+        public void SetTriggerClientRpc(string name)
         {
             maskAnimator.SetTrigger(name);
         }

@@ -171,10 +171,10 @@ namespace LCWildCardMod.Items
         {
             parentComponent.transform.localPosition = Vector3.zero;
             this.transform.localPosition = itemProperties.positionOffset;
-            playerHeldBy.throwingObject = false;
             if (playerHeldBy != null)
             {
                 this.transform.position = playerHeldBy.localItemHolder.transform.position;
+                playerHeldBy.throwingObject = false;
             }
             isThrowing = false;
             if (base.IsServer)
