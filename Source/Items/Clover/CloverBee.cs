@@ -11,6 +11,7 @@ namespace LCWildCardMod.Items.Clover
         readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public NetworkAnimator itemAnimator;
         public AudioSource buzzSource;
+        public AnimationCurve buzzCurve;
         public AudioSource shootSource;
         public AudioClip shootClip;
         public Vector3 targetPosition;
@@ -33,6 +34,7 @@ namespace LCWildCardMod.Items.Clover
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
+            buzzSource.SetCustomCurve(AudioSourceCurveType.CustomRolloff, buzzCurve);
             activatedProperties = itemProperties;
             deactivatedProperties = Instantiate(itemProperties);
             deactivatedProperties.toolTips = new string[2] { $"<s>{fireString}", necklaceString };

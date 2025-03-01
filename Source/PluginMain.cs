@@ -21,7 +21,7 @@ namespace LCWildCardMod
     {
         internal const string modGUID = "deB.WildCard";
         internal const string modName = "WILDCARD Stuff";
-        internal const string modVersion = "0.14.2";
+        internal const string modVersion = "0.14.3";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;

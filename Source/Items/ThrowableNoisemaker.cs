@@ -3,6 +3,7 @@ using UnityEngine;
 using Unity.Netcode.Components;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
+using System.Collections;
 namespace LCWildCardMod.Items
 {
     public class ThrowableNoisemaker : NoisemakerProp
@@ -16,7 +17,6 @@ namespace LCWildCardMod.Items
         public AudioSource spawnMusic;
         public AudioSource throwAudio;
         public AudioClip[] throwClips;
-        public NetworkAnimator itemAnimator;
         internal Vector3 handPosition;
         internal static HashSet<int> validParameters = new HashSet<int>();
         private System.Random random;
@@ -25,16 +25,16 @@ namespace LCWildCardMod.Items
             base.OnNetworkSpawn();
             WildCardMod.wildcardKeyBinds.WildCardButton.performed += ThrowButton;
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            if (itemAnimator != null )
+            if (triggerAnimator != null )
             {
-                for (int i = 0; i < itemAnimator.Animator.parameters.Length; i++)
+                for (int i = 0; i < triggerAnimator.parameters.Length; i++)
                 {
-                    validParameters.Add(Animator.StringToHash(itemAnimator.Animator.parameters[i].name));
+                    validParameters.Add(Animator.StringToHash(triggerAnimator.parameters[i].name));
                 }
             }
-            if (spawnMusic != null && spawnMusic.clip != null)
+            if (spawnMusic != null && spawnMusic.clip != null && base.IsServer)
             {
-                BeginMusicServerRpc();
+                BeginMusicClientRpc(hasBeenHeld);
             }
         }
         public virtual void BeginMusic()
@@ -58,9 +58,9 @@ namespace LCWildCardMod.Items
                     noiseAudioFar.pitch = pitch;
                     noiseAudioFar.PlayOneShot(noiseSFXFar[noiseIndex], volume);
                 }
-                if (itemAnimator != null && validParameters.Contains(Animator.StringToHash("Activate")) && base.IsServer)
+                if (triggerAnimator != null && validParameters.Contains(Animator.StringToHash("Activate")) && base.IsServer)
                 {
-                    itemAnimator.SetTrigger("Activate");
+                    triggerAnimator.SetTrigger("Activate");
                 }
                 WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
                 RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
@@ -72,7 +72,7 @@ namespace LCWildCardMod.Items
         }
         public void ThrowButton(InputAction.CallbackContext throwContext)
         {
-            if (playerHeldBy != null && playerHeldBy.currentlyHeldObjectServer == this)
+            if (playerHeldBy != null && !isPocketed)
             {
                 handPosition = base.transform.localPosition;
                 log.LogDebug($"\"{this.itemProperties.itemName}\" Vector in Player Hand: {handPosition}");
@@ -83,15 +83,11 @@ namespace LCWildCardMod.Items
                     throwAudio.pitch = pitch;
                     throwAudio.clip = throwClips[random.Next(0, throwClips.Length)];
                     throwAudio.Play();
+                    StartCoroutine(StopAudioCoroutine());
                     WalkieTalkie.TransmitOneShotAudio(throwAudio, throwAudio.clip);
                 }
                 Throw();
             }
-        }
-        public override void OnHitGround()
-        {
-            base.OnHitGround();
-            throwAudio.Stop();
         }
         public override void EquipItem()
         {
@@ -101,16 +97,20 @@ namespace LCWildCardMod.Items
         }
         public override void DiscardItem()
         {
-            base.DiscardItem();
             handPosition = base.transform.localPosition;
+            base.DiscardItem();
         }
         public virtual void Throw()
         {
+            if (base.IsOwner)
+            {
+                FloorRotServerRpc(floorYRot);
+            }
         }
         public override void FallWithCurve()
         {
             float magnitude = (startFallingPosition - targetFloorPosition).magnitude;
-            base.transform.rotation = Quaternion.Lerp(base.transform.rotation, Quaternion.Euler(itemProperties.restingRotation.x, base.transform.eulerAngles.y, itemProperties.restingRotation.z), 14f * Time.deltaTime / magnitude);
+            base.transform.rotation = Quaternion.Lerp(base.transform.rotation, Quaternion.Euler(itemProperties.restingRotation.x, (float)(floorYRot + itemProperties.floorYOffset) + 90f, itemProperties.restingRotation.z), 14f * Time.deltaTime / magnitude);
             base.transform.localPosition = Vector3.Lerp(startFallingPosition, targetFloorPosition, throwFallCurve.Evaluate(fallTime));
             if (magnitude > 5f)
             {
@@ -141,20 +141,30 @@ namespace LCWildCardMod.Items
             }
             return throwRay.GetPoint(30f);
         }
+        public IEnumerator StopAudioCoroutine()
+        {
+            yield return new WaitUntil(() => fallTime >= 1);
+            throwAudio.Stop();
+        }
         public override void LoadItemSaveData(int saveData)
         {
             hasBeenHeld = true;
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void BeginMusicServerRpc()
-        {
-            BeginMusicClientRpc(hasBeenHeld);
         }
         [ClientRpc]
         public void BeginMusicClientRpc(bool held)
         {
             hasBeenHeld = held;
             BeginMusic();
+        }
+        [ServerRpc (RequireOwnership = false)]
+        public void FloorRotServerRpc(int rot)
+        {
+            FloorRotClientRpc(rot);
+        }
+        [ClientRpc]
+        public void FloorRotClientRpc(int rot)
+        {
+            floorYRot = rot;
         }
     }
 }

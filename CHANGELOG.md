@@ -1,3 +1,8 @@
+## 0.14.3
+- Finally ACTUALLY fixed The Worm's animations not syncing (12 hours straight, bruh)
+- Possibly fixed The Worm throw audio/animation not playing
+- Lowered Clover Bee's buzz volume
+
 ## 0.14.2
 - Fixed minor visual bug with Clover Bee's stinger
 
