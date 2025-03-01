@@ -84,11 +84,6 @@ namespace LCWildCardMod.Items.Clover
                 stingerTime += Mathf.Abs(Time.deltaTime * 8f);
                 if (stingerTime >= 1)
                 {
-                    if (base.IsServer)
-                    {
-                        log.LogDebug("Clover Bee Resetting Projectile");
-                        itemAnimator.SetTrigger("New Stinger");
-                    }
                     stingerHitSpark.Play();
                     isShooting = false;
                     StartCoroutine(WaitForParticles());
@@ -113,6 +108,11 @@ namespace LCWildCardMod.Items.Clover
             yield return new WaitUntil(() => !stingerHitSpark.IsAlive());
             stinger.localPosition = localPosition;
             stingerTime = 0;
+            log.LogDebug("Clover Bee Resetting Projectile");
+            if (base.IsServer)
+            {
+                itemAnimator.SetTrigger("New Stinger");
+            }
         }
         public void SetNecklaceController(CloverNecklace necklace)
         {

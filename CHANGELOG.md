@@ -1,3 +1,6 @@
+## 0.14.2
+- Fixed minor visual bug with Clover Bee's stinger
+
 ## 0.14.1
 - Added particle effects to Clover Bee to better indicate the shot and the hit
 
