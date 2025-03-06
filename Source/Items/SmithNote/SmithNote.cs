@@ -12,7 +12,10 @@ namespace LCWildCardMod.Items.SmithNote
 {
     public class SmithNote : NoisemakerProp
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public Texture2D[] debugTextures;
+        public GameObject hudTextures;
+        public Animator localHudAnim;
         public AudioSource spawnMusic;
         public AudioClip laughAudio;
         public AudioClip writingSound;
@@ -29,6 +32,7 @@ namespace LCWildCardMod.Items.SmithNote
         public PlayerControllerB killingPlayer;
         public bool isKillRunning = false;
         public int lastFrameLivingPlayers;
+        public List<SmithNote> allNotes;
         internal Coroutine killCoroutine;
         private System.Random random;
         public override void OnNetworkSpawn()
@@ -37,10 +41,46 @@ namespace LCWildCardMod.Items.SmithNote
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
             lastFrameLivingPlayers = StartOfRound.Instance.livingPlayers;
+            if (FindObjectsOfType<SmithNote>().Length == 1)
+            {
+                log.LogDebug("First Smith Note Spawned");
+                localHudAnim = Instantiate(hudTextures, GameNetworkManager.Instance.localPlayerController.playerHudUIContainer).GetComponent<Animator>();
+                StartCoroutine(WaitGeneratorCoroutine());
+            }
             WildCardMod.wildcardKeyBinds.WildCardButton.performed += SelectPage;
             if (base.IsOwner)
             {
                 BeginMusicServerRpc();
+            }
+        }
+        public IEnumerator WaitGeneratorCoroutine()
+        {
+            yield return new WaitUntil(() => RoundManager.Instance.dungeonFinishedGeneratingForAllPlayers);
+            allNotes = FindObjectsOfType<SmithNote>().ToList();
+            for (int i = 0; i < allNotes.Count; i++)
+            {
+                if (allNotes[i] == this)
+                {
+                    log.LogDebug($"Skipping Smith Note {i + 1}");
+                    continue;
+                }
+                allNotes[i].allNotes = this.allNotes;
+                allNotes[i].localHudAnim = this.localHudAnim;
+                log.LogDebug($"Adding Variables to Smith Note {i + 1}");
+            }
+        }
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            if (allNotes.Count == 1)
+            {
+                log.LogDebug("I am the Last Smith Note");
+                Destroy(localHudAnim.gameObject);
+            }
+            for (int i = 0; i < allNotes.Count; i++)
+            {
+                log.LogDebug($"Removing myself from Smith Note {i + 1}");
+                allNotes[i].allNotes.Remove(this);
             }
         }
         public override void EquipItem()
@@ -358,6 +398,7 @@ namespace LCWildCardMod.Items.SmithNote
                     HUDManager.Instance.UIAudio.PlayOneShot(laughAudio, 2f);
                     WildCardMod.Log.LogDebug($"Smith Note Killing This Player!");
                     killingPlayer.JumpToFearLevel(1f);
+                    localHudAnim.SetTrigger("Kill");
                     killCoroutine = StartCoroutine(KillCoroutine());
                 }
                 if (playerHeldBy == GameNetworkManager.Instance.localPlayerController)

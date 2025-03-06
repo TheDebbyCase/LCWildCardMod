@@ -7,7 +7,7 @@ namespace LCWildCardMod.Config
 {
     public class WildCardConfig
     {
-        BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         internal readonly List<ConfigEntry<bool>> isScrapEnabled = new List<ConfigEntry<bool>>();
         internal readonly List<ConfigEntry<string>> scrapSpawnWeights = new List<ConfigEntry<string>>();
         internal readonly List<ConfigEntry<bool>> isSkinEnabled = new List<ConfigEntry<bool>>();

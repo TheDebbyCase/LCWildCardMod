@@ -187,12 +187,12 @@ namespace LCWildCardMod
                 {
                     if (!ModConfig.useDefaultMapObjectCurve[i].Value)
                     {
-                        mapObjectsList[i].levelCurve = mapClass.MapObjectFunc;
+                        mapObjectsList[i].curveFunc = mapClass.MapObjectFunc;
                         Log.LogInfo($"Using config settings for \"{mapObjectsList[i].mapObjectName}\"'s amount curve!");
                     }
                     else
                     {
-                        mapObjectsList[i].levelCurve = mapClass.MapObjectFunc;
+                        mapObjectsList[i].curveFunc = mapClass.MapObjectFunc;
                     }
                     NetworkPrefabs.RegisterNetworkPrefab(mapObjectsList[i].spawnableMapObject.prefabToSpawn);
                     Utilities.FixMixerGroups(mapObjectsList[i].spawnableMapObject.prefabToSpawn);
@@ -200,7 +200,7 @@ namespace LCWildCardMod
                     {
                         LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
                     }
-                    LethalLib.Modules.MapObjects.RegisterMapObject(mapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, mapObjectsList[i].levelCurve);
+                    LethalLib.Modules.MapObjects.RegisterMapObject(mapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, mapObjectsList[i].curveFunc);
                     Log.LogDebug($"\"{mapObjectsList[i].mapObjectName}\" map object was loaded!");
                 }
                 else
@@ -218,8 +218,8 @@ namespace LCWildCardMod
                 {
                     LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
                 }
-                autoMapObjectsList[i].levelCurve = mapClass.AutoMapObjectFunc;
-                LethalLib.Modules.MapObjects.RegisterMapObject(autoMapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, autoMapObjectsList[i].levelCurve);
+                autoMapObjectsList[i].curveFunc = mapClass.AutoMapObjectFunc;
+                LethalLib.Modules.MapObjects.RegisterMapObject(autoMapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, autoMapObjectsList[i].curveFunc);
                 Log.LogDebug($"\"{autoMapObjectsList[i].mapObjectName}\" is being handled automatically!");
             }
             harmony.PatchAll();

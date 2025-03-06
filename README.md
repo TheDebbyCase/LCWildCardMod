@@ -154,7 +154,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Honeycomb Pendant</summary>
 
-	Original design by [Cloverinari](https://bsky.app/profile/cloverinari.net),  
+	Original design by [hodusae](https://hodusae.carrd.co/),  
 	Take control of the bees
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/HoneycombPendantPreview.png)
@@ -212,6 +212,17 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	
 	</details>
 
+- Traps
+	<details>
+	<summary>Worm Pit</summary>
+
+	Original design by [Giwi](https://www.twitch.tv/giwi),  
+	She's back and angrier than ever!
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormPitPreview.png)
+	
+	</details>
+
 I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD
@@ -224,7 +235,7 @@ Subscribe to [WILDCARD](https://www.youtube.com/@WILDCARDorg)!
 
 - [kael](https://bsky.app/profile/kael3.bsky.social) for just being so supportive, I just really wanted to put xem on here!
 - [SunflowerSmith](https://www.twitch.tv/sunflowersmith) for adding the mod to their group's modpack, playing with it on-stream, and making suggestions directly!
-- [iamfixated](https://bsky.app/profile/iamfixated.bsky.social) for the emote I used for the inventory icon of the Smith Note!
+- [iamfixated](https://bsky.app/profile/iamfixated.bsky.social) for the emotes I use for the Smith Note!
 - [Trashfourlife](https://bsky.app/profile/trashfourlife.bsky.social) for finding some Vulpixie voice clips!
 - [OoblesWoobles](https://www.twitch.tv/oobleswoobles) for the idea for Giwi Leviathan!
 - [Raindrop](https://discord.gg/TgXEcxUemF) for finding and editing the Smith Note giggle sound effect!

@@ -92,7 +92,7 @@ namespace LCWildCardMod.Items
                             RaycastHit[] objectsHit = Physics.SphereCastAll(parentComponent.transform.position, 0.5f, playerHeldBy.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
                             for (int i = 0; i < objectsHit.Length; i++)
                             {
-                                if (playerHeldBy != null && objectsHit[i].transform.TryGetComponent<IHittable>(out var hitComponent) && !hitList.Contains(hitComponent) && playerHeldBy.transform != objectsHit[i].transform && (objectsHit[i].transform.GetComponent<PlayerControllerB>() || objectsHit[i].transform.GetComponent<EnemyAICollisionDetect>()))
+                                if (playerHeldBy != null && objectsHit[i].transform.TryGetComponent(out IHittable hitComponent) && !hitList.Contains(hitComponent) && playerHeldBy.transform != objectsHit[i].transform && (objectsHit[i].transform.GetComponent<PlayerControllerB>() || objectsHit[i].transform.GetComponent<EnemyAICollisionDetect>()))
                                 {
                                     hitList.Add(hitComponent);
                                     if (objectsHit[i].transform.TryGetComponent<PlayerControllerB>(out PlayerControllerB player))

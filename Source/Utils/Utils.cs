@@ -153,11 +153,19 @@ namespace LCWildCardMod.Utils
     {
         public string mapObjectName;
         public SpawnableMapObject spawnableMapObject;
-        public Func<SelectableLevel, AnimationCurve> levelCurve;
+        public Func<SelectableLevel, AnimationCurve> curveFunc;
+        public List<LevelCurve> levelCurves;
         public bool autoHandle;
+    }
+    [Serializable]
+    public class LevelCurve
+    {
+        public SelectableLevel level;
+        public AnimationCurve curve;
     }
     public class MapObjectHelper
     {
+        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public static WildCardConfig ModConfig;
         public static List<MapObject> mapObjects;
         public static List<MapObject> autoMapObjects;
@@ -171,7 +179,41 @@ namespace LCWildCardMod.Utils
         }
         public AnimationCurve MapObjectFunc(SelectableLevel level)
         {
-            AnimationCurve curve = new AnimationCurve(new Keyframe(0, ModConfig.mapObjectMinNo[mapIndex].Value), new Keyframe(1, ModConfig.mapObjectMaxNo[mapIndex].Value));
+            AnimationCurve curve;
+            if (ModConfig.useDefaultMapObjectCurve[mapIndex].Value)
+            {
+                List<SelectableLevel> levelsList = new List<SelectableLevel>();
+                for (int i = 0; i < mapObjects[mapIndex].levelCurves.Count; i++)
+                {
+                    levelsList.Add(mapObjects[mapIndex].levelCurves[i].level);
+                }
+                for (int i = 0; i < mapObjects[mapIndex].levelCurves.Count; i++)
+                {
+                    LevelCurve levelCurve = mapObjects[mapIndex].levelCurves[i];
+                    if (!levelsList.Contains(levelCurve.level))
+                    {
+                        continue;
+                    }
+                    else if (levelCurve.level == level)
+                    {
+                        curve = levelCurve.curve;
+                        IterateIndices();
+                        return curve;
+                    }
+                }
+                curve = mapObjects[mapIndex].spawnableMapObject.numberToSpawn;
+                IterateIndices();
+                return curve;
+            }
+            else
+            {
+                curve = new AnimationCurve(new Keyframe(0, ModConfig.mapObjectMinNo[mapIndex].Value), new Keyframe(1, ModConfig.mapObjectMaxNo[mapIndex].Value));
+                IterateIndices();
+                return curve;
+            }
+        }
+        public void IterateIndices()
+        {
             if (levelIndex == StartOfRound.Instance.levels.Length)
             {
                 levelIndex = 0;
@@ -182,21 +224,31 @@ namespace LCWildCardMod.Utils
                 }
             }
             levelIndex++;
-            return curve;
         }
         public AnimationCurve AutoMapObjectFunc(SelectableLevel level)
         {
-            AnimationCurve curve = autoMapObjects[mapIndex].spawnableMapObject.numberToSpawn;
-            if (levelIndex == StartOfRound.Instance.levels.Length)
+            AnimationCurve curve;
+            List<SelectableLevel> levelsList = new List<SelectableLevel>();
+            for (int i = 0; i < autoMapObjects[mapIndex].levelCurves.Count; i++)
             {
-                levelIndex = 0;
-                mapIndex++;
-                if (mapIndex == autoMapObjects.Count)
+                levelsList.Add(autoMapObjects[mapIndex].levelCurves[i].level);
+            }
+            for (int i = 0; i < autoMapObjects[mapIndex].levelCurves.Count; i++)
+            {
+                LevelCurve levelCurve = autoMapObjects[mapIndex].levelCurves[i];
+                if (!levelsList.Contains(levelCurve.level))
                 {
-                    mapIndex = 0;
+                    continue;
+                }
+                else if (levelCurve.level == level)
+                {
+                    curve = levelCurve.curve;
+                    IterateIndices();
+                    return curve;
                 }
             }
-            levelIndex++;
+            curve = autoMapObjects[mapIndex].spawnableMapObject.numberToSpawn;
+            IterateIndices();
             return curve;
         }
     }

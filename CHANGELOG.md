@@ -1,3 +1,9 @@
+## 0.15.0
+- Updated README
+- Added Worm Pit trap!
+- Fixed Map Object level curves and added more customisability
+- Added a HUD effect to the player being killed by the Smith Note
+
 ## 0.14.4
 - Fixed an error when dying with or losing the Smith Halo being thrown
 - Improved Clauvio Mask peeking to be more user friendly
