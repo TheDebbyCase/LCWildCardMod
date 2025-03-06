@@ -1,6 +1,5 @@
 ﻿using GameNetcodeStuff;
 using LCWildCardMod.Utils;
-using LethalLib.Modules;
 using System.Collections.Generic;
 using Unity.Netcode;
 using Unity.Netcode.Components;
