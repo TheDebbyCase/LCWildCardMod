@@ -160,7 +160,7 @@ namespace LCWildCardMod.Utils
     [Serializable]
     public class LevelCurve
     {
-        public SelectableLevel level;
+        public string level;
         public AnimationCurve curve;
     }
     public class MapObjectHelper
@@ -182,7 +182,7 @@ namespace LCWildCardMod.Utils
             AnimationCurve curve;
             if (ModConfig.useDefaultMapObjectCurve[mapIndex].Value)
             {
-                List<SelectableLevel> levelsList = new List<SelectableLevel>();
+                List<string> levelsList = new List<string>();
                 for (int i = 0; i < mapObjects[mapIndex].levelCurves.Count; i++)
                 {
                     levelsList.Add(mapObjects[mapIndex].levelCurves[i].level);
@@ -194,7 +194,7 @@ namespace LCWildCardMod.Utils
                     {
                         continue;
                     }
-                    else if (levelCurve.level == level)
+                    else if (levelCurve.level == level.name)
                     {
                         curve = levelCurve.curve;
                         IterateIndices();
@@ -228,7 +228,7 @@ namespace LCWildCardMod.Utils
         public AnimationCurve AutoMapObjectFunc(SelectableLevel level)
         {
             AnimationCurve curve;
-            List<SelectableLevel> levelsList = new List<SelectableLevel>();
+            List<string> levelsList = new List<string>();
             for (int i = 0; i < autoMapObjects[mapIndex].levelCurves.Count; i++)
             {
                 levelsList.Add(autoMapObjects[mapIndex].levelCurves[i].level);
@@ -240,7 +240,7 @@ namespace LCWildCardMod.Utils
                 {
                     continue;
                 }
-                else if (levelCurve.level == level)
+                else if (levelCurve.level == level.name)
                 {
                     curve = levelCurve.curve;
                     IterateIndices();

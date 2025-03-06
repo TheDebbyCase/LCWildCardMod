@@ -1,3 +1,6 @@
+## 0.15.1
+- Accidentally uploaded the bundle with a bunch of junk assets, reduced the filesize now!
+
 ## 0.15.0
 - Updated README
 - Added Worm Pit trap!
