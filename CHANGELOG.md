@@ -1,3 +1,6 @@
+## 0.16.1
+- Updated WILDCARD Cosmetics dependency version
+
 ## 0.16.0
 - Added WILDCARD Cosmetics as a dependency (it can be safely uninstalled)
 
