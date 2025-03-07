@@ -15,13 +15,14 @@ namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
     [BepInDependency("BMX.LobbyCompatibility", DependencyFlags.SoftDependency)]
+    [BepInDependency("me.swipez.melonloader.morecompany", DependencyFlags.SoftDependency)]
     [BepInDependency("evaisa.lethallib", DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", DependencyFlags.HardDependency)]
     public class WildCardMod : BaseUnityPlugin
     {
         internal const string modGUID = "deB.WildCard";
         internal const string modName = "WILDCARD Stuff";
-        internal const string modVersion = "0.15.1";
+        internal const string modVersion = "0.16.0";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;

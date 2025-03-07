@@ -1,3 +1,6 @@
+## 0.16.0
+- Added WILDCARD Cosmetics as a dependency (it can be safely uninstalled)
+
 ## 0.15.1
 - Accidentally uploaded the bundle with a bunch of junk assets, reduced the filesize now!
 
