@@ -144,7 +144,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Clover Bee</summary>
 
-	Original design by [Cloverinari](https://bsky.app/profile/cloverinari.net),  
+	Original design by [Cloverinari](https://www.twitch.tv/cloverinari),  
 	A bee with an attitude
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/CloverBeePreview.png)
@@ -164,7 +164,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Clauvio Mouse</summary>
 
-	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social),  
+	Original design by [Clauvio](https://www.twitch.tv/clauvio),  
 	A mouse with an attitude
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMousePreview.png)
@@ -174,7 +174,7 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	<details>
 	<summary>Clauvio Mask</summary>
 
-	Original design by [Clauvio](https://bsky.app/profile/clauvio.bsky.social),  
+	Original design by [Clauvio](https://www.twitch.tv/clauvio),  
 	Bring it back to the ship, I dare you
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMaskPreview.png)
