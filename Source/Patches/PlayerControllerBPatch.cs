@@ -2,6 +2,9 @@
 using HarmonyLib;
 using LCWildCardMod.Items;
 using LCWildCardMod.Items.Fyrus;
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
 namespace LCWildCardMod.Patches
 {
     [HarmonyPatch(typeof(PlayerControllerB))]
@@ -14,12 +17,21 @@ namespace LCWildCardMod.Patches
         {
             if (causeOfDeath != CauseOfDeath.Gunshots)
             {
-                if (__instance.GetComponentInChildren<FyrusAttach>() != null)
+                FyrusStar[] fyrusStars = Object.FindObjectsByType<FyrusStar>(FindObjectsSortMode.None);
+                for (int i = 0; i < fyrusStars.Length; i++)
                 {
-                    log.LogDebug($"FyrusStar Saving Player from {causeOfDeath}");
-                    damageNumber = 0;
+                    FyrusStar star = fyrusStars[i];
+                    if (!star.starEffect)
+                    {
+                        continue;
+                    }
+                    else if (star.consumedPlayer == __instance)
+                    {
+                        log.LogDebug($"FyrusStar Saving Player from {causeOfDeath}");
+                        damageNumber = 0;
+                    }
                 }
-                else if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0 && damageNumber >= __instance.health)
+                if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0 && damageNumber >= __instance.health)
                 {
                     log.LogDebug($"Halo Saving Player from {causeOfDeath}");
                     __instance.health = damageNumber + 1;
@@ -37,12 +49,21 @@ namespace LCWildCardMod.Patches
         {
             if (causeOfDeath == CauseOfDeath.Gunshots)
             {
-                if (__instance.GetComponentInChildren<FyrusAttach>() != null)
+                FyrusStar[] fyrusStars = Object.FindObjectsByType<FyrusStar>(FindObjectsSortMode.None);
+                for (int i = 0; i < fyrusStars.Length; i++)
                 {
-                    log.LogDebug($"FyrusStar Saving Player from {causeOfDeath}");
-                    return false;
+                    FyrusStar star = fyrusStars[i];
+                    if (!star.starEffect)
+                    {
+                        continue;
+                    }
+                    else if (star.consumedPlayer == __instance)
+                    {
+                        log.LogDebug($"FyrusStar Saving Player from {causeOfDeath}");
+                        return false;
+                    }
                 }
-                else if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0)
+                if (__instance.isHoldingObject && __instance.currentlyHeldObjectServer.TryGetComponent<SmithHalo>(out SmithHalo haloRef) && haloRef.isExhausted == 0)
                 {
                     log.LogDebug($"Halo Saving Player from {causeOfDeath}");
                     __instance.health = 1;

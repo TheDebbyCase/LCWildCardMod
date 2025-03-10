@@ -12,6 +12,7 @@ namespace LCWildCardMod.Items.Fyrus
         public AudioClip oofClip;
         public TrailRenderer trailRenderer;
         public Item newProperties;
+        public PlayerControllerB consumedPlayer;
         public bool starEffect;
         public float speedMultiplier = 1.25f;
         public override void OnNetworkSpawn()
@@ -32,8 +33,11 @@ namespace LCWildCardMod.Items.Fyrus
         }
         public IEnumerator StarCoroutine(PlayerControllerB player)
         {
+            log.LogDebug($"{player.playerUsername} has consumed Fyrus Star");
             musicSource.PlayOneShot(consumeClip, 1f);
+            consumedPlayer = player;
             yield return new WaitForSeconds(1.2f);
+            log.LogDebug($"{player.playerUsername} has begun Fyrus Star incincibility");
             starEffect = true;
             player.movementSpeed *= speedMultiplier;
             musicSource.Play();
@@ -44,6 +48,7 @@ namespace LCWildCardMod.Items.Fyrus
             trailRenderer.emitting = false;
             musicAudioObject.parent = this.transform;
             starEffect = false;
+            log.LogDebug($"{player.playerUsername}'s Fyrus Star invincibility has ended");
             yield return new WaitForSeconds(0.75f);
             this.NetworkObject.Despawn();
         }
