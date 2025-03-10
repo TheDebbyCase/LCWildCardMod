@@ -1,3 +1,6 @@
+## 0.16.2
+- Removed redundant code for Fyrus Star
+
 ## 0.16.1
 - Updated WILDCARD Cosmetics dependency version
 
