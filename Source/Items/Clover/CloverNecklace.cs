@@ -18,7 +18,10 @@ namespace LCWildCardMod.Items.Clover
             if (necklaceObjects.Length > 1 || beeObjects.Length == 0)
             {
                 log.LogDebug($"{itemProperties.itemName} is Despawning");
-                this.NetworkObject.Despawn();
+                if (base.IsServer)
+                {
+                    this.NetworkObject.Despawn();
+                }
             }
             else
             {

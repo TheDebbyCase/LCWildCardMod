@@ -151,7 +151,10 @@ namespace LCWildCardMod.Items
             yield return new WaitForSeconds(0.1f);
             Landmine.SpawnExplosion(this.transform.position + Vector3.up, true, 5f, 10f, 25, 10f);
             yield return new WaitForSeconds(0.5f);
-            this.NetworkObject.Despawn();
+            if (base.IsServer)
+            {
+                this.NetworkObject.Despawn();
+            }
         }
         public override int GetItemDataToSave()
         {
