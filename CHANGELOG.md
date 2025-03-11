@@ -1,3 +1,6 @@
+## 0.16.3
+- Fixed error spam from Worm Pit
+
 ## 0.16.2
 - Removed redundant code for Fyrus Star
 

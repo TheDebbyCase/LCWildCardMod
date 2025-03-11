@@ -209,7 +209,7 @@ namespace LCWildCardMod.MapObjects
         }
         public PlayerControllerB SelectNewPlayer(PlayerControllerB player)
         {
-            if ((player == null || player.isPlayerDead) || (Physics.Linecast(this.transform.position, player.playerGlobalHead.position, 1107298560, QueryTriggerInteraction.Ignore) && Vector3.Distance(this.transform.position, playerLookingAt.transform.position) >= 7.5f))
+            if (player == null || player.isPlayerDead || (Physics.Linecast(this.transform.position, player.playerGlobalHead.position, 1107298560, QueryTriggerInteraction.Ignore) && Vector3.Distance(this.transform.position, player.transform.position) >= 7.5f))
             {
                 if (playerLookingAt != null)
                 {
