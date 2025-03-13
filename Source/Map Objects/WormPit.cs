@@ -47,6 +47,10 @@ namespace LCWildCardMod.MapObjects
                 {
                     playerLookingAt = SelectNewPlayer(playersOverlapping[i]);
                 }
+                if (playersOverlapping.Count == 0)
+                {
+                    playerLookingAt = SelectNewPlayer(null);
+                }
                 switch (State)
                 {
                     case WormState.Peeping:
@@ -112,13 +116,13 @@ namespace LCWildCardMod.MapObjects
                         }
                     case WormState.Hungry:
                         {
-                            if (Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 5f || patience <= 0f)
+                            if ((playerLookingAt != null && Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 5f) || patience <= 0f)
                             {
                                 patience = 10f;
                                 State = WormState.Consuming;
                                 break;
                             }
-                            else if (Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 15f)
+                            else if (playerLookingAt != null && Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 15f)
                             {
                                 patience -= Time.deltaTime;
                             }

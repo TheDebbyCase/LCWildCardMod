@@ -1,3 +1,6 @@
+## 0.16.5
+- Fixed more Worm Pit error spam
+
 ## 0.16.4
 - Removed despawning logic from non-server clients to avoid error spams
 
