@@ -1,3 +1,6 @@
+## 0.16.6
+- Fixed Worm Pit fear effect lasting over 30 minutes (oopsies)
+
 ## 0.16.5
 - Fixed more Worm Pit error spam
 

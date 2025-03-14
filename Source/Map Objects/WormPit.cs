@@ -134,7 +134,7 @@ namespace LCWildCardMod.MapObjects
                             {
                                 for (int i = 0; i < playersOverlapping.Count; i++)
                                 {
-                                    playersOverlapping[i].IncreaseFearLevelOverTime(5f, 5f);
+                                    playersOverlapping[i].IncreaseFearLevelOverTime(2f, 1f);
                                     playersOverlapping[i].externalForces += (this.transform.position - playersOverlapping[i].transform.position).normalized * 3.5f;
                                 }
                                 if (sleepiness >= 12.5f)
@@ -166,7 +166,7 @@ namespace LCWildCardMod.MapObjects
                                 PitMusicClientRpc(true);
                                 for (int i = 0; i < playersOverlapping.Count; i++)
                                 {
-                                    playersOverlapping[i].JumpToFearLevel(0.5f, true);
+                                    playersOverlapping[i].JumpToFearLevel(0.25f, true);
                                 }
                             }
                             sleepiness += Time.deltaTime;
