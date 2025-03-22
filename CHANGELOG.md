@@ -1,3 +1,6 @@
+## 0.16.7
+- Hopefully fixed the last of the Worm Pit desyncs
+
 ## 0.16.6
 - Fixed Worm Pit fear effect lasting over 30 minutes (oopsies)
 

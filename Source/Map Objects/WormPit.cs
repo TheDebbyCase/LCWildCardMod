@@ -59,7 +59,7 @@ namespace LCWildCardMod.MapObjects
                             {
                                 if (playerLookingAt != null)
                                 {
-                                    playerLookingAt.IncreaseFearLevelOverTime(1f, 0.5f);
+                                    PlayerFearIncreaseClientRpc(true, 1f, 0.5f, playerLookingAt.actualClientId);
                                     IrisLookClientRpc(false, playerLookingAt.playerClientId);
                                 }
                                 if (peepCooldown >= peepWaitHold)
@@ -134,8 +134,8 @@ namespace LCWildCardMod.MapObjects
                             {
                                 for (int i = 0; i < playersOverlapping.Count; i++)
                                 {
-                                    playersOverlapping[i].IncreaseFearLevelOverTime(2f, 1f);
-                                    playersOverlapping[i].externalForces += (this.transform.position - playersOverlapping[i].transform.position).normalized * 3.5f;
+                                    PlayerFearIncreaseClientRpc(true, 2f, 1f, playersOverlapping[i].actualClientId);
+                                    PlayerExternalForcesClientRpc(playersOverlapping[i].actualClientId);
                                 }
                                 if (sleepiness >= 12.5f)
                                 {
@@ -148,7 +148,7 @@ namespace LCWildCardMod.MapObjects
                                     State = WormState.Sleeping;
                                     break;
                                 }
-                                else if ((playersOverlapping.Count == 0 && sleepiness >= 7.5f))
+                                else if (playersOverlapping.Count == 0 && sleepiness >= 7.5f)
                                 {
                                     consuming = false;
                                     netAnim.SetTrigger("Emerge");
@@ -166,7 +166,7 @@ namespace LCWildCardMod.MapObjects
                                 PitMusicClientRpc(true);
                                 for (int i = 0; i < playersOverlapping.Count; i++)
                                 {
-                                    playersOverlapping[i].JumpToFearLevel(0.25f, true);
+                                    PlayerFearIncreaseClientRpc(false, 0.25f, 0, playersOverlapping[i].actualClientId);
                                 }
                             }
                             sleepiness += Time.deltaTime;
@@ -208,8 +208,11 @@ namespace LCWildCardMod.MapObjects
         }
         public void PitAudioAnim()
         {
-            miscSource.pitch = (float)random.Next(9, 11) / 10f;
-            miscSource.PlayOneShot(biteClip);
+            if (State == WormState.Consuming)
+            {
+                miscSource.pitch = (float)random.Next(9, 11) / 10f;
+                miscSource.PlayOneShot(biteClip);
+            }
         }
         public PlayerControllerB SelectNewPlayer(PlayerControllerB player)
         {
@@ -304,6 +307,31 @@ namespace LCWildCardMod.MapObjects
             else
             {
                 lookLerp = 0f;
+            }
+        }
+        //playersOverlapping[i].externalForces += (this.transform.position - playersOverlapping[i].transform.position).normalized * 3.5f;
+        [ClientRpc]
+        public void PlayerExternalForcesClientRpc(ulong id)
+        {
+            PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
+            if (player.actualClientId == id)
+            {
+                player.externalForces += (this.transform.position - player.transform.position).normalized * 3.5f;
+            }
+        }
+        [ClientRpc]
+        public void PlayerFearIncreaseClientRpc(bool overTime, float amount, float cap, ulong id)
+        {
+            if (GameNetworkManager.Instance.localPlayerController.actualClientId == id)
+            {
+                if (overTime)
+                {
+                    GameNetworkManager.Instance.localPlayerController.IncreaseFearLevelOverTime(amount, cap);
+                }
+                else
+                {
+                    GameNetworkManager.Instance.localPlayerController.JumpToFearLevel(amount);
+                }
             }
         }
         [ClientRpc]
