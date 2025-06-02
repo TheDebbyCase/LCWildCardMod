@@ -2,8 +2,6 @@
 using HarmonyLib;
 using LCWildCardMod.Items;
 using LCWildCardMod.Items.Fyrus;
-using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 namespace LCWildCardMod.Patches
 {

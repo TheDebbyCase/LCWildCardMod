@@ -20,7 +20,7 @@ namespace LCWildCardMod.MapObjects
         public Transform irisTransform;
         public NetworkAnimator netAnim;
         public float peepCooldown;
-        public float peepWaitBetween = 10f;
+        public float peepWaitBetween = 5f;
         public float peepWaitHold;
         public PlayerControllerB playerLookingAt;
         public List<PlayerControllerB> playersOverlapping = new List<PlayerControllerB>();
@@ -86,13 +86,13 @@ namespace LCWildCardMod.MapObjects
                                     PlaySquishClientRpc(id, pitch);
                                     netAnim.SetTrigger("Peep");
                                     netAnim.Animator.SetBool("HoldPeep", true);
-                                    peepWaitBetween = ((float)random.Next(50, 101) / 10f);
-                                    peepWaitHold = ((float)random.Next(30, 81) / 10f);
+                                    peepWaitBetween = ((float)random.Next(25, 76) / 10f);
+                                    peepWaitHold = ((float)random.Next(40, 71) / 10f);
                                     peeping = true;
                                     peepCooldown = 0f;
                                 }
                             }
-                            if (hunger >= 25f)
+                            if (hunger >= 5f)
                             {
                                 peeping = false;
                                 peepCooldown = 0f;
@@ -118,7 +118,7 @@ namespace LCWildCardMod.MapObjects
                         {
                             if ((playerLookingAt != null && Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 5f) || patience <= 0f)
                             {
-                                patience = 10f;
+                                patience = 5f;
                                 State = WormState.Consuming;
                                 break;
                             }
@@ -141,7 +141,7 @@ namespace LCWildCardMod.MapObjects
                                 {
                                     consuming = false;
                                     netAnim.SetTrigger("Emerge");
-                                    sleepiness = ((float)random.Next(75, 151) / 10f);
+                                    sleepiness = ((float)random.Next(50, 126) / 10f);
                                     float pitch = (float)random.Next(9, 11) / 10f;
                                     PlayGrowlClientRpc(pitch);
                                     PitMusicClientRpc(false);
@@ -208,11 +208,8 @@ namespace LCWildCardMod.MapObjects
         }
         public void PitAudioAnim()
         {
-            if (State == WormState.Consuming)
-            {
-                miscSource.pitch = (float)random.Next(9, 11) / 10f;
-                miscSource.PlayOneShot(biteClip);
-            }
+            miscSource.pitch = (float)random.Next(9, 11) / 10f;
+            miscSource.PlayOneShot(biteClip);
         }
         public PlayerControllerB SelectNewPlayer(PlayerControllerB player)
         {
@@ -309,7 +306,6 @@ namespace LCWildCardMod.MapObjects
                 lookLerp = 0f;
             }
         }
-        //playersOverlapping[i].externalForces += (this.transform.position - playersOverlapping[i].transform.position).normalized * 3.5f;
         [ClientRpc]
         public void PlayerExternalForcesClientRpc(ulong id)
         {

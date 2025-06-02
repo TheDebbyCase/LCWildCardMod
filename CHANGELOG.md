@@ -1,3 +1,7 @@
+## 0.16.8
+- Fixed an issue where the worm chomp noises were host only
+- Shoved some digicats into the pixel jars
+
 ## 0.16.7
 - Hopefully fixed the last of the Worm Pit desyncs
 

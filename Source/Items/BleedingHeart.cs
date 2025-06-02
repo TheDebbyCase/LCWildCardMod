@@ -60,7 +60,6 @@ namespace LCWildCardMod.Items
                     SetMagnitudeServerRpc(Mathf.Clamp01(GameNetworkManager.Instance.localPlayerController.moveInputVector.magnitude));
                     SetSensitivityServerRpc(IngamePlayerSettings.Instance.settings.lookSensitivity);
                 }
-                log.LogDebug($"Slosh Intensity: {(playerMovementMag + 0.5f) * (Mathf.Max(0.1f, playerHeldBy.playerActions.Movement.Look.ReadValue<Vector2>().magnitude / 360f)) * Mathf.Max(1f, playerSensitivity)}");
                 itemAnimator.Animator.SetLayerWeight(sloshLayerIndex, Mathf.Max(0.1f, Mathf.Min(1f, (playerMovementMag + 0.5f) * (Mathf.Max(0.1f, playerHeldBy.playerActions.Movement.Look.ReadValue<Vector2>().magnitude / 360f)) * Mathf.Max(1f, playerSensitivity))));
             }
             float currentLiquidWeight = itemAnimator.Animator.GetLayerWeight(levelLayerIndex);
@@ -168,10 +167,6 @@ namespace LCWildCardMod.Items
         public void ScrapValueClientRpc(int newValue)
         {
             SetScrapValue(newValue);
-            if (hasBeenHeld)
-            {
-                log.LogDebug($"Bleeding Heart Value: {scrapValue}, Starting Value: {startingValue}");
-            }
         }
         [ClientRpc]
         public void SetIntensityClientRpc(float intensity)
