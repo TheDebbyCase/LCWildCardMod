@@ -1,3 +1,8 @@
+## 0.16.9
+- Fixed an issue where worm chomp noises never stopped playing
+- Reduced the volume of the heart beats
+- Attempted to fix the bleeding heart explosion glitching, including preventing it from losing value in space
+
 ## 0.16.8
 - Fixed an issue where the worm chomp noises were host only
 - Shoved some digicats into the pixel jars

@@ -100,7 +100,7 @@ namespace LCWildCardMod.MapObjects
                                 hunger = 0f;
                                 float pitch = (float)random.Next(9, 11) / 10f;
                                 PlayGrowlClientRpc(pitch);
-                                State = WormState.Hungry;
+                                SetStateClientRpc(WormState.Hungry);
                                 break;
                             }
                             if (playerLookingAt != null && peeping)
@@ -119,7 +119,7 @@ namespace LCWildCardMod.MapObjects
                             if ((playerLookingAt != null && Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 5f) || patience <= 0f)
                             {
                                 patience = 5f;
-                                State = WormState.Consuming;
+                                SetStateClientRpc(WormState.Consuming);
                                 break;
                             }
                             else if (playerLookingAt != null && Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 15f)
@@ -145,7 +145,7 @@ namespace LCWildCardMod.MapObjects
                                     float pitch = (float)random.Next(9, 11) / 10f;
                                     PlayGrowlClientRpc(pitch);
                                     PitMusicClientRpc(false);
-                                    State = WormState.Sleeping;
+                                    SetStateClientRpc(WormState.Sleeping);
                                     break;
                                 }
                                 else if (playersOverlapping.Count == 0 && sleepiness >= 7.5f)
@@ -154,7 +154,7 @@ namespace LCWildCardMod.MapObjects
                                     netAnim.SetTrigger("Emerge");
                                     sleepiness = 0f;
                                     PitMusicClientRpc(false);
-                                    State = WormState.Peeping;
+                                    SetStateClientRpc(WormState.Peeping);
                                     break;
                                 }
                             }
@@ -180,7 +180,7 @@ namespace LCWildCardMod.MapObjects
                             }
                             else
                             {
-                                State = WormState.Peeping;
+                                SetStateClientRpc(WormState.Peeping);
                                 break;
                             }
                             break;
@@ -197,19 +197,30 @@ namespace LCWildCardMod.MapObjects
                 {
                     if (objectsHit[i].transform.TryGetComponent(out PlayerControllerB player))
                     {
-                        player.DamagePlayer(15, true, true, CauseOfDeath.Mauling, 0, false, this.transform.up * -10f);
+                        DamagePlayerCheckClientRpc(player.playerClientId);
                     }
-                    else if (objectsHit[i].transform.GetComponent<EnemyAICollisionDetect>() && objectsHit[i].transform.TryGetComponent(out IHittable hitComponent))
+                    else if (objectsHit[i].transform.TryGetComponent<EnemyAICollisionDetect>(out EnemyAICollisionDetect enemyCol))
                     {
-                        hitComponent.Hit(2, this.transform.up * -1f, null, true);
+                        enemyCol.mainScript.HitEnemyClientRpc(2, -1, true);
                     }
                 }
             }
         }
+        [ClientRpc]
+        public void DamagePlayerCheckClientRpc(ulong id)
+        {
+            if (GameNetworkManager.Instance.localPlayerController == StartOfRound.Instance.allPlayerScripts[(int)id])
+            {
+                GameNetworkManager.Instance.localPlayerController.DamagePlayer(15, true, true, CauseOfDeath.Mauling, 0, false, this.transform.up * -10f);
+            }
+        }
         public void PitAudioAnim()
         {
-            miscSource.pitch = (float)random.Next(9, 11) / 10f;
-            miscSource.PlayOneShot(biteClip);
+            if (State == WormState.Consuming)
+            {
+                miscSource.pitch = (float)random.Next(9, 11) / 10f;
+                miscSource.PlayOneShot(biteClip);
+            }
         }
         public PlayerControllerB SelectNewPlayer(PlayerControllerB player)
         {
@@ -307,12 +318,21 @@ namespace LCWildCardMod.MapObjects
             }
         }
         [ClientRpc]
+        public void SetStateClientRpc(WormState newState)
+        {
+            State = newState;
+        }
+        [ClientRpc]
         public void PlayerExternalForcesClientRpc(ulong id)
         {
             PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
             if (player.actualClientId == id)
             {
-                player.externalForces += (this.transform.position - player.transform.position).normalized * 3.5f;
+                Vector3 pitPlayerVector = this.transform.position - player.transform.position;
+                if (pitPlayerVector.magnitude < 5f || !Physics.Linecast(this.transform.position, player.cameraContainerTransform.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+                {
+                    player.externalForces += (pitPlayerVector).normalized * (3.5f / pitPlayerVector.magnitude);
+                }
             }
         }
         [ClientRpc]

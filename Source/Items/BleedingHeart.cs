@@ -24,6 +24,7 @@ namespace LCWildCardMod.Items
         public int playerSensitivity;
         public int levelLayerIndex;
         public int sloshLayerIndex;
+        public bool exploding;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -42,7 +43,7 @@ namespace LCWildCardMod.Items
         public override void Update()
         {
             base.Update();
-            if (base.IsServer && currentUseCooldown <= 0f && startingValue > 0)
+            if (base.IsServer && currentUseCooldown <= 0f && startingValue > 0 && !StartOfRound.Instance.inShipPhase)
             {
                 playerMovementMag = 0f;
                 if (scrapValue > 0)
@@ -79,8 +80,9 @@ namespace LCWildCardMod.Items
                     weightOverTime = 0f;
                 }
             }
-            if (scrapValue <= 0 && hasBeenHeld)
+            if (scrapValue <= 0 && hasBeenHeld && !exploding)
             {
+                exploding = true;
                 StartCoroutine(ExplodeCoroutine());
             }
         }
