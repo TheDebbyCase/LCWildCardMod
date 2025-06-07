@@ -22,7 +22,7 @@ namespace LCWildCardMod
     {
         internal const string modGUID = "deB.WildCard";
         internal const string modName = "WILDCARD Stuff";
-        internal const string modVersion = "0.16.9";
+        internal const string modVersion = "0.16.10";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;
@@ -206,8 +206,8 @@ namespace LCWildCardMod
                 }
                 else
                 {
-                    mapObjectsList.Remove(mapObjectsList[i]);
                     Log.LogInfo($"\"{mapObjectsList[i].mapObjectName}\" map object was disabled!");
+                    mapObjectsList.Remove(mapObjectsList[i]);
                     i--;
                 }
             }
