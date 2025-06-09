@@ -106,7 +106,7 @@ namespace LCWildCardMod.MapObjects
                             if (playerLookingAt != null && peeping)
                             {
                                 hunger += Time.deltaTime * 1.5f;
-                                if (Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 7.5f)
+                                if (Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 7.5f)
                                 {
                                     hunger += Time.deltaTime * 2f;
                                 }
@@ -116,13 +116,13 @@ namespace LCWildCardMod.MapObjects
                         }
                     case WormState.Hungry:
                         {
-                            if ((playerLookingAt != null && Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 5f) || patience <= 0f)
+                            if ((playerLookingAt != null && Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 5f) || patience <= 0f)
                             {
                                 patience = 5f;
                                 SetStateClientRpc(WormState.Consuming);
                                 break;
                             }
-                            else if (playerLookingAt != null && Vector3.Distance(this.transform.position, playerLookingAt.transform.position) <= 15f)
+                            else if (playerLookingAt != null && Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 15f)
                             {
                                 patience -= Time.deltaTime;
                             }
@@ -224,7 +224,7 @@ namespace LCWildCardMod.MapObjects
         }
         public PlayerControllerB SelectNewPlayer(PlayerControllerB player)
         {
-            if (player == null || player.isPlayerDead || (Physics.Linecast(this.transform.position, player.playerGlobalHead.position, 1107298560, QueryTriggerInteraction.Ignore) && Vector3.Distance(this.transform.position, player.transform.position) >= 7.5f))
+            if (player == null || player.isPlayerDead || (Physics.Linecast(this.transform.position + (Vector3.up / 2f), player.playerGlobalHead.position, 1107298560, QueryTriggerInteraction.Ignore) && Vector3.Distance(this.transform.position, player.transform.position) >= 7.5f))
             {
                 if (playerLookingAt != null)
                 {
@@ -232,7 +232,7 @@ namespace LCWildCardMod.MapObjects
                 }
                 return null;
             }
-            else if (player != playerLookingAt && (playerLookingAt == null || (Vector3.Distance(player.transform.position, this.transform.position) < Vector3.Distance(playerLookingAt.transform.position, this.transform.position))))
+            else if (player != playerLookingAt && (playerLookingAt == null || (playerLookingAt != null && Vector3.Distance(player.transform.position, this.transform.position + (Vector3.up / 2f)) < Vector3.Distance(playerLookingAt.transform.position, this.transform.position + (Vector3.up / 2f)))))
             {
                 if (playerLookingAt != player)
                 {
@@ -329,7 +329,7 @@ namespace LCWildCardMod.MapObjects
             if (player.actualClientId == id)
             {
                 Vector3 pitPlayerVector = this.transform.position - player.transform.position;
-                if (pitPlayerVector.magnitude < 5f || !Physics.Linecast(this.transform.position, player.cameraContainerTransform.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+                if (pitPlayerVector.magnitude < 5f || !Physics.Linecast(this.transform.position + (Vector3.up / 2f), player.cameraContainerTransform.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
                 {
                     player.externalForces += (pitPlayerVector).normalized * (3.5f / pitPlayerVector.magnitude);
                 }

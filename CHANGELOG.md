@@ -1,3 +1,9 @@
+## 0.16.11
+- Attempted to fix an issue where the Clover Necklace would not be added properly causing the game to break
+
+## 0.16.10
+- Fixed an issue where startup would error if the worm pit was disabled
+
 ## 0.16.9
 - Fixed an issue where worm chomp noises never stopped playing
 - Reduced the volume of the heart beats

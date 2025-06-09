@@ -22,7 +22,7 @@ namespace LCWildCardMod
     {
         internal const string modGUID = "deB.WildCard";
         internal const string modName = "WILDCARD Stuff";
-        internal const string modVersion = "0.16.10";
+        internal const string modVersion = "0.16.11";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;
@@ -219,7 +219,7 @@ namespace LCWildCardMod
                 {
                     LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
                 }
-                autoMapObjectsList[i].curveFunc = mapClass.AutoMapObjectFunc;
+                autoMapObjectsList[i].curveFunc = mapClass.MapObjectFunc;
                 LethalLib.Modules.MapObjects.RegisterMapObject(autoMapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, autoMapObjectsList[i].curveFunc);
                 Log.LogDebug($"\"{autoMapObjectsList[i].mapObjectName}\" is being handled automatically!");
             }
