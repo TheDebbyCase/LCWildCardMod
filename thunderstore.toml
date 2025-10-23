@@ -1,18 +1,18 @@
 [config]
-schemaVersion = "0.16.11"
+schemaVersion = "1.0.0"
 
 [package]
 namespace = "deB"
 name = "WILDCARDStuff"
-versionNumber = "0.16.11"
+versionNumber = "1.0.0"
 description = "Adds content based on YouTube org WILDCARD!"
 websiteUrl = "https://github.com/TheDebbyCase/LCWildCardMod"
 containsNsfwContent = false
 [package.dependencies]
 BepInEx-BepInExPack = "5.4.2100"
-Evaisa-LethalLib = "0.16.2"
-Rune580-LethalCompany_InputUtils = "0.7.7"
-Evaisa-FixPluginTypesSerialization = "1.1.2"
+Evaisa-LethalLib = "1.1.1"
+Rune580-LethalCompany_InputUtils = "0.7.10"
+Evaisa-FixPluginTypesSerialization = "1.1.4"
 deB-WILDCARD_Cosmetics = "1.0.1"
 
 
@@ -40,6 +40,6 @@ target = "./LICENSE"
 [publish]
 communities = ["lethal-company"]
 [publish.categories]
-lethal-company = ["bepinex", "mods", "items", "serverside"]
+lethal-company = ["bepinex", "mods", "items", "serverside", "clientside", "assetreplacements"]
 
 

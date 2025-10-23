@@ -26,13 +26,14 @@ namespace LCWildCardMod.Utils
         public string defaultRarities;
         public bool isBonus;
     }
-    public class SkinsClass : MonoBehaviour
+    public class SkinsClass
     {
         readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         readonly List<BepInEx.Configuration.ConfigEntry<int>> configChances = WildCardMod.ModConfig.skinApplyChance;
         readonly List<Skin> allSkins = WildCardMod.skinList;
         public void SetSkin(List<Skin> potentialSkins, EnemyAI enemy = null, GrabbableObject item = null)
         {
+            log.LogDebug($"Setting Skin for {enemy.enemyType.enemyName}");
             System.Random random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             Skin skinToApply = null;
             int nothingWeight = 0;
@@ -98,7 +99,7 @@ namespace LCWildCardMod.Utils
                         case "Clown horn":
                             {
                                 log.LogDebug($"Skin \"{skinToApply.skinName}\" is being applied!");
-                                Item newProperties = Instantiate(item.itemProperties);
+                                Item newProperties = UnityEngine.Object.Instantiate(item.itemProperties);
                                 newProperties.itemName = skinToApply.skinName;
                                 newProperties.isConductiveMetal = false;
                                 newProperties.grabSFX = skinToApply.newAudioClips[0];
@@ -163,7 +164,6 @@ namespace LCWildCardMod.Utils
     }
     public class MapObjectHelper
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         public static WildCardConfig ModConfig;
         public static List<MapObject> mapObjects;
         public static List<MapObject> autoMapObjects;

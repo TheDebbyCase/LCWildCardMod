@@ -1,6 +1,7 @@
 ﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
+using System.Linq;
 namespace LCWildCardMod.Patches
 {
     [HarmonyPatch(typeof(EnemyAI))]
@@ -8,23 +9,15 @@ namespace LCWildCardMod.Patches
     {
         static readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
         [HarmonyPatch(nameof(EnemyAI.Start))]
-        [HarmonyAfter(new string[] {"AudioKnight.StarlancerAIFix", "antlershed.lethalcompany.enemyskinregistry"})]
+        [HarmonyAfter(new string[] { "AudioKnight.StarlancerAIFix", "antlershed.lethalcompany.enemyskinregistry" })]
         [HarmonyPostfix]
-        private static void ChangeAssets(EnemyAI __instance)
+        public static void ChangeAssets(EnemyAI __instance)
         {
-            List<Skin> skins = new List<Skin>();
-            List<Skin> skinList = WildCardMod.skinList;
-            for (int i = 0; i < skinList.Count; i++)
-            {
-                if (skinList[i].targetEnemy != null && __instance.enemyType.enemyName == skinList[i].targetEnemy.enemyName)
-                {
-                    skins.Add(skinList[i]);
-                }
-            }
-            if (skins.Count > 0)
+            IEnumerable<Skin> skins = WildCardMod.skinList.Where((x) => x.targetEnemy != null && x.targetEnemy.enemyName == __instance.enemyType.enemyName);
+            if (skins.Count() > 0)
             {
                 log.LogDebug($"A \"{__instance.enemyType.enemyName}\" has spawned with potential skins!");
-                WildCardMod.skinsClass.SetSkin(skins, __instance);
+                WildCardMod.skinsClass.SetSkin(skins.ToList(), __instance);
             }
         }
     }

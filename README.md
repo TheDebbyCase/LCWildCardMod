@@ -11,7 +11,7 @@ Or follow me on [Bluesky](https://bsky.app/profile/thedebbycase.bsky.social)!
 See the Thunderstore page [here](https://thunderstore.io/c/lethal-company/p/deB/WILDCARDStuff),
 or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 
-## Content so far!
+## Content!
 
 - Scraps
 	<details>
@@ -222,8 +222,6 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/WormPitPreview.png)
 	
 	</details>
-
-I hope to add more soon! Make suggestions in the Discord!
 
 ## WILDCARD
 

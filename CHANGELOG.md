@@ -1,3 +1,7 @@
+## 1.0.0
+- The final update unless glaring issues are brought up
+- Slightly improved The Worm's animation code
+
 ## 0.16.11
 - Attempted to fix an issue where the Clover Necklace would not be added properly causing the game to break
 - Attempted to fix Worm Pit not working by moving its eyeline up slightly and adding a check or two

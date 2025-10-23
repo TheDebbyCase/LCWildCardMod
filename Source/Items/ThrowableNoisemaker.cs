@@ -1,6 +1,5 @@
 ﻿using Unity.Netcode;
 using UnityEngine;
-using Unity.Netcode.Components;
 using System.Collections.Generic;
 using UnityEngine.InputSystem;
 using System.Collections;

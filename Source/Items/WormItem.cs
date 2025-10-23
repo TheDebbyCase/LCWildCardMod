@@ -1,14 +1,19 @@
 ﻿using System.Collections;
 using Unity.Netcode;
+using Unity.Netcode.Components;
 using UnityEngine;
 namespace LCWildCardMod.Items
 {
+    public enum WormLook
+    {
+        Forward,
+        Left,
+        Right
+    }
     public class WormItem : ThrowableNoisemaker
     {
         readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
-        public bool LookingForward = true;
-        public bool LookingLeft;
-        public bool LookingRight;
+        public WormLook lookDirection = WormLook.Forward;
         public int playersFinishedForward;
         public int playersFinishedLeft;
         public int playersFinishedRight;
@@ -99,30 +104,30 @@ namespace LCWildCardMod.Items
                 {
                     yield return new WaitForSeconds(5f);
                     SetTriggerClientRpc("LookRight");
-                    yield return new WaitUntil(() => LookingRight);
+                    yield return new WaitUntil(() => lookDirection == WormLook.Right);
                     ResetTriggersClientRpc();
                     yield return new WaitForSeconds(3f);
                     SetTriggerClientRpc("LookForward");
-                    yield return new WaitUntil(() => LookingForward);
+                    yield return new WaitUntil(() => lookDirection == WormLook.Forward);
                     ResetTriggersClientRpc();
                     yield return new WaitForSeconds(1f);
                     SetTriggerClientRpc("LookLeft");
-                    yield return new WaitUntil(() => LookingLeft);
+                    yield return new WaitUntil(() => lookDirection == WormLook.Left);
                     ResetTriggersClientRpc();
                 }
                 else
                 {
                     yield return new WaitForSeconds(4f);
                     SetTriggerClientRpc("LookLeft");
-                    yield return new WaitUntil(() => LookingLeft);
+                    yield return new WaitUntil(() => lookDirection == WormLook.Left);
                     ResetTriggersClientRpc();
                     yield return new WaitForSeconds(2f);
                     SetTriggerClientRpc("LookRight");
-                    yield return new WaitUntil(() => LookingRight);
+                    yield return new WaitUntil(() => lookDirection == WormLook.Right);
                     ResetTriggersClientRpc();
                     yield return new WaitForSeconds(2f);
                     SetTriggerClientRpc("LookForward");
-                    yield return new WaitUntil(() => LookingForward);
+                    yield return new WaitUntil(() => lookDirection == WormLook.Forward);
                     ResetTriggersClientRpc();
                 }
             }
@@ -173,9 +178,7 @@ namespace LCWildCardMod.Items
                         if (playersFinishedForward >= StartOfRound.Instance.connectedPlayersAmount)
                         {
                             playersFinishedForward = 0;
-                            LookingForward = true;
-                            LookingLeft = false;
-                            LookingRight = false;
+                            lookDirection = WormLook.Forward;
                         }
                         break;
                     }
@@ -185,9 +188,7 @@ namespace LCWildCardMod.Items
                         if (playersFinishedLeft >= StartOfRound.Instance.connectedPlayersAmount)
                         {
                             playersFinishedLeft = 0;
-                            LookingForward = false;
-                            LookingLeft = true;
-                            LookingRight = false;
+                            lookDirection = WormLook.Left;
                         }
                         break;
                     }
@@ -197,9 +198,7 @@ namespace LCWildCardMod.Items
                         if (playersFinishedRight >= StartOfRound.Instance.connectedPlayersAmount)
                         {
                             playersFinishedRight = 0;
-                            LookingForward = false;
-                            LookingLeft = false;
-                            LookingRight = true;
+                            lookDirection = WormLook.Right;
                         }
                         break;
                     }
