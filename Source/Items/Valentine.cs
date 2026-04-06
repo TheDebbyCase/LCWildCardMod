@@ -16,6 +16,10 @@ namespace LCWildCardMod.Items
         public float intensityValue;
         public Vector3 lastUpdatePosition;
         public int standStillAmount = 0;
+        public void Awake()
+        {
+            beatAudio.volume /= 2f;
+        }
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();

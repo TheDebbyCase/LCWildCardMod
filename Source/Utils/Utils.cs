@@ -33,7 +33,6 @@ namespace LCWildCardMod.Utils
         readonly List<Skin> allSkins = WildCardMod.skinList;
         public void SetSkin(List<Skin> potentialSkins, EnemyAI enemy = null, GrabbableObject item = null)
         {
-            log.LogDebug($"Setting Skin for {enemy.enemyType.enemyName}");
             System.Random random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             Skin skinToApply = null;
             int nothingWeight = 0;

@@ -22,7 +22,7 @@ namespace LCWildCardMod
     {
         internal const string modGUID = "deB.WildCard";
         internal const string modName = "WILDCARD Stuff";
-        internal const string modVersion = "0.16.11";
+        internal const string modVersion = "1.0.1";
         internal static ManualLogSource Log = null!;
         internal static KeyBinds wildcardKeyBinds;
         internal static SkinsClass skinsClass;
@@ -35,7 +35,6 @@ namespace LCWildCardMod
         public static List<Skin> skinList = new List<Skin>();
         public static List<MapObject> mapObjectsList = new List<MapObject>();
         public static List<MapObject> autoMapObjectsList = new List<MapObject>();
-        [System.Diagnostics.CodeAnalysis.SuppressMessage("CodeQuality", "IDE0051:Remove unused private members", Justification = "<Pending>")]
         private void Awake()
         {
             wildcardKeyBinds = new KeyBinds();

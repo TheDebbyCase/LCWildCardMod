@@ -1,3 +1,7 @@
+## 1.0.1
+- Fixed internal mod version being incorrect
+- Fixed issue where item skins would not get applied
+
 ## 1.0.0
 - The final update unless glaring issues are brought up
 - Slightly improved The Worm's animation code
