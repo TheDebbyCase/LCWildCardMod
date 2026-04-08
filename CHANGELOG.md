@@ -1,3 +1,6 @@
+## 1.1.1
+- Vastly increased the time it takes for Clauvio Mouse to get agitated
+
 ## 1.1.0
 - Removed ability for passive noisemakers to trigger the company monster
 - Fixed Smith Note sometimes being unable to kill clients

@@ -99,7 +99,7 @@ namespace LCWildCardMod.Items
             agitating = true;
             while (agitate < 10)
             {
-                yield return new WaitForSeconds((float)random.Next(5, 50) / 10f);
+                yield return new WaitForSeconds((float)random.Next(25, 75) / 10f);
                 WalkieNoiseClientRpc();
                 agitate++;
             }
