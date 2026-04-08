@@ -1,3 +1,7 @@
+## 1.1.0
+- Removed ability for passive noisemakers to trigger the company monster
+- Fixed Smith Note sometimes being unable to kill clients
+
 ## 1.0.3
 - Forgot to build the .DLL, oops, also increased the sucking potential of the worm pit
 

@@ -82,7 +82,10 @@ namespace LCWildCardMod.Items
         {
             beatAudio.Stop();
             beatAudio.Play();
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            if (StartOfRound.Instance.currentLevel.planetHasTime)
+            {
+                RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            }
             WalkieTalkie.TransmitOneShotAudio(beatAudio, beatAudio.clip);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
             if ((base.transform.position - lastUpdatePosition).magnitude < 3f)

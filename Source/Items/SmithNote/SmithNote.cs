@@ -44,7 +44,6 @@ namespace LCWildCardMod.Items.SmithNote
             if (FindObjectsOfType<SmithNote>().Length == 1)
             {
                 log.LogDebug("First Smith Note Spawned");
-                localHudAnim = Instantiate(hudTextures, GameNetworkManager.Instance.localPlayerController.playerHudUIContainer).GetComponent<Animator>();
                 StartCoroutine(WaitGeneratorCoroutine());
             }
             WildCardMod.wildcardKeyBinds.WildCardButton.performed += SelectPage;
@@ -56,6 +55,7 @@ namespace LCWildCardMod.Items.SmithNote
         public IEnumerator WaitGeneratorCoroutine()
         {
             yield return new WaitUntil(() => RoundManager.Instance.dungeonFinishedGeneratingForAllPlayers);
+            localHudAnim = Instantiate(hudTextures, GameNetworkManager.Instance.localPlayerController.playerHudUIContainer).GetComponent<Animator>();
             allNotes = FindObjectsOfType<SmithNote>().ToList();
             for (int i = 0; i < allNotes.Count; i++)
             {

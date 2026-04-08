@@ -158,7 +158,10 @@ namespace LCWildCardMod.Items
         [ClientRpc]
         public void DogNoiseClientRpc()
         {
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 1f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            if (StartOfRound.Instance.currentLevel.planetHasTime)
+            {
+                RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 1f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            }
             if (playerHeldBy != null)
             {
                 playerHeldBy.timeSinceMakingLoudNoise = 0f;
