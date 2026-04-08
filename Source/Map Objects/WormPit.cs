@@ -331,7 +331,7 @@ namespace LCWildCardMod.MapObjects
                 Vector3 pitPlayerVector = this.transform.position - player.transform.position;
                 if (pitPlayerVector.magnitude < 5f || !Physics.Linecast(this.transform.position + (Vector3.up / 2f), player.cameraContainerTransform.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
                 {
-                    player.externalForces += (pitPlayerVector).normalized * (3.5f / pitPlayerVector.magnitude);
+                    player.externalForces += pitPlayerVector.normalized * (5f / pitPlayerVector.magnitude);
                 }
             }
         }

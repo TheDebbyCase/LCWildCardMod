@@ -1,3 +1,6 @@
+## 1.0.3
+- Forgot to build the .DLL, oops, also increased the sucking potential of the worm pit
+
 ## 1.0.2
 - Stopped Eyeless Dogs from being attracted to Clover Bee buzzes
 
