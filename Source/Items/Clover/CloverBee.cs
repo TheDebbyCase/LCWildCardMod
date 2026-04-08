@@ -164,7 +164,6 @@ namespace LCWildCardMod.Items.Clover
             buzzSource.pitch = pitch;
             buzzSource.Play();
             WalkieTalkie.TransmitOneShotAudio(buzzSource, buzzSource.clip);
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
         }
         [ServerRpc(RequireOwnership = false)]
         public void ShootServerRpc(Vector3 target, float pitch)

@@ -1,3 +1,6 @@
+## 1.0.2
+- Stopped Eyeless Dogs from being attracted to Clover Bee buzzes
+
 ## 1.0.1
 - Fixed internal mod version being incorrect
 - Fixed issue where item skins would not get applied
