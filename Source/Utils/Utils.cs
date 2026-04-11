@@ -8,14 +8,29 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 namespace LCWildCardMod.Utils
 {
-    public class KeyBinds : LcInputActions
+    internal static class EventsClass
+    {
+        internal delegate void RoundStart();
+        internal delegate void RoundEnd();
+        internal static event RoundStart OnRoundStart;
+        internal static event RoundEnd OnRoundEnd;
+        internal static void RoundStarted()
+        {
+            OnRoundStart.Invoke();
+        }
+        internal static void RoundEnded()
+        {
+            OnRoundEnd.Invoke();
+        }
+    }
+    internal class KeyBinds : LcInputActions
     {
         [InputAction("<Keyboard>/r", Name = "WildCardUse")]
-        public InputAction WildCardButton { get; set; }
+        internal InputAction WildCardButton { get; set; }
     }
-    public class SoftDepHelper
+    internal static class SoftDepHelper
     {
-        public static void LobCompatRegister()
+        internal static void LobCompatRegister()
         {
             PluginHelper.RegisterPlugin(WildCardMod.modGUID, new Version(WildCardMod.modVersion), CompatibilityLevel.Everyone, VersionStrictness.Patch);
         }
@@ -26,111 +41,158 @@ namespace LCWildCardMod.Utils
         public string defaultRarities;
         public bool isBonus;
     }
-    public class SkinsClass
+    internal static class SkinsClass
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
-        readonly List<BepInEx.Configuration.ConfigEntry<int>> configChances = WildCardMod.ModConfig.skinApplyChance;
-        readonly List<Skin> allSkins = WildCardMod.skinList;
-        public void SetSkin(List<Skin> potentialSkins, EnemyAI enemy = null, GrabbableObject item = null)
+        static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
+        static List<BepInEx.Configuration.ConfigEntry<int>> ConfigChances => WildCardMod.Instance.ModConfig.skinApplyChance;
+        internal static void SetSkin(EnemyAI enemy)
+        {
+            Skin skinToApply = GetRandomSkin(enemy.enemyType.enemyName, SkinType.Enemy);
+            if (skinToApply == null)
+            {
+                return;
+            }
+            switch ((skinToApply.target as EnemyType).enemyName)
+            {
+                case "Earth Leviathan":
+                    {
+                        Log.LogDebug($"Skin \"{skinToApply.skinName}\" is being applied!");
+                        Transform meshContainerTransform = enemy.transform.Find("MeshContainer");
+                        SkinnedMeshRenderer meshRenderer = meshContainerTransform.Find("Renderer").GetComponent<SkinnedMeshRenderer>();
+                        meshRenderer.sharedMesh = skinToApply.newMesh;
+                        meshRenderer.sharedMaterial = skinToApply.newMaterial;
+                        meshContainerTransform.Find("Armature").Find("Bone").Find("Bone.001").Find("Bone.003").Find("Bone.002").Find("ScanNode").GetComponent<ScanNodeProperties>().headerText = skinToApply.skinName;
+                        SandWormAI sandWorm = enemy.transform.GetComponent<SandWormAI>();
+                        sandWorm.ambientRumbleSFX[0] = skinToApply.newAudioClips[0];
+                        sandWorm.ambientRumbleSFX[1] = skinToApply.newAudioClips[0];
+                        sandWorm.ambientRumbleSFX[2] = skinToApply.newAudioClips[0];
+                        sandWorm.creatureSFX.volume *= 1.5f;
+                        sandWorm.roarSFX[0] = skinToApply.newAudioClips[1];
+                        sandWorm.roarSFX[1] = skinToApply.newAudioClips[2];
+                        break;
+                    }
+                default:
+                    {
+                        Log.LogError($"\"{skinToApply.skinName}\" did not match any known enemy type!");
+                        break;
+                    }
+            }
+        }
+        internal static void SetSkin(GrabbableObject item)
+        {
+            Skin skinToApply = GetRandomSkin(item.itemProperties.itemName, SkinType.Item);
+            if (skinToApply == null)
+            {
+                return;
+            }
+            switch ((skinToApply.target as Item).itemName)
+            {
+                case "Clown horn":
+                    {
+                        Log.LogDebug($"Skin \"{skinToApply.skinName}\" is being applied!");
+                        Item newProperties = UnityEngine.Object.Instantiate(item.itemProperties);
+                        newProperties.itemName = skinToApply.skinName;
+                        newProperties.isConductiveMetal = false;
+                        newProperties.grabSFX = skinToApply.newAudioClips[0];
+                        newProperties.dropSFX = skinToApply.newAudioClips[1];
+                        newProperties.toolTips[0] = "Squeeze : [LMB]";
+                        newProperties.positionOffset = new Vector3(0.05f, 0.15f, -0.05f);
+                        item.useCooldown = 0.5f;
+                        MeshFilter prefabMeshFilter = newProperties.spawnPrefab.GetComponent<MeshFilter>();
+                        prefabMeshFilter.mesh = skinToApply.newMesh;
+                        prefabMeshFilter.sharedMesh = skinToApply.newMesh;
+                        MeshFilter itemMeshFilter = item.transform.GetComponent<MeshFilter>();
+                        itemMeshFilter.mesh = skinToApply.newMesh;
+                        itemMeshFilter.sharedMesh = skinToApply.newMesh;
+                        MeshRenderer itemMeshRenderer = item.transform.GetComponent<MeshRenderer>();
+                        itemMeshRenderer.material = skinToApply.newMaterial;
+                        itemMeshRenderer.sharedMaterial = skinToApply.newMaterial;
+                        item.transform.Find("ScanNode").GetComponent<ScanNodeProperties>().headerText = skinToApply.skinName;
+                        Animator anim = item.gameObject.AddComponent<Animator>();
+                        anim.runtimeAnimatorController = skinToApply.newAnimationController;
+                        item.transform.GetComponent<NoisemakerProp>().triggerAnimator = anim;
+                        item.itemProperties = newProperties;
+                        break;
+                    }
+                default:
+                    {
+                        Log.LogError($"\"{skinToApply.skinName}\" did not match any known item!");
+                        break;
+                    }
+            }
+        }
+        static Skin GetRandomSkin(string target, SkinType type)
         {
             System.Random random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             Skin skinToApply = null;
             int nothingWeight = 0;
             int skinsWeight = 0;
+            List<Skin> potentialSkins = new List<Skin>();
+            for (int i = 0; i < WildCardMod.Instance.skinList.Count; i++)
+            {
+                Skin skin = WildCardMod.Instance.skinList[i];
+                switch (type)
+                {
+                    case SkinType.Enemy:
+                        {
+                            if (!(skin.target is EnemyType))
+                            {
+                                continue;
+                            }
+                            if ((skin.target as EnemyType).enemyName == target)
+                            {
+                                potentialSkins.Add(skin);
+                            }
+                            break;
+                        }
+                    case SkinType.Item:
+                        {
+                            if (!(skin.target is Item))
+                            {
+                                continue;
+                            }
+                            if ((skin.target as Item).itemName == target)
+                            {
+                                potentialSkins.Add(skin);
+                            }
+                            break;
+                        }
+                }
+            }
+            if (potentialSkins.Count == 0)
+            {
+                return null;
+            }
             for (int i = 0; i < potentialSkins.Count; i++)
             {
-                int index = allSkins.IndexOf(potentialSkins[i]);
-                if (configChances[index].Value <= 0)
+                int index = WildCardMod.Instance.skinList.IndexOf(potentialSkins[i]);
+                if (ConfigChances[index].Value <= 0)
                 {
-                    log.LogDebug($"Skin \"{potentialSkins[i].skinName}\" was disabled!");
+                    Log.LogDebug($"Skin \"{potentialSkins[i].skinName}\" was disabled!");
                     potentialSkins.Remove(potentialSkins[i]);
                     i--;
                     continue;
                 }
-                log.LogDebug($"Adding skin \"{potentialSkins[i].skinName}\"'s chance weight!");
-                skinsWeight += configChances[index].Value;
-                nothingWeight += 100 - configChances[index].Value;
+                Log.LogDebug($"Adding skin \"{potentialSkins[i].skinName}\"'s chance weight!");
+                skinsWeight += ConfigChances[index].Value;
+                nothingWeight += 100 - ConfigChances[index].Value;
             }
             float applyChance = (float)random.NextDouble();
-            log.LogDebug($"Rolling to see if a skin will be applied!");
+            Log.LogDebug($"Rolling to see if a skin will be applied!");
             if (((float)nothingWeight / (float)(nothingWeight + skinsWeight)) < applyChance)
             {
-                potentialSkins.Sort((x, y) => configChances[allSkins.IndexOf(potentialSkins[potentialSkins.IndexOf(x)])].Value.CompareTo(configChances[allSkins.IndexOf(potentialSkins[potentialSkins.IndexOf(y)])].Value));
                 for (int i = 0; i < potentialSkins.Count; i++)
                 {
-                    log.LogDebug($"Rolling to see if \"{potentialSkins[i].skinName}\" is selected!");
-                    if (configChances[allSkins.IndexOf(potentialSkins[i])].Value / skinsWeight >= applyChance)
+                    Log.LogDebug($"Rolling to see if \"{potentialSkins[i].skinName}\" is selected!");
+                    if (ConfigChances[WildCardMod.Instance.skinList.IndexOf(potentialSkins[i])].Value / skinsWeight >= applyChance)
                     {
-                        log.LogDebug($"Skin \"{potentialSkins[i].skinName}\" was selected!");
+                        Log.LogDebug($"Skin \"{potentialSkins[i].skinName}\" was selected!");
                         skinToApply = potentialSkins[i];
                         break;
                     }
                 }
-                if (skinToApply.targetEnemy != null)
-                {
-                    switch (skinToApply.targetEnemy.enemyName)
-                    {
-                        case "Earth Leviathan":
-                            {
-                                log.LogDebug($"Skin \"{skinToApply.skinName}\" is being applied!");
-                                enemy.transform.Find("MeshContainer").Find("Renderer").GetComponent<SkinnedMeshRenderer>().sharedMesh = skinToApply.newMesh;
-                                enemy.transform.Find("MeshContainer").Find("Renderer").GetComponent<SkinnedMeshRenderer>().sharedMaterial = skinToApply.newMaterial;
-                                enemy.transform.Find("MeshContainer").Find("Armature").Find("Bone").Find("Bone.001").Find("Bone.003").Find("Bone.002").Find("ScanNode").GetComponent<ScanNodeProperties>().headerText = skinToApply.skinName;
-                                enemy.transform.GetComponent<SandWormAI>().ambientRumbleSFX[0] = skinToApply.newAudioClips[0];
-                                enemy.transform.GetComponent<SandWormAI>().ambientRumbleSFX[1] = skinToApply.newAudioClips[0];
-                                enemy.transform.GetComponent<SandWormAI>().ambientRumbleSFX[2] = skinToApply.newAudioClips[0];
-                                enemy.transform.GetComponent<SandWormAI>().creatureSFX.volume *= 1.5f;
-                                enemy.transform.GetComponent<SandWormAI>().roarSFX[0] = skinToApply.newAudioClips[1];
-                                enemy.transform.GetComponent<SandWormAI>().roarSFX[1] = skinToApply.newAudioClips[2];
-                                break;
-                            }
-                        default:
-                            {
-                                log.LogError($"\"{potentialSkins[0].skinName}\" did not match any known enemy type!");
-                                break;
-                            }
-                    }
-                }
-                else if (skinToApply.targetItem != null)
-                {
-                    switch (skinToApply.targetItem.itemName)
-                    {
-                        case "Clown horn":
-                            {
-                                log.LogDebug($"Skin \"{skinToApply.skinName}\" is being applied!");
-                                Item newProperties = UnityEngine.Object.Instantiate(item.itemProperties);
-                                newProperties.itemName = skinToApply.skinName;
-                                newProperties.isConductiveMetal = false;
-                                newProperties.grabSFX = skinToApply.newAudioClips[0];
-                                newProperties.dropSFX = skinToApply.newAudioClips[1];
-                                newProperties.toolTips[0] = "Squeeze : [LMB]";
-                                newProperties.positionOffset = new Vector3(0.05f, 0.15f, -0.05f);
-                                item.useCooldown = 0.5f;
-                                newProperties.spawnPrefab.GetComponent<MeshFilter>().mesh = skinToApply.newMesh;
-                                item.transform.GetComponent<MeshFilter>().mesh = skinToApply.newMesh;
-                                item.transform.GetComponent<MeshRenderer>().material = skinToApply.newMaterial;
-                                newProperties.spawnPrefab.GetComponent<MeshFilter>().sharedMesh = skinToApply.newMesh;
-                                item.transform.GetComponent<MeshFilter>().sharedMesh = skinToApply.newMesh;
-                                item.transform.GetComponent<MeshRenderer>().sharedMaterial = skinToApply.newMaterial;
-                                item.transform.Find("ScanNode").GetComponent<ScanNodeProperties>().headerText = skinToApply.skinName;
-                                Animator anim = item.gameObject.AddComponent<Animator>();
-                                anim.runtimeAnimatorController = skinToApply.newAnimationController;
-                                item.transform.GetComponent<NoisemakerProp>().triggerAnimator = anim;
-                                item.itemProperties = newProperties;
-                                break;
-                            }
-                        default:
-                            {
-                                log.LogError($"\"{potentialSkins[0].skinName}\" did not match any known item!");
-                                break;
-                            }
-                    }
-                }
             }
-            else
-            {
-                log.LogDebug($"No skin for \"{potentialSkins[0].targetEnemy.enemyName}\" was chosen to apply!");
-            }
+            return skinToApply;
         }
     }
     [CreateAssetMenu(menuName = "WCScriptableObjects/Skin", order = 1)]
@@ -139,8 +201,7 @@ namespace LCWildCardMod.Utils
         public string skinName;
         public bool skinEnabled;
         public int skinChance;
-        public EnemyType targetEnemy;
-        public Item targetItem;
+        public ScriptableObject target;
         public Mesh newMesh;
         public Material newMaterial;
         public AudioClip[] newAudioClips;
@@ -161,25 +222,17 @@ namespace LCWildCardMod.Utils
         public string level;
         public AnimationCurve curve;
     }
-    public class MapObjectHelper
+    internal static class MapObjectHelper
     {
-        public static WildCardConfig ModConfig;
-        public static List<MapObject> mapObjects;
-        public static List<MapObject> autoMapObjects;
-        public int levelIndex = 0;
-        public int mapIndex = 0;
-        public int autoMapIndex = 0;
-        public void Init(List<MapObject> maps, List<MapObject> autoMaps, WildCardConfig config)
-        {
-            ModConfig = config;
-            mapObjects = maps;
-            autoMapObjects = autoMaps;
-        }
-        public AnimationCurve MapObjectFunc(SelectableLevel level)
+        static WildCardConfig ModConfig => WildCardMod.Instance.ModConfig;
+        static List<MapObject> MapObjects => WildCardMod.Instance.mapObjectsList;
+        static List<MapObject> AutoMapObjects => WildCardMod.Instance.autoMapObjectsList;
+        static int mapIndex = 0;
+        internal static AnimationCurve MapObjectFunc(SelectableLevel level)
         {
             AnimationCurve curve;
-            List<MapObject> maps = mapObjects;
-            maps.AddRange(autoMapObjects);
+            List<MapObject> maps = MapObjects;
+            maps.AddRange(AutoMapObjects);
             if (maps[mapIndex].autoHandle || (ModConfig.useDefaultMapObjectCurve.Count > mapIndex && ModConfig.useDefaultMapObjectCurve[mapIndex].Value))
             {
                 List<string> levelsList = new List<string>();
@@ -218,5 +271,10 @@ namespace LCWildCardMod.Utils
                 return curve;
             }
         }
+    }
+    internal enum SkinType
+    {
+        Item,
+        Enemy
     }
 }

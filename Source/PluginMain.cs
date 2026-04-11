@@ -20,34 +20,37 @@ namespace LCWildCardMod
     [BepInDependency("com.rune580.LethalCompanyInputUtils", DependencyFlags.HardDependency)]
     public class WildCardMod : BaseUnityPlugin
     {
-        internal const string modGUID = "deB.WildCard";
-        internal const string modName = "WILDCARD Stuff";
-        internal const string modVersion = "1.1.1";
-        internal static ManualLogSource Log = null!;
-        internal static KeyBinds wildcardKeyBinds;
-        internal static SkinsClass skinsClass;
-        internal static MapObjectHelper mapClass;
-        private static WildCardMod Instance;
-        private readonly Harmony harmony = new Harmony(modGUID);
-        internal static WildCardConfig ModConfig {get; private set;} = null!;
-        private readonly string[] declaredAssetPaths = {"assets/my creations/scrap items", "assets/my creations/skins", "assets/my creations/map objects"};
-        public static List<Item> scrapList = new List<Item>();
-        public static List<Skin> skinList = new List<Skin>();
-        public static List<MapObject> mapObjectsList = new List<MapObject>();
-        public static List<MapObject> autoMapObjectsList = new List<MapObject>();
-        private void Awake()
+        public const string modGUID = "deB.WildCard";
+        public const string modName = "WILDCARD Stuff";
+        public const string modVersion = "1.2.0";
+        public List<Item> scrapList = new List<Item>();
+        public List<Skin> skinList = new List<Skin>();
+        public List<MapObject> mapObjectsList = new List<MapObject>();
+        public List<MapObject> autoMapObjectsList = new List<MapObject>();
+        internal ManualLogSource Log { get; private set; } = null!;
+        internal KeyBinds KeyBinds { get; private set; } = null!;
+        internal static WildCardMod Instance { get; private set; } = null!;
+        internal WildCardConfig ModConfig { get; private set; } = null!;
+        readonly Harmony harmony = new Harmony(modGUID);
+        void Awake()
         {
-            wildcardKeyBinds = new KeyBinds();
+            Instance = this;
+            KeyBinds = new KeyBinds();
             Log = Logger;
-            if (Instance == null)
-            {
-                Instance = this;
-            }
             if (BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
             {
                 Log.LogDebug("Registering with LobbyCompatibility");
                 SoftDepHelper.LobCompatRegister();
             }
+            InitializeMethods();
+            LoadFromBundle();
+            ModConfig = new WildCardConfig(base.Config, scrapList, skinList, mapObjectsList);
+            InitializeAssets();
+            HandleHarmony();
+            Log.LogInfo("WILDCARD Stuff Successfully Loaded");
+        }
+        void InitializeMethods()
+        {
             Type[] assemblyTypes = Assembly.GetExecutingAssembly().GetTypes();
             for (int i = 0; i < assemblyTypes.Length; i++)
             {
@@ -61,51 +64,54 @@ namespace LCWildCardMod
                     }
                 }
             }
+        }
+        void LoadFromBundle()
+        {
             AssetBundle bundle = AssetBundle.LoadFromFile(Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "wildcardmod"));
             string[] allAssetPaths = bundle.GetAllAssetNames();
             for (int i = 0; i < allAssetPaths.Length; i++)
             {
-                if (declaredAssetPaths.Contains(allAssetPaths[i][..allAssetPaths[i].LastIndexOf("/")]))
+                switch (allAssetPaths[i][..allAssetPaths[i].LastIndexOf("/")])
                 {
-                    switch (allAssetPaths[i][..allAssetPaths[i].LastIndexOf("/")])
-                    {
-                        case "assets/my creations/scrap items":
+                    case "assets/my creations/scrap items":
+                        {
+                            scrapList.Add(bundle.LoadAsset<Item>(allAssetPaths[i]));
+                            break;
+                        }
+                    case "assets/my creations/skins":
+                        {
+                            skinList.Add(bundle.LoadAsset<Skin>(allAssetPaths[i]));
+                            break;
+                        }
+                    case "assets/my creations/map objects":
+                        {
+                            MapObject asset = bundle.LoadAsset<MapObject>(allAssetPaths[i]);
+                            if (asset.autoHandle)
                             {
-                                scrapList.Add(bundle.LoadAsset<Item>(allAssetPaths[i]));
-                                break;
+                                autoMapObjectsList.Add(asset);
                             }
-                        case "assets/my creations/skins":
+                            else
                             {
-                                skinList.Add(bundle.LoadAsset<Skin>(allAssetPaths[i]));
-                                break;
+                                mapObjectsList.Add(asset);
                             }
-                        case "assets/my creations/map objects":
-                            {
-                                MapObject asset = bundle.LoadAsset<MapObject>(allAssetPaths[i]);
-                                if (asset.autoHandle)
-                                {
-                                    autoMapObjectsList.Add(asset);
-                                }
-                                else
-                                {
-                                    mapObjectsList.Add(asset);
-                                }
-                                break;
-                            }
-                        default:
-                            {
-                                break;
-                            }
-                    }
-                }
-                else
-                {
-                    Log.LogWarning($"\"{allAssetPaths[i]}\" is not a known asset path, skipping.");
+                            break;
+                        }
+                    default:
+                        {
+                            Log.LogWarning($"\"{allAssetPaths[i]}\" is not a known asset path, skipping.");
+                            break;
+                        }
                 }
             }
-            ModConfig = new WildCardConfig(base.Config, scrapList, skinList, mapObjectsList);
-            skinsClass = new SkinsClass();
-            mapClass = new MapObjectHelper();
+        }
+        void InitializeAssets()
+        {
+            InitializeScraps();
+            InitializeSkins();
+            InitializeMapObjects();
+        }
+        void InitializeScraps()
+        {
             for (int i = 0; i < scrapList.Count; i++)
             {
                 if (scrapList[i].spawnPrefab.GetComponent<AdditionalInfo>().isBonus && !ModConfig.assortedScrap.Value)
@@ -167,6 +173,9 @@ namespace LCWildCardMod
                     i--;
                 }
             }
+        }
+        void InitializeSkins()
+        {
             for (int i = 0; i < skinList.Count; i++)
             {
                 if (ModConfig.isSkinEnabled[i].Value)
@@ -180,19 +189,21 @@ namespace LCWildCardMod
                     i--;
                 }
             }
-            mapClass.Init(mapObjectsList, autoMapObjectsList, ModConfig);
+        }
+        void InitializeMapObjects()
+        {
             for (int i = 0; i < mapObjectsList.Count; i++)
             {
                 if (ModConfig.isMapObjectEnabled[i].Value)
                 {
                     if (!ModConfig.useDefaultMapObjectCurve[i].Value)
                     {
-                        mapObjectsList[i].curveFunc = mapClass.MapObjectFunc;
+                        mapObjectsList[i].curveFunc = MapObjectHelper.MapObjectFunc;
                         Log.LogInfo($"Using config settings for \"{mapObjectsList[i].mapObjectName}\"'s amount curve!");
                     }
                     else
                     {
-                        mapObjectsList[i].curveFunc = mapClass.MapObjectFunc;
+                        mapObjectsList[i].curveFunc = MapObjectHelper.MapObjectFunc;
                     }
                     NetworkPrefabs.RegisterNetworkPrefab(mapObjectsList[i].spawnableMapObject.prefabToSpawn);
                     Utilities.FixMixerGroups(mapObjectsList[i].spawnableMapObject.prefabToSpawn);
@@ -218,12 +229,23 @@ namespace LCWildCardMod
                 {
                     LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
                 }
-                autoMapObjectsList[i].curveFunc = mapClass.MapObjectFunc;
+                autoMapObjectsList[i].curveFunc = MapObjectHelper.MapObjectFunc;
                 LethalLib.Modules.MapObjects.RegisterMapObject(autoMapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, autoMapObjectsList[i].curveFunc);
                 Log.LogDebug($"\"{autoMapObjectsList[i].mapObjectName}\" is being handled automatically!");
             }
-            harmony.PatchAll();
-            Log.LogInfo("WILDCARD Stuff Successfully Loaded");
+        }
+        void HandleHarmony()
+        {
+            Type[] types = AccessTools.GetTypesFromAssembly(Assembly.GetExecutingAssembly());
+            for (int i = 0; i < types.Length; i++)
+            {
+                Type type = types[i];
+                if (type.GetCustomAttributes(typeof(HarmonyAttribute)).Count() > 0)
+                {
+                    Log.LogDebug($"Running patches of type \"{type}\"");
+                    harmony.PatchAll(type);
+                }
+            }
         }
     }
 }

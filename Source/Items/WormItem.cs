@@ -1,10 +1,9 @@
 ﻿using System.Collections;
 using Unity.Netcode;
-using Unity.Netcode.Components;
 using UnityEngine;
 namespace LCWildCardMod.Items
 {
-    public enum WormLook
+    internal enum WormLook
     {
         Forward,
         Left,
@@ -12,143 +11,151 @@ namespace LCWildCardMod.Items
     }
     public class WormItem : ThrowableNoisemaker
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
-        public WormLook lookDirection = WormLook.Forward;
-        public int playersFinishedForward;
-        public int playersFinishedLeft;
-        public int playersFinishedRight;
-        public Coroutine idleAnimCoroutine;
-        public override void BeginMusic()
+        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
+        internal WormLook lookDirection = WormLook.Forward;
+        internal int playersFinishedForward;
+        internal int playersFinishedLeft;
+        internal int playersFinishedRight;
+        internal Coroutine idleAnimCoroutine;
+        System.Random random;
+        internal override void BeginMusic()
         {
             base.BeginMusic();
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                if (hasBeenHeld)
-                {
-                    SetBoolClientRpc("OnFloor", false);
-                }
-                idleAnimCoroutine = StartCoroutine(IdleAnimation(false));
+                return;
             }
+            random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
+            if (hasBeenHeld)
+            {
+                SetBoolClientRpc("OnFloor", false);
+            }
+            idleAnimCoroutine = StartCoroutine(IdleAnimation(false));
         }
         public override void GrabItem()
         {
             base.GrabItem();
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                SetBoolClientRpc("OnFloor", false);
-                SetBoolClientRpc("IsThrown", false);
-                RestartCoroutine(ref idleAnimCoroutine, true);
+                return;
             }
+            SetBoolClientRpc("OnFloor", false);
+            SetBoolClientRpc("IsThrown", false);
+            RestartCoroutine(ref idleAnimCoroutine, true);
         }
         public override void EquipItem()
         {
             base.EquipItem();
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                SetBoolClientRpc("IsHeld", true);
+                return;
             }
+            SetBoolClientRpc("IsHeld", true);
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                SetBoolClientRpc("IsHeld", false);
+                return;
             }
+            SetBoolClientRpc("IsHeld", false);
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                SetBoolClientRpc("IsHeld", false);
-                RestartCoroutine(ref idleAnimCoroutine, false);
+                return;
             }
+            SetBoolClientRpc("IsHeld", false);
+            RestartCoroutine(ref idleAnimCoroutine, false);
         }
         public override void OnHitGround()
         {
             base.OnHitGround();
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                SetBoolClientRpc("IsThrown", false);
+                return;
             }
+            SetBoolClientRpc("IsThrown", false);
         }
-        public override void Throw()
+        internal override void Throw()
         {
             base.Throw();
-            if (base.IsServer)
+            Log.LogDebug("Giwi Worm being thrown!");
+            if (!base.IsServer)
             {
-                SetBoolClientRpc("IsThrown", true);
+                return;
             }
+            SetBoolClientRpc("IsThrown", true);
         }
-        public void RestartCoroutine(ref Coroutine coroutine, bool hand)
+        internal void RestartCoroutine(ref Coroutine coroutine, bool hand)
         {
             StopCoroutine(coroutine);
             ResetTriggersClientRpc();
+            string trigger = "SnapForward";
             if (hand)
             {
-                SetTriggerClientRpc("SnapLeft");
+                trigger = "SnapLeft";
             }
-            else
-            {
-                SetTriggerClientRpc("SnapForward");
-            }
+            SetTriggerClientRpc(trigger);
             coroutine = StartCoroutine(IdleAnimation(hand));
         }
-        public IEnumerator IdleAnimation(bool idleHand)
+        internal IEnumerator IdleAnimation(bool idleHand)
         {
             yield return new WaitUntil(() => base.IsSpawned);
             while (true)
             {
                 if (idleHand)
                 {
-                    yield return new WaitForSeconds(5f);
+                    yield return new WaitForSeconds(random.Next(3, 7));
                     SetTriggerClientRpc("LookRight");
                     yield return new WaitUntil(() => lookDirection == WormLook.Right);
                     ResetTriggersClientRpc();
-                    yield return new WaitForSeconds(3f);
+                    yield return new WaitForSeconds(random.Next(2, 5));
                     SetTriggerClientRpc("LookForward");
                     yield return new WaitUntil(() => lookDirection == WormLook.Forward);
                     ResetTriggersClientRpc();
-                    yield return new WaitForSeconds(1f);
+                    yield return new WaitForSeconds(random.Next(1, 3));
                     SetTriggerClientRpc("LookLeft");
                     yield return new WaitUntil(() => lookDirection == WormLook.Left);
                     ResetTriggersClientRpc();
+                    continue;
                 }
-                else
-                {
-                    yield return new WaitForSeconds(4f);
-                    SetTriggerClientRpc("LookLeft");
-                    yield return new WaitUntil(() => lookDirection == WormLook.Left);
-                    ResetTriggersClientRpc();
-                    yield return new WaitForSeconds(2f);
-                    SetTriggerClientRpc("LookRight");
-                    yield return new WaitUntil(() => lookDirection == WormLook.Right);
-                    ResetTriggersClientRpc();
-                    yield return new WaitForSeconds(2f);
-                    SetTriggerClientRpc("LookForward");
-                    yield return new WaitUntil(() => lookDirection == WormLook.Forward);
-                    ResetTriggersClientRpc();
-                }
+                yield return new WaitForSeconds(random.Next(3, 6));
+                SetTriggerClientRpc("LookLeft");
+                yield return new WaitUntil(() => lookDirection == WormLook.Left);
+                ResetTriggersClientRpc();
+                yield return new WaitForSeconds(random.Next(1, 3));
+                SetTriggerClientRpc("LookRight");
+                yield return new WaitUntil(() => lookDirection == WormLook.Right);
+                ResetTriggersClientRpc();
+                yield return new WaitForSeconds(random.Next(1, 3));
+                SetTriggerClientRpc("LookForward");
+                yield return new WaitUntil(() => lookDirection == WormLook.Forward);
+                ResetTriggersClientRpc();
             }
         }
-        public void FinishForward()
+        internal void FinishForward()
         {
-            FinishAnimServerRpc("Forward");
+            FinishAnimServerRpc((int)WormLook.Forward);
         }
-        public void FinishLeft()
+        internal void FinishLeft()
         {
-            if (triggerAnimator.GetCurrentAnimatorStateInfo(0).speed > 0)
+            if (triggerAnimator.GetCurrentAnimatorStateInfo(0).speed <= 0)
             {
-                FinishAnimServerRpc("Left");
+                return;
             }
+            FinishAnimServerRpc((int)WormLook.Left);
         }
-        public void FinishRight()
+        internal void FinishRight()
         {
-            if (triggerAnimator.GetCurrentAnimatorStateInfo(0).speed > 0)
+            if (triggerAnimator.GetCurrentAnimatorStateInfo(0).speed <= 0)
             {
-                FinishAnimServerRpc("Right");
+                return;
             }
+            FinishAnimServerRpc((int)WormLook.Right);
         }
         [ClientRpc]
         public void SetTriggerClientRpc(string trigger)
@@ -168,38 +175,43 @@ namespace LCWildCardMod.Items
             triggerAnimator.SetBool(boolean, value);
         }
         [ServerRpc (RequireOwnership = false)]
-        public void FinishAnimServerRpc(string look)
+        public void FinishAnimServerRpc(int look)
         {
-            switch (look)
+            WormLook direction = (WormLook)look;
+            Log.LogDebug($"Worm looking {direction}");
+            switch (direction)
             {
-                case "Forward":
+                case WormLook.Forward:
                     {
                         playersFinishedForward++;
-                        if (playersFinishedForward >= StartOfRound.Instance.connectedPlayersAmount)
+                        if (playersFinishedForward < StartOfRound.Instance.connectedPlayersAmount)
                         {
-                            playersFinishedForward = 0;
-                            lookDirection = WormLook.Forward;
+                            break;
                         }
+                        playersFinishedForward = 0;
+                        lookDirection = direction;
                         break;
                     }
-                case "Left":
+                case WormLook.Left:
                     {
                         playersFinishedLeft++;
-                        if (playersFinishedLeft >= StartOfRound.Instance.connectedPlayersAmount)
+                        if (playersFinishedLeft < StartOfRound.Instance.connectedPlayersAmount)
                         {
-                            playersFinishedLeft = 0;
-                            lookDirection = WormLook.Left;
+                            break;
                         }
+                        playersFinishedLeft = 0;
+                        lookDirection = direction;
                         break;
                     }
-                case "Right":
+                case WormLook.Right:
                     {
                         playersFinishedRight++;
-                        if (playersFinishedRight >= StartOfRound.Instance.connectedPlayersAmount)
+                        if (playersFinishedRight < StartOfRound.Instance.connectedPlayersAmount)
                         {
-                            playersFinishedRight = 0;
-                            lookDirection = WormLook.Right;
+                            break;
                         }
+                        playersFinishedRight = 0;
+                        lookDirection = direction;
                         break;
                     }
             }

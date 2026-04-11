@@ -8,43 +8,46 @@ namespace LCWildCardMod.Items.Clover
 {
     public class CloverBee : PhysicsProp
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
+        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public NetworkAnimator itemAnimator;
         public AudioSource buzzSource;
         public AnimationCurve buzzCurve;
         public AudioSource shootSource;
         public AudioClip shootClip;
-        public Vector3 targetPosition;
-        public bool isShooting;
-        public float stingerTime;
-        public Vector3 startingPosition;
-        public Vector3 localPosition;
         public Transform stinger;
         public ParticleSystem stingerFlash;
         public ParticleSystem stingerHitSpark;
-        public Item activatedProperties;
-        public Item deactivatedProperties;
-        public PlayerControllerB lastPlayer;
-        public List<IHittable> hitList = new List<IHittable>();
-        public CloverNecklace necklaceRef;
-        public readonly string necklaceString = "It doesn't seem to recognise you... Find the pendant...";
-        public readonly string fireString = "[LMB] : Fire Stinger";
-        private System.Random random;
+        internal Vector3 targetPosition;
+        internal bool isShooting;
+        internal float stingerTime;
+        internal Vector3 startingPosition;
+        internal Vector3 localPosition;
+        internal Item activatedProperties;
+        internal Item deactivatedProperties;
+        internal PlayerControllerB lastPlayer;
+        internal List<IHittable> hitList = new List<IHittable>();
+        System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            CloverNecklace.beeList.Add(this);
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             buzzSource.SetCustomCurve(AudioSourceCurveType.CustomRolloff, buzzCurve);
             activatedProperties = itemProperties;
             deactivatedProperties = Instantiate(itemProperties);
-            deactivatedProperties.toolTips = new string[2] { $"<s>{fireString}", necklaceString };
+            deactivatedProperties.toolTips = new string[2] { $"<s>[LMB] : Fire Stinger", "It doesn't seem to recognise you... Find the pendant..." };
             localPosition = stinger.localPosition;
             insertedBattery.charge = 1f;
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                StartCoroutine(BuzzLoop());
-                StartCoroutine(NecklaceCheck());
+                return;
             }
+            StartCoroutine(BuzzLoop());
+        }
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            CloverNecklace.beeList.Remove(this);
         }
         public override void GrabItem()
         {
@@ -54,103 +57,78 @@ namespace LCWildCardMod.Items.Clover
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            if (base.IsOwner && necklaceRef != null && necklaceRef.playerHeldBy == playerHeldBy)
+            if (!base.IsOwner)
             {
-                Ray ray = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
-                if (Physics.Raycast(ray, out RaycastHit hit, 20f, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
-                {
-                    targetPosition = ray.GetPoint(hit.distance - 0.05f);
-                }
-                else
-                {
-                    targetPosition = ray.GetPoint(20f);
-                }
-                if (hitList.Count > 0)
-                {
-                    hitList.Clear();
-                }
-                ShootServerRpc(targetPosition, (float)random.Next(80, 121) / 100f);
+                return;
             }
-            else if (base.IsOwner)
+            if (CloverNecklace.oneNecklace == null || CloverNecklace.oneNecklace.playerHeldBy != playerHeldBy)
             {
                 ShootServerRpc(Vector3.zero, (float)random.Next(80, 121) / 100f);
                 playerHeldBy.DamagePlayer(25, false, true, CauseOfDeath.Stabbing);
+                return;
             }
+            Ray ray = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
+            targetPosition = ray.GetPoint(20f);
+            if (Physics.Raycast(ray, out RaycastHit hit, 20f, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+            {
+                targetPosition = ray.GetPoint(hit.distance - 0.05f);
+            }
+            hitList.Clear();
+            ShootServerRpc(targetPosition, (float)random.Next(80, 121) / 100f);
         }
         public override void Update()
         {
             base.Update();
-            if (isShooting)
+            if (!isShooting)
             {
-                stinger.position = Vector3.Lerp(startingPosition, targetPosition, stingerTime);
-                stingerTime += Mathf.Abs(Time.deltaTime * 8f);
-                if (stingerTime >= 1)
+                return;
+            }
+            stinger.position = Vector3.Lerp(startingPosition, targetPosition, stingerTime);
+            stingerTime += Mathf.Abs(Time.deltaTime * 8f);
+            if (stingerTime >= 1)
+            {
+                stingerHitSpark.Play();
+                isShooting = false;
+                StartCoroutine(WaitForParticles());
+                return;
+            }
+            if (!base.IsOwner)
+            {
+                return;
+            }
+            RaycastHit[] objectsHit = Physics.SphereCastAll(stinger.position, 0.25f, lastPlayer.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < objectsHit.Length; i++)
+            {
+                RaycastHit hit = objectsHit[i];
+                if (hit.transform.TryGetComponent(out IHittable hitComponent) && !hitList.Contains(hitComponent) && lastPlayer.transform != hit.transform)
                 {
-                    stingerHitSpark.Play();
-                    isShooting = false;
-                    StartCoroutine(WaitForParticles());
-                }
-                else if (base.IsOwner)
-                {
-                    RaycastHit[] objectsHit = Physics.SphereCastAll(stinger.position, 0.25f, lastPlayer.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
-                    for (int i = 0; i < objectsHit.Length; i++)
-                    {
-                        if (objectsHit[i].transform.TryGetComponent<IHittable>(out var hitComponent) && !hitList.Contains(hitComponent) && lastPlayer.transform != objectsHit[i].transform && (objectsHit[i].transform.GetComponent<PlayerControllerB>() || objectsHit[i].transform.GetComponent<EnemyAICollisionDetect>()))
-                        {
-                            hitList.Add(hitComponent);
-                            hitComponent.Hit(1, lastPlayer.gameplayCamera.transform.forward, lastPlayer, true, 1);
-                        }
-                    }
+                    hitList.Add(hitComponent);
+                    hitComponent.Hit(1, lastPlayer.gameplayCamera.transform.forward, lastPlayer, true, 1);
                 }
             }
-
         }
-        public IEnumerator WaitForParticles()
+        internal IEnumerator WaitForParticles()
         {
             yield return new WaitUntil(() => !stingerHitSpark.IsAlive());
             stinger.localPosition = localPosition;
             stingerTime = 0;
-            log.LogDebug("Clover Bee Resetting Projectile");
-            if (base.IsServer)
+            Log.LogDebug("Clover Bee Resetting Projectile");
+            if (!base.IsServer)
             {
-                itemAnimator.SetTrigger("New Stinger");
+                yield break;
             }
+            itemAnimator.SetTrigger("New Stinger");
         }
-        public void SetNecklaceController(CloverNecklace necklace)
-        {
-            log.LogDebug($"Located {necklace.itemProperties.itemName}");
-            necklaceRef = necklace;
-            ToggleHeld(false);
-        }
-        public void RemoveNecklaceController(CloverNecklace necklace)
-        {
-            if (necklace == necklaceRef)
-            {
-                necklaceRef = null;
-            }
-        }
-        public void ToggleHeld(bool held)
+        internal void ToggleHeld(bool held)
         {
             if (held)
             {
                 itemProperties = activatedProperties;
+                return;
             }
-            else
-            {
-                itemProperties = deactivatedProperties;
-            }
+            itemProperties = deactivatedProperties;
         }
-        public IEnumerator NecklaceCheck()
-        {
-            yield return new WaitUntil(() => RoundManager.Instance.dungeonFinishedGeneratingForAllPlayers || StartOfRound.Instance.inShipPhase);
-            CloverNecklace necklace = FindObjectOfType<CloverNecklace>();
-            if (necklace != null && necklaceRef != necklace)
-            {
-                necklaceRef = necklace;
-                necklaceRef.beeList.Add(this);
-            }
-        }
-        public IEnumerator BuzzLoop()
+        internal IEnumerator BuzzLoop()
         {
             while (true)
             {
@@ -175,7 +153,7 @@ namespace LCWildCardMod.Items.Clover
         {
             if (target != Vector3.zero)
             {
-                log.LogDebug("Clover Bee Shooting");
+                Log.LogDebug("Clover Bee Shooting");
                 targetPosition = target;
                 startingPosition = stinger.position;
                 isShooting = true;
@@ -187,15 +165,12 @@ namespace LCWildCardMod.Items.Clover
             {
                 shootSource.clip = itemProperties.dropSFX;
                 shootSource.volume = 1.5f;
-                log.LogDebug("Clover Bee Revolting");
+                Log.LogDebug("Clover Bee Revolting");
             }
             shootSource.pitch = pitch;
             shootSource.Play();
             WalkieTalkie.TransmitOneShotAudio(shootSource, shootSource.clip);
-            if (insertedBattery.charge <= 0 && !insertedBattery.empty)
-            {
-                insertedBattery.empty = true;
-            }
+            insertedBattery.empty = insertedBattery.charge <= 0;
         }
     }
 }

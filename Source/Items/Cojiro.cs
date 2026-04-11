@@ -5,7 +5,7 @@ namespace LCWildCardMod.Items
 {
     public class Cojiro : NoisemakerProp
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
+        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public AudioSource flapSource;
         public NetworkAnimator itemAnimator;
         public bool isFloating;
@@ -13,10 +13,11 @@ namespace LCWildCardMod.Items
         public override void GrabItem()
         {
             base.GrabItem();
-            if (previousPlayer == null)
+            if (previousPlayer != null)
             {
-                previousPlayer = playerHeldBy;
+                return;
             }
+            previousPlayer = playerHeldBy;
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
@@ -25,13 +26,14 @@ namespace LCWildCardMod.Items
             float pitch = (float)noisemakerRandom.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
             noiseAudio.pitch = pitch;
             noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
-            if (base.IsServer)
-            {
-                itemAnimator.SetTrigger("playAnim");
-            }
             WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
             RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
+            if (!base.IsServer)
+            {
+                return;
+            }
+            itemAnimator.SetTrigger("playAnim");
         }
         public override void Update()
         {
@@ -45,6 +47,7 @@ namespace LCWildCardMod.Items
                     {
                         itemAnimator.Animator.SetBool("Floating", true);
                     }
+                    Log.LogDebug($"Cojiro is slowing \"{playerHeldBy.playerUsername}\"'s fall!");
                     flapSource.Play();
                     WalkieTalkie.TransmitOneShotAudio(flapSource, flapSource.clip);
                 }
@@ -57,29 +60,23 @@ namespace LCWildCardMod.Items
                 {
                     itemAnimator.Animator.SetBool("Floating", false);
                 }
+                Log.LogDebug($"Cojiro stopped slowing \"{playerHeldBy.playerUsername}\"'s fall!");
                 flapSource.Stop();
-                WalkieTalkie.TransmitOneShotAudio(flapSource, flapSource.clip);
             }
-            if (currentUseCooldown < 0)
-            {
-                currentUseCooldown = 0;
-            }
-            else if (currentUseCooldown == 0f && playerHeldBy == null && previousPlayer != null)
+            currentUseCooldown = Mathf.Max(currentUseCooldown, 0f);
+            if (currentUseCooldown == 0f && playerHeldBy == null)
             {
                 previousPlayer = null;
             }
-            else if (currentUseCooldown == 0f && playerHeldBy != null && previousPlayer != playerHeldBy)
+            else if (currentUseCooldown == 0f && playerHeldBy != null)
             {
                 previousPlayer = playerHeldBy;
             }
-            if (currentUseCooldown < 1 && isFloating)
+            if (currentUseCooldown < 1f && isFloating)
             {
-                currentUseCooldown += 2 * Time.deltaTime;
+                currentUseCooldown += 2f * Time.deltaTime;
             }
-            else if (currentUseCooldown > 1)
-            {
-                currentUseCooldown = 1;
-            }
+            currentUseCooldown = Mathf.Min(currentUseCooldown, 1f);
         }
     }
 }

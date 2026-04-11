@@ -1,45 +1,47 @@
 ﻿using UnityEngine;
 using GameNetcodeStuff;
 using Steamworks;
+using System;
+using System.Threading.Tasks;
+using System.Runtime.CompilerServices;
 namespace LCWildCardMod.Items.SmithNote
 {
-    public class SmithNoteInfo : MonoBehaviour
+    internal class SmithNoteInfo : MonoBehaviour
     {
-        public PlayerControllerB selectedPlayer;
-        public Texture2D texture;
-        public Color colour = Color.white;
-        public string username;
-        public bool isDead = false;
-        public SmithNote noteReference;
-        public void Spawn(SmithNote reference, PlayerControllerB player)
+        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
+        internal PlayerControllerB selectedPlayer;
+        internal Texture2D texture;
+        internal Color colour = Color.white;
+        internal string username;
+        internal bool isDead = false;
+        internal SmithNote noteReference;
+        internal void Spawn(SmithNote reference, PlayerControllerB player)
         {
             noteReference = reference;
             selectedPlayer = player;
             username = selectedPlayer.playerUsername;
+            Log.LogDebug($"Spawning Smith Note page for player \"{username}\"!");
             if (!GameNetworkManager.Instance.disableSteam)
             {
-                GetProfilePicture();
+                try
+                {
+                    GetProfilePicture();
+                }
+                catch (Exception exception)
+                {
+                    Log.LogError(exception);
+                }
+                return;
             }
-            else if (username == "Player #0")
+            if (int.TryParse(username[^1].ToString(), out int index) && index >= 0 && index < reference.debugTextures.Length)
             {
-                texture = reference.debugTextures[0];
-            }
-            else if (username == "Player #1")
-            {
-                texture = reference.debugTextures[1];
-            }
-            else if (username == "Player #2")
-            {
-                texture = reference.debugTextures[2];
-            }
-            else if (username == "Player #3")
-            {
-                texture = reference.debugTextures[3];
+                texture = reference.debugTextures[index];
             }
         }
-        public async void GetProfilePicture()
+        internal async void GetProfilePicture()
         {
             texture = HUDManager.GetTextureFromImage(await SteamFriends.GetLargeAvatarAsync(selectedPlayer.playerSteamId));
+            Log.LogDebug($"Found profile picture!");
         }
     }
 }

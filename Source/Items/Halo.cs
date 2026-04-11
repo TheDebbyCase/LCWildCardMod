@@ -9,7 +9,7 @@ namespace LCWildCardMod.Items
 {
     public class SmithHalo : PhysicsProp
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
+        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public ParticleSystem[] dripParticles;
         public ParticleSystem spinParticle;
         public AudioSource spawnMusic;
@@ -19,108 +19,114 @@ namespace LCWildCardMod.Items
         public float minPitch;
         public float maxPitch;
         public NetworkAnimator itemAnimator;
-        public int isExhausted = 0;
         public AnimationCurve throwCurve;
         public Component parentComponent;
-        public bool isThrowing = false;
-        public float throwTime = 0;
-        public Vector3 handPosition;
-        public Vector3 targetPosition;
-        public Coroutine exhaustCoroutine;
-        public List<IHittable> hitList = new List<IHittable>();
-        private System.Random random;
+        internal int isExhausted = 0;
+        internal bool isThrowing = false;
+        internal float throwTime = 0;
+        internal Vector3 handPosition;
+        internal Vector3 targetPosition;
+        internal Coroutine exhaustCoroutine;
+        internal List<IHittable> hitList = new List<IHittable>();
+        System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            WildCardMod.wildcardKeyBinds.WildCardButton.performed += ThrowButton;
+            WildCardMod.Instance.KeyBinds.WildCardButton.performed += ThrowButton;
             spinParticle.gameObject.SetActive(false);
-            if (base.IsServer)
+            if (!base.IsServer || hasBeenHeld)
             {
-                BeginMusicClientRpc(isExhausted);
+                return;
             }
+            BeginMusicClientRpc(isExhausted);
         }
-        public void BeginMusic()
+        public override void OnNetworkDespawn()
+        {
+            base.OnNetworkDespawn();
+            WildCardMod.Instance.KeyBinds.WildCardButton.performed -= ThrowButton;
+        }
+        internal void BeginMusic()
         {
             if (isExhausted == 1)
             {
                 this.GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
                 spinParticle.gameObject.SetActive(false);
                 StopDrip();
+                return;
             }
-            else
-            {
-                StartDrip();
-                spawnMusic.Play();
-            }
+            StartDrip();
+            spawnMusic.Play();
         }
-        public void ThrowButton(InputAction.CallbackContext throwContext)
+        internal void ThrowButton(InputAction.CallbackContext throwContext)
         {
-            if (playerHeldBy != null && playerHeldBy.currentlyHeldObjectServer == this && isExhausted == 0 && !isThrowing && base.IsOwner)
+            if (playerHeldBy == null)
             {
-                if (throwAudio != null && throwClips.Length > 0)
-                {
-                    float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
-                    int selectedClip = random.Next(0, throwClips.Length);
-                    ThrowAudioServerRpc(pitch, selectedClip);
-                }
-                ThrowServerRpc();
+                return;
             }
+            if (!base.IsOwner || playerHeldBy.currentlyHeldObjectServer != this || isExhausted == 1 || isThrowing)
+            {
+                return;
+            }
+            if (throwAudio != null && throwClips.Length > 0)
+            {
+                float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
+                int selectedClip = random.Next(0, throwClips.Length);
+                ThrowAudioServerRpc(pitch, selectedClip);
+            }
+            ThrowServerRpc();
         }
         public override void Update()
         {
             base.Update();
-            if (base.IsOwner)
+            if (!base.IsOwner)
             {
-                if (isThrowing)
+                return;
+            }
+            if (!isThrowing)
+            {
+                parentComponent.transform.localPosition = Vector3.zero;
+                return;
+            }
+            if (playerHeldBy == null)
+            {
+                ThrowCurveServerRpc(parentComponent.transform.position);
+                ThrowEndServerRpc();
+                return;
+            }
+            ThrowCurve();
+            if (throwTime >= 1)
+            {
+                ThrowCurveServerRpc(parentComponent.transform.position);
+                ThrowEndServerRpc();
+                return;
+            }
+            RaycastHit[] objectsHit = Physics.SphereCastAll(parentComponent.transform.position, 0.5f, playerHeldBy.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < objectsHit.Length; i++)
+            {
+                RaycastHit hit = objectsHit[i];
+                if (!hit.transform.TryGetComponent(out IHittable hitComponent))
                 {
-                    if (playerHeldBy == null)
-                    {
-                        ThrowCurveServerRpc(parentComponent.transform.position);
-                        ThrowEndServerRpc();
-                    }
-                    else
-                    {
-                        ThrowCurve();
-                        if (throwTime >= 1)
-                        {
-                            ThrowCurveServerRpc(parentComponent.transform.position);
-                            ThrowEndServerRpc();
-                        }
-                        else
-                        {
-                            RaycastHit[] objectsHit = Physics.SphereCastAll(parentComponent.transform.position, 0.5f, playerHeldBy.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
-                            for (int i = 0; i < objectsHit.Length; i++)
-                            {
-                                if (playerHeldBy != null && objectsHit[i].transform.TryGetComponent(out IHittable hitComponent) && !hitList.Contains(hitComponent) && playerHeldBy.transform != objectsHit[i].transform && (objectsHit[i].transform.GetComponent<PlayerControllerB>() || objectsHit[i].transform.GetComponent<EnemyAICollisionDetect>()))
-                                {
-                                    hitList.Add(hitComponent);
-                                    if (objectsHit[i].transform.TryGetComponent<PlayerControllerB>(out PlayerControllerB player))
-                                    {              
-                                        hitComponent.Hit(1, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
-                                        log.LogDebug($"Halo Hit {player.playerUsername}");
-                                    }
-                                    else if (objectsHit[i].transform.TryGetComponent<EnemyAICollisionDetect>(out EnemyAICollisionDetect enemy))
-                                    {
-                                        hitComponent.Hit(2, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
-                                        log.LogDebug($"Halo Hit {enemy.mainScript.enemyType.enemyName}");
-                                    }
-                                }
-                                else if (playerHeldBy == null)
-                                {
-                                    log.LogDebug($"Halo Hit But Throwing Player Is Missing");
-                                }
-                            }
-                        }
-                    }
+                    continue;
                 }
-                else if (parentComponent.transform.localPosition != Vector3.zero)
+                if (hitList.Contains(hitComponent) || playerHeldBy.transform == hit.transform)
                 {
-                    parentComponent.transform.localPosition = Vector3.zero;
+                    continue;
+                }
+                hitList.Add(hitComponent);
+                if (hit.transform.TryGetComponent(out PlayerControllerB player))
+                {
+                    hitComponent.Hit(1, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
+                    Log.LogDebug($"Halo Hit {player.playerUsername}");
+                }
+                else if (hit.transform.TryGetComponent(out EnemyAICollisionDetect enemy))
+                {
+                    hitComponent.Hit(2, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
+                    Log.LogDebug($"Halo Hit {enemy.mainScript.enemyType.enemyName}");
                 }
             }
         }
-        public void ThrowCurve()
+        internal void ThrowCurve()
         {
             handPosition = playerHeldBy.localItemHolder.transform.position;
             parentComponent.transform.position = Vector3.Lerp(handPosition, targetPosition, throwCurve.Evaluate(throwTime));
@@ -132,15 +138,16 @@ namespace LCWildCardMod.Items
             base.EquipItem();
             parentComponent.transform.localPosition = Vector3.zero;
             this.transform.localPosition = itemProperties.positionOffset;
-            if (base.IsServer)
-            {
-                itemAnimator.Animator.SetBool("BeingHeld", true);
-            }
             spawnMusic.Stop();
+            if (!base.IsServer)
+            {
+                return;
+            }
+            itemAnimator.Animator.SetBool("BeingHeld", true);
         }
-        public void Throw()
+        internal void Throw()
         {
-            log.LogDebug("Halo Throw Begun");
+            Log.LogDebug("Halo Throw Begun");
             throwTime = 0;
             isThrowing = true;
             playerHeldBy.throwingObject = true;
@@ -148,39 +155,30 @@ namespace LCWildCardMod.Items
             {
                 itemAnimator.Animator.SetBool("BeingThrown", true);
             }
-            if (base.IsOwner)
+            if (!base.IsOwner)
             {
-                if (hitList.Count > 0)
-                {
-                    hitList.Clear();
-                }
-                Ray ray = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
-                if (Physics.Raycast(ray, out RaycastHit hit, 10f, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
-                {
-                    targetPosition = ray.GetPoint(hit.distance - 0.05f);
-                }
-                else
-                {
-                    targetPosition = ray.GetPoint(10f);
-                }
-                SyncThrowDestinationServerRpc(targetPosition);
-                StopDripServerRpc();
+                return;
             }
+            hitList.Clear();
+            Ray ray = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
+            targetPosition = ray.GetPoint(10f);
+            if (Physics.Raycast(ray, out RaycastHit hit, 10f, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+            {
+                targetPosition = ray.GetPoint(hit.distance - 0.05f);
+            }
+            SyncThrowDestinationServerRpc(targetPosition);
+            StopDripServerRpc();
         }
-        public void ThrowEnd()
+        internal void ThrowEnd()
         {
             parentComponent.transform.localPosition = Vector3.zero;
             this.transform.localPosition = itemProperties.positionOffset;
             if (playerHeldBy != null)
             {
-                this.transform.position = playerHeldBy.localItemHolder.transform.position;
+                this.transform.position = playerHeldBy.localItemHolder.position;
                 playerHeldBy.throwingObject = false;
             }
             isThrowing = false;
-            if (base.IsServer)
-            {
-                itemAnimator.Animator.SetBool("BeingThrown", false);
-            }
             throwAudio.Stop();
             if (isExhausted == 0)
             {
@@ -190,61 +188,104 @@ namespace LCWildCardMod.Items
             {
                 spinParticle.gameObject.SetActive(false);
             }
-            log.LogDebug("Halo Throw Ended");
+            Log.LogDebug("Halo Throw Ended");
+            if (!base.IsServer)
+            {
+                return;
+            }
+            itemAnimator.Animator.SetBool("BeingThrown", false);
         } 
         public override void DiscardItem()
         {
-            base.DiscardItem();
             if (base.IsServer)
             {
                 itemAnimator.Animator.SetBool("BeingHeld", false);
             }
+            if (base.IsOwner && (isThrowing || playerHeldBy.throwingObject))
+            {
+                ThrowCurveServerRpc(parentComponent.transform.position);
+                ThrowEndServerRpc();
+            }
+            base.DiscardItem();
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            if (isExhausted == 0 && base.IsOwner)
+            if (isExhausted == 1 || !base.IsOwner)
             {
-                StopDripServerRpc();
+                return;
             }
+            StopDripServerRpc();
         }
-        public IEnumerator ExhaustCoroutine()
+        internal IEnumerator ExhaustCoroutine()
         {
-            this.GetComponent<AudioSource>().clip = breakSound;
-            this.GetComponent<AudioSource>().Play();
-            this.GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
+            AudioSource audio = GetComponent<AudioSource>();
+            audio.clip = breakSound;
+            audio.Play();
+            GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
             if (base.IsOwner)
             {
                 ThrowEndServerRpc();
                 StopDripServerRpc();
             }
             yield return new WaitForSeconds(1f);
-            log.LogDebug("Halo Fully Exhausted");
+            Log.LogDebug("Halo Fully Exhausted");
             isExhausted = 1;
+            exhaustCoroutine = null;
         }
-        public void StartDrip()
+        internal void StartDrip()
         {
-            if (isExhausted == 0)
-            {
-                for (int i = 0; i < dripParticles.Length; i++)
-                {
-                    dripParticles[i].gameObject.SetActive(true);
-                    dripParticles[i].Play();
-                }
-            }
             spinParticle.gameObject.SetActive(false);
+            if (isExhausted == 1)
+            {
+                return;
+            }
+            for (int i = 0; i < dripParticles.Length; i++)
+            {
+                ParticleSystem particle = dripParticles[i];
+                particle.gameObject.SetActive(true);
+                particle.Play();
+            }
         }
-        public void StopDrip()
+        internal void StopDrip()
         {
             for (int i = 0; i < dripParticles.Length; i++)
             {
                 dripParticles[i].gameObject.SetActive(false);
             }
-            if (isExhausted == 0 && itemAnimator.Animator.GetBool("BeingThrown"))
+            if (isExhausted == 1 || !itemAnimator.Animator.GetBool("BeingThrown"))
             {
-                spinParticle.gameObject.SetActive(true);
-                spinParticle.Play();
+                return;
             }
+            spinParticle.gameObject.SetActive(true);
+            spinParticle.Play();
+        }
+        internal void ExhaustLocal(PlayerControllerB player, Vector3 hitVelocity = default)
+        {
+            player.health = 1;
+            player.externalForceAutoFade += hitVelocity;
+            if (exhaustCoroutine == null)
+            {
+                ExhaustHaloServerRpc();
+                HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
+                player.MakeCriticallyInjured(enable: true);
+            }
+            AudioClip damageClip = StartOfRound.Instance.damageSFX;
+            if (player.takingFallDamage)
+            {
+                damageClip = StartOfRound.Instance.fallDamageSFX;
+                WalkieTalkie.TransmitOneShotAudio(player.movementAudio, damageClip);
+                player.BreakLegsSFXClientRpc();
+            }
+            HUDManager.Instance.UIAudio.PlayOneShot(damageClip, 1f);
+            StartOfRound.Instance.LocalPlayerDamagedEvent.Invoke();
+            player.takingFallDamage = false;
+            if (!player.inSpecialInteractAnimation && !player.twoHandedAnimation)
+            {
+                player.playerBodyAnimator.SetTrigger("Damage");
+            }
+            player.specialAnimationWeight = 1f;
+            player.PlayQuickSpecialAnimation(0.7f);
         }
         public override int GetItemDataToSave()
         {
@@ -252,6 +293,7 @@ namespace LCWildCardMod.Items
         }
         public override void LoadItemSaveData(int saveData)
         {
+            hasBeenHeld = true;
             isExhausted = saveData;
         }
         [ServerRpc(RequireOwnership = false)]

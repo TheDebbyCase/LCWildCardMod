@@ -1,0 +1,38 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <OutputType>Library</OutputType>
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <OutputPath>Builds\</OutputPath>
+    <AssemblyTitle>LCWildCardMod</AssemblyTitle>
+    <Product>LCWildCardMod</Product>
+    <AssemblyVersion>1.0.0.0</AssemblyVersion>
+    <FileVersion>1.0.0.0</FileVersion>
+    <ProduceReferenceAssembly>False</ProduceReferenceAssembly>
+	<MSBuildWarningsAsMessages>$(MSBuildWarningsAsMessages);NCP0001</MSBuildWarningsAsMessages>
+	<DebugType>embedded</DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+	<None Remove="*.png" />
+	<None Remove="*/*.png" />
+	<None Remove="*/*/*.png" />
+	<None Remove="*.mp4" />
+	<None Remove="*/*.mp4" />
+	<None Remove="LICENSE" />
+	<None Remove="*.zip" />
+  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="Evaisa.LethalLib" Version="1.2.0" Publicize="true" />
+		<PackageReference Include="Facepunch.Steamworks" Version="2.3.3" />
+		<PackageReference Include="LethalCompany.GameLibs.Steam" Version="81.0.0-ngd.0" />
+		<PackageReference Include="Rune580.Mods.LethalCompany.InputUtils" Version="0.7.13" Publicize="true" />
+		<PackageReference Include="TeamBMX.LobbyCompatibility" Version="1.5.1" Publicize="true" />
+		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
+	</ItemGroup>
+	<Target Name="NetcodePatch" AfterTargets="PostBuildEvent">
+		<Exec Command="dotnet netcode-patch -uv 2022.3.62 -nv 1.12.2 &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
+	</Target>
+</Project>

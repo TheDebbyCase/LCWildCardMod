@@ -7,16 +7,16 @@ namespace LCWildCardMod.Items
 {
     public class ClauvioMask : PhysicsProp
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
-        public bool isLifted = false;
+        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public Transform meshTransform;
         public Animator maskAnimator;
-        public Coroutine peekCoroutine;
-        public PlayerControllerB previousPlayer;
+        internal bool isLifted = false;
+        internal Coroutine peekCoroutine;
+        internal PlayerControllerB previousPlayer;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            WildCardMod.wildcardKeyBinds.WildCardButton.started += MaskPeek;
+            WildCardMod.Instance.KeyBinds.WildCardButton.started += MaskPeek;
         }
         public override void EquipItem()
         {
@@ -24,26 +24,26 @@ namespace LCWildCardMod.Items
             if (base.IsOwner)
             {
                 meshTransform.parent = playerHeldBy.gameplayCamera.transform;
-                maskAnimator.SetBool("isOwner", true);
             }
             else
             {
                 meshTransform.parent = playerHeldBy.bodyParts[0];
-                maskAnimator.SetBool("isOwner", false);
             }
-            previousPlayer = playerHeldBy;
+            maskAnimator.SetBool("isOwner", base.IsOwner);
             maskAnimator.SetBool("isHeld", true);
+            previousPlayer = playerHeldBy;
         }
         public override void PocketItem()
         {
             base.PocketItem();
             meshTransform.parent = this.transform;
             maskAnimator.SetBool("isHeld", false);
-            if (peekCoroutine != null)
+            if (peekCoroutine == null)
             {
-                StopCoroutine(peekCoroutine);
-                peekCoroutine = null;
+                return;
             }
+            StopCoroutine(peekCoroutine);
+            peekCoroutine = null;
         }
         public override void DiscardItem()
         {
@@ -56,15 +56,16 @@ namespace LCWildCardMod.Items
             }
             base.DiscardItem();
         }
-        public void MaskPeek(InputAction.CallbackContext throwContext)
+        internal void MaskPeek(InputAction.CallbackContext throwContext)
         {
-            if (base.IsOwner && playerHeldBy != null)
+            if (!base.IsOwner || playerHeldBy == null)
             {
-                log.LogDebug($"\"{this.itemProperties.itemName}\" Beginning Peek");
-                peekCoroutine = StartCoroutine(PeekCoroutine(throwContext));
+                return;
             }
+            Log.LogDebug($"\"{this.itemProperties.itemName}\" Beginning Peek");
+            peekCoroutine = StartCoroutine(PeekCoroutine(throwContext));
         }
-        public IEnumerator PeekCoroutine(InputAction.CallbackContext throwContext)
+        internal IEnumerator PeekCoroutine(InputAction.CallbackContext throwContext)
         {
             while (throwContext.action.IsPressed())
             {
@@ -72,12 +73,12 @@ namespace LCWildCardMod.Items
                 {
                     isLifted = true;
                     SetTriggerServerRpc("Lift");
-                    log.LogDebug($"\"{this.itemProperties.itemName}\" Waiting for Button Release");
+                    Log.LogDebug($"\"{this.itemProperties.itemName}\" Waiting for Button Release");
                 }
                 yield return new WaitUntil(() => (!throwContext.action.IsPressed() || playerHeldBy == null || playerHeldBy.moveInputVector != Vector2.zero));
                 if (isLifted)
                 {
-                    log.LogDebug($"\"{this.itemProperties.itemName}\" Button Released");
+                    Log.LogDebug($"\"{this.itemProperties.itemName}\" Button Released");
                     SetTriggerServerRpc("Lower");
                     isLifted = false;
                 }

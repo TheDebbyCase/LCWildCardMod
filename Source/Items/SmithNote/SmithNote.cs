@@ -8,79 +8,57 @@ using TMPro;
 using System.Linq;
 using UnityEngine.UI;
 using System.Collections;
+using LCWildCardMod.Utils;
 namespace LCWildCardMod.Items.SmithNote
 {
     public class SmithNote : NoisemakerProp
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
+        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public Texture2D[] debugTextures;
         public GameObject hudTextures;
-        public Animator localHudAnim;
         public AudioSource spawnMusic;
         public AudioClip laughAudio;
         public AudioClip writingSound;
         public AudioClip countdownSound;
         public AudioClip[] selectSounds;
         public NetworkAnimator itemAnimator;
-        public Dictionary<PlayerControllerB, SmithNoteInfo> playerNotes = new Dictionary<PlayerControllerB, SmithNoteInfo>();
-        public KeyValuePair<PlayerControllerB, SmithNoteInfo> currentElement;
         public List<TextMeshProUGUI> textMeshList;
         public List<RawImage> rawImageList;
         public GameObject infoPrefab;
-        public float playerSelectCooldown = 0;
-        public bool isFlippable = false;
-        public PlayerControllerB killingPlayer;
-        public bool isKillRunning = false;
-        public int lastFrameLivingPlayers;
-        public List<SmithNote> allNotes;
+        internal Dictionary<int, SmithNoteInfo> playerNotes = new Dictionary<int, SmithNoteInfo>();
+        internal int currentElement;
+        internal float playerSelectCooldown = 0;
+        internal bool isFlippable = false;
+        internal PlayerControllerB killingPlayer;
+        internal bool isKillRunning = false;
+        internal int lastFrameLivingPlayers;
+        internal static Animator localHudAnim;
+        internal static int noteCount = 0;
         internal Coroutine killCoroutine;
-        private System.Random random;
+        System.Random random;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            noteCount++;
+            EventsClass.OnRoundStart += SetHUDAnimator;
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
             lastFrameLivingPlayers = StartOfRound.Instance.livingPlayers;
-            if (FindObjectsOfType<SmithNote>().Length == 1)
-            {
-                log.LogDebug("First Smith Note Spawned");
-                StartCoroutine(WaitGeneratorCoroutine());
-            }
-            WildCardMod.wildcardKeyBinds.WildCardButton.performed += SelectPage;
+            WildCardMod.Instance.KeyBinds.WildCardButton.performed += SelectPage;
             if (base.IsOwner)
             {
                 BeginMusicServerRpc();
             }
         }
-        public IEnumerator WaitGeneratorCoroutine()
-        {
-            yield return new WaitUntil(() => RoundManager.Instance.dungeonFinishedGeneratingForAllPlayers);
-            localHudAnim = Instantiate(hudTextures, GameNetworkManager.Instance.localPlayerController.playerHudUIContainer).GetComponent<Animator>();
-            allNotes = FindObjectsOfType<SmithNote>().ToList();
-            for (int i = 0; i < allNotes.Count; i++)
-            {
-                if (allNotes[i] == this)
-                {
-                    log.LogDebug($"Skipping Smith Note {i + 1}");
-                    continue;
-                }
-                allNotes[i].allNotes = this.allNotes;
-                allNotes[i].localHudAnim = this.localHudAnim;
-                log.LogDebug($"Adding Variables to Smith Note {i + 1}");
-            }
-        }
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            if (allNotes.Count == 1)
+            noteCount--;
+            EventsClass.OnRoundStart -= SetHUDAnimator;
+            if (noteCount <= 0)
             {
-                log.LogDebug("I am the Last Smith Note");
                 Destroy(localHudAnim.gameObject);
-            }
-            for (int i = 0; i < allNotes.Count; i++)
-            {
-                log.LogDebug($"Removing myself from Smith Note {i + 1}");
-                allNotes[i].allNotes.Remove(this);
+                localHudAnim = null;
             }
         }
         public override void EquipItem()
@@ -91,7 +69,7 @@ namespace LCWildCardMod.Items.SmithNote
             }
             base.EquipItem();
             textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
-            if (playerNotes.ContainsKey(playerHeldBy))
+            if (playerNotes.ContainsKey((int)playerHeldBy.playerClientId))
             {
                 StartOpening();
             }
@@ -115,19 +93,19 @@ namespace LCWildCardMod.Items.SmithNote
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
-            if (isFlippable)
+            if (!isFlippable)
             {
-                int noiseIndex = random.Next(0, noiseSFX.Length);
-                float volume = (float)random.Next((int)(minLoudness * 100f), (int)(maxLoudness * 100f)) / 100f;
-                float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
-                noiseAudio.pitch = pitch;
-                StartFlipping();
-                noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
-                WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
-                playerHeldBy.timeSinceMakingLoudNoise = 0f;
-                RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
-
+                return;
             }
+            int noiseIndex = random.Next(0, noiseSFX.Length);
+            float volume = (float)random.Next((int)(minLoudness * 100f), (int)(maxLoudness * 100f)) / 100f;
+            float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
+            noiseAudio.pitch = pitch;
+            StartFlipping();
+            noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
+            WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
+            playerHeldBy.timeSinceMakingLoudNoise = 0f;
+            RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
         }
         public override void Update()
         {
@@ -157,110 +135,118 @@ namespace LCWildCardMod.Items.SmithNote
         {
             hasBeenHeld = true;
         }
-        public void BeginMusic()
+        internal void BeginMusic()
         {
-            if (!hasBeenHeld)
+            if (hasBeenHeld)
             {
-                spawnMusic.Play();
-            }
-        }
-        public void SelectPage(InputAction.CallbackContext throwContext)
-        {
-            if (playerHeldBy != null && playerHeldBy.ItemSlots.Contains<GrabbableObject>(this) && playerSelectCooldown == 0)
-            {
-                playerSelectCooldown = 5;
-                if (GameNetworkManager.Instance.localPlayerController == playerHeldBy)
-                {
-                    HUDManager.Instance.UIAudio.PlayOneShot(countdownSound, 3f);
-                    if (isPocketed)
-                    {
-                        RaycastHit[] hits = Physics.RaycastAll(new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward), 5f, StartOfRound.Instance.playersMask, QueryTriggerInteraction.Ignore);
-                        if (hits.Length > 0)
-                        {
-                            RaycastHit currentHit = hits[0];
-                            float hitDistance = 5f;
-                            foreach (RaycastHit hit in hits)
-                            {
-                                if (hit.transform.GetComponent<PlayerControllerB>() == playerHeldBy)
-                                {
-                                    continue;
-                                }
-                                else if (hit.distance > hitDistance)
-                                {
-                                    continue;
-                                }
-                                else
-                                {
-                                    hitDistance = hit.distance;
-                                    currentHit = hit;
-                                }
-                            }
-                            if (!playerNotes.ContainsKey(currentHit.transform.GetComponent<PlayerControllerB>()))
-                            {
-                                NewPageServerRpc(currentHit.transform.GetComponent<PlayerControllerB>().playerClientId);
-                            }
-                            else
-                            {
-                                WildCardMod.Log.LogDebug($"{currentHit.transform.GetComponent<PlayerControllerB>().playerUsername} was already in the players list!");
-                            }
-                        }
-                    }
-                    else
-                    {
-                        KillServerRpc(currentElement.Key.playerClientId);
-                    }
-                }
-            }
-        }
-        public void SetPages()
-        {
-            int index = playerNotes.Keys.ToList().IndexOf(currentElement.Key);
-            if (playerNotes.Count > 1 && index < playerNotes.Count - 1)
-            {
-                index++;
-                currentElement = playerNotes.ElementAt(index);
-                WildCardMod.Log.LogDebug($"playerNotes index: {index}");
                 return;
             }
-            currentElement = playerNotes.ElementAt(0);
+            spawnMusic.Play();
         }
-        public void StartOpening()
+        internal void SelectPage(InputAction.CallbackContext throwContext)
         {
-            currentElement = playerNotes.ElementAt(0);
+            if (playerHeldBy == null)
+            {
+                return;
+            }
+            if (!playerHeldBy.ItemSlots.Contains(this) || playerSelectCooldown > 0)
+            {
+                return;
+            }
+            if (GameNetworkManager.Instance.localPlayerController != playerHeldBy)
+            {
+                return;
+            }
+            playerSelectCooldown = 5;
+            HUDManager.Instance.UIAudio.PlayOneShot(countdownSound, 3f);
+            if (!isPocketed)
+            {
+                KillServerRpc((ulong)currentElement);
+                return;
+            }
+            RaycastHit[] hits = Physics.RaycastAll(new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward), 5f, StartOfRound.Instance.playersMask, QueryTriggerInteraction.Ignore);
+            if (hits.Length == 0)
+            {
+                return;
+            }
+            float hitDistance = 5f;
+            PlayerControllerB target = null;
+            for (int i = 0; i < hits.Length; i++)
+            {
+                RaycastHit newHit = hits[i];
+                PlayerControllerB newPlayer = newHit.transform.GetComponent<PlayerControllerB>();
+                if (newPlayer == null || newPlayer == playerHeldBy || newHit.distance > hitDistance)
+                {
+                    continue;
+                }
+                hitDistance = newHit.distance;
+                target = newPlayer;
+            }
+            if (target == null)
+            {
+                return;
+            }
+            if (playerNotes.ContainsKey((int)target.playerClientId))
+            {
+                Log.LogDebug($"{target.playerUsername} was already in the players list!");
+                return;
+            }
+            NewPageServerRpc(target.playerClientId);
+        }
+        internal void SetPages()
+        {
+            int index = playerNotes.Keys.ToList().IndexOf(currentElement);
+            if (playerNotes.Count <= 1 || index >= playerNotes.Count - 1)
+            {
+                currentElement = playerNotes.ElementAt(0).Key;
+                return;
+            }
+            index++;
+            currentElement = playerNotes.ElementAt(index).Key;
+            Log.LogDebug($"playerNotes index: {index}");
+        }
+        internal void StartOpening()
+        {
+            currentElement = playerNotes.ElementAt(0).Key;
             textMeshList[0].rectTransform.parent.gameObject.SetActive(true);
             rawImageList[0].rectTransform.parent.gameObject.SetActive(true);
-            textMeshList[0].text = currentElement.Value.username;
-            rawImageList[0].texture = currentElement.Value.texture;
-            rawImageList[0].color = currentElement.Value.colour;
-            if (base.IsServer)
+            SmithNoteInfo info = playerNotes[currentElement];
+            textMeshList[0].text = info.username;
+            rawImageList[0].texture = info.texture;
+            rawImageList[0].color = info.colour;
+            if (!base.IsServer)
             {
-                itemAnimator.SetTrigger("OpenBook");
+                return;
             }
+            itemAnimator.SetTrigger("OpenBook");
         }
-        public void StartClosing()
+        internal void StartClosing()
         {
             textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
             isFlippable = false;
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                itemAnimator.SetTrigger("CloseBook");
+                return;
             }
+            itemAnimator.SetTrigger("CloseBook");
         }
-        public void StartFlipping()
+        internal void StartFlipping()
         {
             isFlippable = false;
             textMeshList[1].rectTransform.parent.gameObject.SetActive(true);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(true);
             rawImageList[0].rectTransform.parent.gameObject.SetActive(false);
-            rawImageList[1].texture = currentElement.Value.texture;
-            rawImageList[1].color = currentElement.Value.colour;
+            SmithNoteInfo info = playerNotes[currentElement];
+            rawImageList[1].texture = info.texture;
+            rawImageList[1].color = info.colour;
             SetPages();
-            textMeshList[1].text = currentElement.Value.username;
-            if (base.IsServer)
+            textMeshList[1].text = info.username;
+            if (!base.IsServer)
             {
-                itemAnimator.SetTrigger("Activate");
+                return;
             }
+            itemAnimator.SetTrigger("Activate");
         }
         public void FinishOpening()
         {
@@ -268,15 +254,16 @@ namespace LCWildCardMod.Items.SmithNote
         }
         public void FinishClosing()
         {
-            if (!isHeld)
+            if (isHeld)
             {
-                textMeshList[0].rectTransform.parent.gameObject.SetActive(false);
-                rawImageList[0].rectTransform.parent.gameObject.SetActive(false);
+                return;
             }
+            textMeshList[0].rectTransform.parent.gameObject.SetActive(false);
+            rawImageList[0].rectTransform.parent.gameObject.SetActive(false);
         }
         public void FinishFlipping()
         {
-            textMeshList[0].text = currentElement.Value.username;
+            textMeshList[0].text = playerNotes[currentElement].username;
             textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
             isFlippable = true;
@@ -284,68 +271,82 @@ namespace LCWildCardMod.Items.SmithNote
         public void PfpFrameUpdate()
         {
             rawImageList[0].rectTransform.parent.gameObject.SetActive(true);
-            rawImageList[0].texture = currentElement.Value.texture;
-            rawImageList[0].color = currentElement.Value.colour;
+            SmithNoteInfo info = playerNotes[currentElement];
+            rawImageList[0].texture = info.texture;
+            rawImageList[0].color = info.colour;
         }
-        public void CheckDead()
+        internal void CheckDead()
         {
-            foreach (KeyValuePair<PlayerControllerB, SmithNoteInfo> pair in playerNotes)
+            List<int> ids = playerNotes.Keys.ToList();
+            for (int i = 0; i < ids.Count; i++)
             {
-                PlayerControllerB player = pair.Key;
-                SmithNoteInfo info = pair.Value;
+                int id = ids[i];
+                PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[id];
+                SmithNoteInfo info = playerNotes[id];
+                string user;
                 if ((player.isPlayerDead || killingPlayer == player) && !info.isDead)
                 {
-                    string user = info.username;
+                    user = info.username;
                     info.username = $"<s>{user}";
                     info.colour = new Color(1f, 0.5f, 0.5f);
                     info.isDead = true;
-                    for (int i = 0; i < 2; i++)
+                    for (int j = 0; j < 2; j++)
                     {
-                        TextMeshProUGUI text = textMeshList[i];
-                        if (text.text == user)
+                        TextMeshProUGUI text = textMeshList[j];
+                        if (text.text != user)
                         {
-                            text.text = info.username;
+                            continue;
                         }
+                        text.text = info.username;
                     }
-                    for (int i = 0; i < 2; i++)
+                    for (int j = 0; j < 2; j++)
                     {
-                        RawImage image = rawImageList[i];
-                        if (image.texture == info.texture)
+                        RawImage image = rawImageList[j];
+                        if (image.texture != info.texture)
                         {
-                            image.color = info.colour;
+                            continue;
                         }
+                        image.color = info.colour;
                     }
+                    return;
                 }
-                else if (!player.isPlayerDead && info.isDead)
+                if (player.isPlayerDead || !info.isDead)
                 {
-                    string user = info.username;
-                    info.username = $"{player.playerUsername}";
-                    info.colour = Color.white;
-                    info.isDead = false;
-                    for (int i = 0; i < 2; i++)
+                    return;
+                }
+                user = info.username;
+                info.username = $"{player.playerUsername}";
+                info.colour = Color.white;
+                info.isDead = false;
+                for (int j = 0; j < 2; j++)
+                {
+                    TextMeshProUGUI text = textMeshList[j];
+                    if (text.text != user)
                     {
-                        TextMeshProUGUI text = textMeshList[i];
-                        if (text.text == user)
-                        {
-                            text.text = info.username;
-                        }
+                        continue;
                     }
-                    for (int i = 0; i < 2; i++)
+                    text.text = info.username;
+                }
+                for (int j = 0; j < 2; j++)
+                {
+                    RawImage image = rawImageList[j];
+                    if (image.texture != info.texture)
                     {
-                        RawImage image = rawImageList[i];
-                        if (image.texture == info.texture)
-                        {
-                            image.color = info.colour;
-                        }
+                        continue;
                     }
+                    image.color = info.colour;
                 }
             }
         }
-        public IEnumerator KillCoroutine()
+        internal IEnumerator KillCoroutine()
         {
             isKillRunning = true;
             yield return new WaitForSeconds(4.5f);
-            GameNetworkManager.Instance.localPlayerController.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 1);
+            PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+            if (!localPlayer.SaveIfHalo())
+            {
+                localPlayer.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 1);
+            }
             isKillRunning = false;
         }
         [ServerRpc(RequireOwnership = false)]
@@ -368,17 +369,19 @@ namespace LCWildCardMod.Items.SmithNote
         public void NewPageClientRpc(ulong id)
         {
             PlayerControllerB selectingPlayer = StartOfRound.Instance.allPlayerScripts[id];
-            WildCardMod.Log.LogDebug($"Adding player {selectingPlayer.playerUsername} to players list!");
-            playerNotes.Add(selectingPlayer, Instantiate<SmithNoteInfo>(infoPrefab.GetComponent<SmithNoteInfo>(), base.transform));
-            playerNotes.GetValueOrDefault(selectingPlayer).Spawn(this, selectingPlayer);
+            Log.LogDebug($"Adding player {selectingPlayer.playerUsername} to players list!");
+            SmithNoteInfo info = Instantiate(infoPrefab.GetComponent<SmithNoteInfo>(), base.transform);
+            playerNotes.Add((int)id, info);
+            info.Spawn(this, selectingPlayer);
             if (!isPocketed)
             {
                 StartOpening();
             }
-            if (playerHeldBy == GameNetworkManager.Instance.localPlayerController)
+            if (playerHeldBy != GameNetworkManager.Instance.localPlayerController)
             {
-                HUDManager.Instance.UIAudio.PlayOneShot(selectSounds[random.Next(0, selectSounds.Length)], 3f);
+                return;
             }
+            HUDManager.Instance.UIAudio.PlayOneShot(selectSounds[random.Next(0, selectSounds.Length)], 3f);
         }
         [ServerRpc(RequireOwnership = false)]
         public void KillServerRpc(ulong id)
@@ -389,24 +392,30 @@ namespace LCWildCardMod.Items.SmithNote
         public void KillClientRpc(ulong id)
         {
             killingPlayer = StartOfRound.Instance.allPlayerScripts[id];
-            if (!killingPlayer.isPlayerDead)
+            if (killingPlayer.isPlayerDead)
             {
-                WildCardMod.Log.LogDebug($"Running Kill with id: {id}");
-                CheckDead();
-                if (killingPlayer == GameNetworkManager.Instance.localPlayerController)
-                {
-                    HUDManager.Instance.UIAudio.PlayOneShot(laughAudio, 2f);
-                    WildCardMod.Log.LogDebug($"Smith Note Killing This Player!");
-                    killingPlayer.JumpToFearLevel(1f);
-                    localHudAnim.SetTrigger("Kill");
-                    killCoroutine = StartCoroutine(KillCoroutine());
-                }
-                if (playerHeldBy == GameNetworkManager.Instance.localPlayerController)
-                {
-                    WildCardMod.Log.LogDebug($"Smith Note Killing {killingPlayer}!");
-                    HUDManager.Instance.UIAudio.PlayOneShot(writingSound, 3f);
-                }
+                return;
             }
+            Log.LogDebug($"Running Kill with id: {id}");
+            CheckDead();
+            if (killingPlayer == GameNetworkManager.Instance.localPlayerController)
+            {
+                HUDManager.Instance.UIAudio.PlayOneShot(laughAudio, 2f);
+                Log.LogDebug($"Smith Note Killing This Player!");
+                killingPlayer.JumpToFearLevel(1f);
+                localHudAnim?.SetTrigger("Kill");
+                killCoroutine = StartCoroutine(KillCoroutine());
+            }
+            if (playerHeldBy != GameNetworkManager.Instance.localPlayerController)
+            {
+                return;
+            }
+            Log.LogDebug($"Smith Note Killing {killingPlayer}!");
+            HUDManager.Instance.UIAudio.PlayOneShot(writingSound, 3f);
+        }
+        internal void SetHUDAnimator()
+        {
+            localHudAnim ??= Instantiate(hudTextures, GameNetworkManager.Instance.localPlayerController.playerHudUIContainer).GetComponent<Animator>();
         }
     }
 }

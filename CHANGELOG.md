@@ -1,9 +1,19 @@
+## 1.2.0
+- Further increased the time it takes for Clauvio Mouse to get agitated, and stopped it from getting agitated when not on a timed moon
+- Fixed Smith Note not being able to kill non-host players. This also fixes the emote effect not showing.
+- Further increased the force applied to players when being consumed by the Worm Pit
+- Added a bunch of debug lines to help fix any issues that might arise
+- Refactored a huge amount of code to improve readability and probably a very minor performance boost
+- Made Fyrus Star and Smith Halo actually useful! They should now save from virtually every form of damage/death, respectively, other than Out of Bounds. If there are any ways to die you find that don't get saved by them and you think they should, let me know!
+- Fixed a bug where when forced to discard your items after throwing a halo you would be unable to interact
+- Decreased range at which Worm Pit will get hungry quickly when the player is near
+
 ## 1.1.1
 - Vastly increased the time it takes for Clauvio Mouse to get agitated
 
 ## 1.1.0
 - Removed ability for passive noisemakers to trigger the company monster
-- Fixed Smith Note sometimes being unable to kill clients
+- Fixed Smith Note sometimes being unable to kill clients (lie)
 
 ## 1.0.3
 - Forgot to build the .DLL, oops, also increased the sucking potential of the worm pit

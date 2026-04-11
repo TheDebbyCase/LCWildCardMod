@@ -6,33 +6,31 @@ namespace LCWildCardMod.Items
 {
     public class Valentine : PhysicsProp
     {
-        readonly BepInEx.Logging.ManualLogSource log = WildCardMod.Log;
+        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public ScanNodeProperties scanNode;
         public MeshRenderer meshRenderer;
         public NetworkAnimator itemAnimator;
         public AudioSource beatAudio;
         public Material materialRef;
         public int startingValue = 0;
-        public float intensityValue;
-        public Vector3 lastUpdatePosition;
-        public int standStillAmount = 0;
-        public void Awake()
-        {
-            beatAudio.volume /= 2f;
-        }
+        internal float intensityValue;
+        internal Vector3 lastUpdatePosition;
+        internal int standStillAmount = 0;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
             StartCoroutine(StartingValueCoroutine());
             materialRef = meshRenderer.material;
+            beatAudio.volume /= 2f;
         }
-        public IEnumerator StartingValueCoroutine()
+        internal IEnumerator StartingValueCoroutine()
         {
-            yield return new WaitUntil(() => scrapValue > 0);
-            if (startingValue == 0)
+            if (startingValue != 0)
             {
-                startingValue = scrapValue;
+                yield break;
             }
+            yield return new WaitUntil(() => scrapValue > 0);
+            startingValue = scrapValue;
         }
         public override void Update()
         {
@@ -55,28 +53,31 @@ namespace LCWildCardMod.Items
             currentUseCooldown = 2.5f;
             lastUpdatePosition = base.transform.position;
             standStillAmount = 0;
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                itemAnimator.Animator.SetBool("isHeld", true);
+                return;
             }
+            itemAnimator.Animator.SetBool("isHeld", true);
         }
         public override void PocketItem()
         {
             base.PocketItem();
             standStillAmount = 0;
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                itemAnimator.Animator.SetBool("isHeld", false);
+                return;
             }
+            itemAnimator.Animator.SetBool("isHeld", false);
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
             standStillAmount = 0;
-            if (base.IsServer)
+            if (!base.IsServer)
             {
-                itemAnimator.Animator.SetBool("isHeld", false);
+                return;
             }
+            itemAnimator.Animator.SetBool("isHeld", false);
         }
         public void HeartBeat()
         {
@@ -88,11 +89,8 @@ namespace LCWildCardMod.Items
             }
             WalkieTalkie.TransmitOneShotAudio(beatAudio, beatAudio.clip);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
-            if ((base.transform.position - lastUpdatePosition).magnitude < 3f)
-            {
-                standStillAmount++;
-            }
-            else
+            standStillAmount++;
+            if ((base.transform.position - lastUpdatePosition).magnitude >= 3f)
             {
                 standStillAmount = 0;
             }
@@ -115,7 +113,7 @@ namespace LCWildCardMod.Items
         public void ScrapValueClientRpc(int newValue)
         {
             SetScrapValue(newValue);
-            log.LogDebug($"Valentine Stand Still Amount: {standStillAmount}, Value: {scrapValue}");
+            Log.LogDebug($"Valentine Stand Still Amount: {standStillAmount}, Value: {scrapValue}");
         }
         [ServerRpc(RequireOwnership = false)]
         public void SetIntensityServerRpc(float intensity)
@@ -135,10 +133,11 @@ namespace LCWildCardMod.Items
         public void SetIntensityClientRpc(float intensity)
         {
             intensityValue = intensity;
-            if (intensityValue > 95f)
+            if (intensityValue <= 95f)
             {
-                beatAudio.pitch = (intensityValue / 20f) - 3.75f;
+                return;
             }
+            beatAudio.pitch = (intensityValue / 20f) - 3.75f;
         }
     }
 }
