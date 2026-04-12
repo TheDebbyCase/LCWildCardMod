@@ -19,13 +19,6 @@ namespace LCWildCardMod.Patches
         static MethodInfo killPlayerMethod = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
         static FieldInfo sinkingField = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.sinkingValue));
         static FieldInfo crouchingField = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.isCrouching));
-        [HarmonyPatch(nameof(PlayerControllerB.Interact_performed))]
-        [HarmonyPrefix]
-        public static bool DebugGrab(PlayerControllerB __instance, ref InputAction.CallbackContext context)
-        {
-            Log.LogDebug($"IsOwner: {__instance.IsOwner}, isPlayerDead: {__instance.isPlayerDead}, IsServer: {__instance.IsServer}, isHostPlayerObject: {__instance.isHostPlayerObject}, isPlayerControlled: {__instance.isPlayerControlled}, isTestingPlayer: {__instance.isTestingPlayer}, context.performed: {context.performed}, timeSinceSwitchingSlots: {__instance.timeSinceSwitchingSlots}, inSpecialMenu: {__instance.inSpecialMenu}, isGrabbingObjectAnimation: {__instance.isGrabbingObjectAnimation}, isTypingChat: {__instance.isTypingChat}, inTerminalMenu: {__instance.inTerminalMenu}, throwingObject: {__instance.throwingObject}, IsInspectingItem: {__instance.IsInspectingItem}, inAnimationWithEnemy: {__instance.inAnimationWithEnemy}, jetpackControls: {__instance.jetpackControls}, disablingJetpackControls: {__instance.disablingJetpackControls}, StartOfRound.Instance.suckingPlayersOutOfShip: {StartOfRound.Instance.suckingPlayersOutOfShip}");
-            return true;
-        }
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyPrefix]
         public static bool SavePlayerDamage(PlayerControllerB __instance, ref CauseOfDeath causeOfDeath, ref int damageNumber)
@@ -117,6 +110,10 @@ namespace LCWildCardMod.Patches
         {
             try
             {
+                if (!__result)
+                {
+                    return;
+                }
                 __result = !__instance.IsFyrusSaveable();
             }
             catch (Exception exception)

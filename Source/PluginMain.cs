@@ -22,7 +22,7 @@ namespace LCWildCardMod
     {
         public const string modGUID = "deB.WildCard";
         public const string modName = "WILDCARD Stuff";
-        public const string modVersion = "1.2.0";
+        public const string modVersion = "1.2.1";
         public List<Item> scrapList = new List<Item>();
         public List<Skin> skinList = new List<Skin>();
         public List<MapObject> mapObjectsList = new List<MapObject>();

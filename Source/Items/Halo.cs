@@ -228,7 +228,7 @@ namespace LCWildCardMod.Items
                 ThrowEndServerRpc();
                 StopDripServerRpc();
             }
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(2.5f);
             Log.LogDebug("Halo Fully Exhausted");
             isExhausted = 1;
             exhaustCoroutine = null;
@@ -262,13 +262,22 @@ namespace LCWildCardMod.Items
         }
         internal void ExhaustLocal(PlayerControllerB player, Vector3 hitVelocity = default)
         {
-            player.health = 1;
+            int damage = player.health - 1;
+            player.health -= damage;
             player.externalForceAutoFade += hitVelocity;
             if (exhaustCoroutine == null)
             {
                 ExhaustHaloServerRpc();
-                HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
-                player.MakeCriticallyInjured(enable: true);
+                HUDManager.Instance.SetCracksOnVisor(player.health);
+                HUDManager.Instance.UpdateHealthUI(player.health);
+            }
+            if (base.IsServer)
+            {
+                player.DamagePlayerClientRpc(damage, player.health);
+            }
+            else
+            {
+                player.DamagePlayerServerRpc(damage, player.health);
             }
             AudioClip damageClip = StartOfRound.Instance.damageSFX;
             if (player.takingFallDamage)

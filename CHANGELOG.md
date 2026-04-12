@@ -1,3 +1,9 @@
+## 1.2.1
+- Fixed a bug that would cause quicksand to behave unexpectedly
+- Halo saves now properly update the HUD and no longer cause critical injury
+- Doubled the grace period after eing Halo saved where the player remains invincible
+- Removed a temporary debug log
+
 ## 1.2.0
 - Further increased the time it takes for Clauvio Mouse to get agitated, and stopped it from getting agitated when not on a timed moon
 - Fixed Smith Note not being able to kill non-host players. This also fixes the emote effect not showing.
