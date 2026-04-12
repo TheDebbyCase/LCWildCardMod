@@ -41,16 +41,22 @@ namespace LCWildCardMod.Patches
         public static IEnumerable<CodeInstruction> SavePlayerDamage(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             LocalBuilder overkill = null;
-            Label? elseJump = null;
+            LocalBuilder healthOverride = null;
+            Label? oldLabel1 = null;
+            Label? oldLabel2 = null;
+            Label? oldLabel3 = null;
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
             {
-                if (codes[i + 2].LoadsField(healthField) && codes[i].opcode.Equals(OpCodes.Ret) && codes[i - 1].Branches(out Label? oldLabel0) && codes[i + 3].IsLdarg(1) && codes[i + 4].opcode.Equals(OpCodes.Sub) && codes[i + 5].opcode.Equals(OpCodes.Ldc_I4_0) && codes[i + 6].Branches(out Label? oldLabel1))
+                if (i - 3 < 0 || i + 6 >= codes.Count)
+                {
+                    continue;
+                }
+                if (codes[i + 2].LoadsField(healthField) && codes[i].opcode.Equals(OpCodes.Ret) && codes[i + 3].IsLdarg(1) && codes[i + 4].opcode.Equals(OpCodes.Sub) && codes[i + 5].opcode.Equals(OpCodes.Ldc_I4_0) && codes[i - 1].Branches(out Label? oldLabel0) && codes[i + 6].Branches(out oldLabel1))
                 {
                     List<CodeInstruction> newCode = new List<CodeInstruction>();
                     overkill = generator.DeclareLocal(typeof(bool));
-                    Label ifJump0 = generator.DefineLabel();
-                    Label ifJump1 = generator.DefineLabel();
+                    healthOverride = generator.DeclareLocal(typeof(bool));
                     CodeInstruction jumpDest = new CodeInstruction(OpCodes.Ldarg_0);
                     jumpDest.labels.Add(oldLabel0.Value);
                     newCode.Add(jumpDest);
@@ -62,50 +68,63 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_0));
                     newCode.Add(new CodeInstruction(OpCodes.Ceq));
                     newCode.Add(new CodeInstruction(OpCodes.Stloc_S, (byte)overkill.LocalIndex));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_0));
+                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, (byte)healthOverride.LocalIndex));
+                    codes.RemoveRange(i + 1, 6);
+                    codes.InsertRange(i + 1, newCode);
+                    i += newCode.Count;
+                }
+                if (overkill != null && oldLabel1.HasValue && codes[i - 1].opcode.Equals(OpCodes.Ldc_I4_S) && codes[i - 1].OperandIs((byte)50) && codes[i].Branches(out oldLabel3) && codes[i - 3].Branches(out oldLabel2)) //
+                {
+                    List<CodeInstruction> newCode = new List<CodeInstruction>();
+                    Label newLabel = generator.DefineLabel();
+                    Label noSaveJump = generator.DefineLabel();
+                    Label overridenJump = generator.DefineLabel();
                     newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, (byte)overkill.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, ifJump0));
+                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, oldLabel1.Value));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_1));
+                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, (byte)healthOverride.LocalIndex));
+                    codes.InsertRange(i + 1, newCode);
+                    i += newCode.Count;
+                    newCode.Clear();
+                    CodeInstruction elseIfCode = new CodeInstruction(OpCodes.Ldloc_S, (byte)overkill.LocalIndex);
+                    elseIfCode.labels.Add(oldLabel1.Value);
+                    elseIfCode.labels.Add(oldLabel2.Value);
+                    elseIfCode.labels.Add(oldLabel3.Value);
+                    newCode.Add(elseIfCode);
+                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_0));
                     newCode.Add(new CodeInstruction(OpCodes.Call, haloSaveMethod));
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_0));
                     newCode.Add(new CodeInstruction(OpCodes.Ceq));
                     newCode.Add(new CodeInstruction(OpCodes.Stloc_S, (byte)overkill.LocalIndex));
                     newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, (byte)overkill.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, ifJump1));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_0));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, healthField));
+                    newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, noSaveJump));
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_1));
-                    newCode.Add(new CodeInstruction(OpCodes.Sub));
-                    newCode.Add(new CodeInstruction(OpCodes.Starg_S, (byte)1));
-                    CodeInstruction nextJumpDest = new CodeInstruction(OpCodes.Ldloc_S, (byte)overkill.LocalIndex);
-                    nextJumpDest.labels.Add(ifJump0);
-                    nextJumpDest.labels.Add(ifJump1);
-                    newCode.Add(nextJumpDest);
-                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, oldLabel1));
-                    codes.RemoveRange(i + 1, 6);
+                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, (byte)healthOverride.LocalIndex));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_0));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_1));
+                    newCode.Add(new CodeInstruction(OpCodes.Stfld, healthField));
+                    CodeInstruction newIf = new CodeInstruction(OpCodes.Ldloca_S, (byte)healthOverride.LocalIndex);
+                    newIf.labels.Add(newLabel);
+                    newIf.labels.Add(noSaveJump);
+                    newCode.Add(newIf);
+                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, overridenJump));
+                    codes[i + 5].labels.Clear();
+                    codes[i + 14].labels.Add(overridenJump);
                     codes.InsertRange(i + 1, newCode);
                     i += newCode.Count;
                 }
-                if (overkill != null && codes[i].Branches(out _) && codes[i - 1].Calls(killPlayerMethod) && codes[i + 2].LoadsField(healthField))
+                if (overkill != null && oldLabel1.HasValue && oldLabel2.HasValue && oldLabel3.HasValue && codes[i].Calls(killPlayerMethod))
                 {
                     List<CodeInstruction> newCode = new List<CodeInstruction>();
-                    elseJump = generator.DefineLabel();
-                    CodeInstruction loadLocal = new CodeInstruction(OpCodes.Ldloc_S, (byte)overkill.LocalIndex);
-                    loadLocal.labels.AddRange(codes[i + 1].labels);
-                    newCode.Add(loadLocal);
-                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, elseJump.Value));
-                    codes[i + 1].labels.Clear();
-                    codes.InsertRange(i + 1, newCode);
-                    i += newCode.Count;
-                }
-                if (elseJump.HasValue && codes[i].IsLdarg(1) && codes[i + 1].opcode.Equals(OpCodes.Ldc_I4_S) && codes[i + 2].Branches(out _))
-                {
-                    codes[i].labels.Add(elseJump.Value);
+                    Label overkillJump = generator.DefineLabel();
+                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, (byte)overkill.LocalIndex));
+                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, overkillJump));
+                    codes[i + 16].labels.Add(overkillJump);
+                    codes.InsertRange(i + 2, newCode);
                     break;
                 }
-            }
-            for (int i = 0; i < codes.Count; i++)
-            {
-                Log.LogDebug(codes[i].ToString());
             }
             return codes.AsEnumerable();
         }
