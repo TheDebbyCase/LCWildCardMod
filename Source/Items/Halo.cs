@@ -262,39 +262,11 @@ namespace LCWildCardMod.Items
         }
         internal void ExhaustLocal(PlayerControllerB player, Vector3 hitVelocity = default)
         {
-            int damage = player.health - 1;
-            player.health -= damage;
             player.externalForceAutoFade += hitVelocity;
             if (exhaustCoroutine == null)
             {
                 ExhaustHaloServerRpc();
-                HUDManager.Instance.SetCracksOnVisor(player.health);
-                HUDManager.Instance.UpdateHealthUI(player.health);
             }
-            if (base.IsServer)
-            {
-                player.DamagePlayerClientRpc(damage, player.health);
-            }
-            else
-            {
-                player.DamagePlayerServerRpc(damage, player.health);
-            }
-            AudioClip damageClip = StartOfRound.Instance.damageSFX;
-            if (player.takingFallDamage)
-            {
-                damageClip = StartOfRound.Instance.fallDamageSFX;
-                WalkieTalkie.TransmitOneShotAudio(player.movementAudio, damageClip);
-                player.BreakLegsSFXClientRpc();
-            }
-            HUDManager.Instance.UIAudio.PlayOneShot(damageClip, 1f);
-            StartOfRound.Instance.LocalPlayerDamagedEvent.Invoke();
-            player.takingFallDamage = false;
-            if (!player.inSpecialInteractAnimation && !player.twoHandedAnimation)
-            {
-                player.playerBodyAnimator.SetTrigger("Damage");
-            }
-            player.specialAnimationWeight = 1f;
-            player.PlayQuickSpecialAnimation(0.7f);
         }
         public override int GetItemDataToSave()
         {
@@ -339,7 +311,10 @@ namespace LCWildCardMod.Items
         [ClientRpc]
         public void ThrowEndClientRpc()
         {
-            ThrowEnd();
+            if (isThrowing || (playerHeldBy != null && playerHeldBy.throwingObject))
+            {
+                ThrowEnd();
+            }
         }
         [ServerRpc(RequireOwnership = false)]
         public void ThrowCurveServerRpc(Vector3 position)

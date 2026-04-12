@@ -31,6 +31,7 @@ namespace LCWildCardMod.Utils
         {
             if (player.IsSaveable(out bool starSave, out SmithHalo haloRef) && !starSave)
             {
+                WildCardMod.Instance.Log.LogDebug("Running Halo Exhaust from SaveIfHalo");
                 haloRef.ExhaustLocal(player);
                 return true;
             }

@@ -11,6 +11,7 @@ using HarmonyLib;
 using LCWildCardMod.Config;
 using LCWildCardMod.Utils;
 using static BepInEx.BepInDependency;
+using System.Runtime.CompilerServices;
 namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
@@ -246,6 +247,21 @@ namespace LCWildCardMod
                     harmony.PatchAll(type);
                 }
             }
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void LogString(string tolog)
+        {
+            Instance.Log.LogDebug(tolog);
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void LogBool(string tolog, bool value)
+        {
+            LogString($"{tolog}: {value}");
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void LogInt(string tolog, int value)
+        {
+            LogString($"{tolog}: {value}");
         }
     }
 }
