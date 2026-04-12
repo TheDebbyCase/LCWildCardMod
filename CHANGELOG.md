@@ -1,7 +1,10 @@
+## 1.2.2
+- Tweaked the Halo save so that it will not exhaust if the player would otherwise have been saved by vanilla means
+
 ## 1.2.1
 - Fixed a bug that would cause quicksand to behave unexpectedly
 - Halo saves now properly update the HUD and no longer cause critical injury
-- Doubled the grace period after eing Halo saved where the player remains invincible
+- Doubled the grace period after being Halo saved where the player remains invincible
 - Removed a temporary debug log
 
 ## 1.2.0

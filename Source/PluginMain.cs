@@ -23,7 +23,7 @@ namespace LCWildCardMod
     {
         public const string modGUID = "deB.WildCard";
         public const string modName = "WILDCARD Stuff";
-        public const string modVersion = "1.2.1";
+        public const string modVersion = "1.2.2";
         public List<Item> scrapList = new List<Item>();
         public List<Skin> skinList = new List<Skin>();
         public List<MapObject> mapObjectsList = new List<MapObject>();
@@ -247,21 +247,6 @@ namespace LCWildCardMod
                     harmony.PatchAll(type);
                 }
             }
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void LogString(string tolog)
-        {
-            Instance.Log.LogDebug(tolog);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void LogBool(string tolog, bool value)
-        {
-            LogString($"{tolog}: {value}");
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void LogInt(string tolog, int value)
-        {
-            LogString($"{tolog}: {value}");
         }
     }
 }
