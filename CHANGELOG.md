@@ -1,3 +1,9 @@
+## 1.2.3
+- Fixed players not dying from damage (oops)
+- Fixed Kidnapper Fox, Cadaver Bloom, Ghost Girl, Masked and Jester behaviour being incorrect
+- Made Worm Pit hittable (she doesn't enjoy it)
+- Made Halo able to hit any hittable objects (like turrets)
+
 ## 1.2.2
 - Tweaked the Halo save so that it will not exhaust if the player would otherwise have been saved by vanilla means
 
