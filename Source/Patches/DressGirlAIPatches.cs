@@ -1,21 +1,14 @@
-﻿using GameNetcodeStuff;
-using HarmonyLib;
+﻿using HarmonyLib;
 using LCWildCardMod.Utils;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Emit;
-using UnityEngine;
 namespace LCWildCardMod.Patches
 {
     [HarmonyPatch(typeof(DressGirlAI))]
     public static class DressGirlAIPatches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        static MethodInfo haloSaveMethod = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
-        static MethodInfo killPlayerMethod = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
-        static FieldInfo stateField = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.currentBehaviourStateIndex));
         [HarmonyPatch(nameof(DressGirlAI.OnCollideWithPlayer))]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
@@ -24,18 +17,30 @@ namespace LCWildCardMod.Patches
             Label? newLabel = null;
             for (int i = 0; i < codes.Count; i++)
             {
-                if (codes[i].LoadsField(stateField) && codes[i + 1].opcode.Equals(OpCodes.Ldc_I4_1) && codes[i + 2].Branches(out _))
+                if (codes[i].LoadsField(TranspilerHelper.enemyState) && codes[i + 1].opcode.Equals(OpCodes.Ldc_I4_1) && codes[i + 2].Branches(out _))
                 {
                     List<CodeInstruction> newCode = new List<CodeInstruction>();
                     newLabel = generator.DefineLabel();
-                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_0));
-                    newCode.Add(new CodeInstruction(OpCodes.Call, haloSaveMethod));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.haloSave));
                     newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, newLabel.Value));
                     codes.InsertRange(i + 3, newCode);
                 }
-                if (newLabel.HasValue && codes[i].Calls(killPlayerMethod))
+                if (newLabel.HasValue && codes[i].Calls(TranspilerHelper.killPlayer))
                 {
+                    List<CodeInstruction> newCode = new List<CodeInstruction>();
+                    Label dontSwitchLabel = generator.DefineLabel();
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.switchHaunt));
+                    newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, dontSwitchLabel));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 1));
+                    newCode.Add(new CodeInstruction(OpCodes.Stfld, TranspilerHelper.switchHaunt));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.newHauntClient));
                     codes[i + 1].labels.Add(newLabel.Value);
+                    codes.InsertRange(i + 1, newCode);
+                    codes[^1].labels.Add(dontSwitchLabel);
                     break;
                 }
             }

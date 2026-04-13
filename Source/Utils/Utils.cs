@@ -1,25 +1,218 @@
-﻿using LCWildCardMod.Config;
+﻿using GameNetcodeStuff;
+using HarmonyLib;
+using LCWildCardMod.Config;
+using LCWildCardMod.Items.Fyrus;
 using LethalCompanyInputUtils.Api;
-using LobbyCompatibility.Enums;
-using LobbyCompatibility.Features;
 using System;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using UnityEngine;
+using UnityEngine.AI;
 using UnityEngine.InputSystem;
 namespace LCWildCardMod.Utils
 {
+    internal static class TranspilerHelper
+    {
+        internal static MethodInfo toString = AccessTools.Method(typeof(object), nameof(object.ToString));
+        internal static MethodInfo stringConcat3 = AccessTools.Method(typeof(string), nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) });
+        internal static MethodInfo logString = AccessTools.Method(typeof(TranspilerHelper), nameof(LogString), new Type[] { typeof(string) });
+        internal static MethodInfo collision = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.MeetsStandardPlayerCollisionConditions), new Type[] { typeof(Collider), typeof(bool), typeof(bool) });
+        internal static MethodInfo inequality = AccessTools.Method(typeof(UnityEngine.Object), "op_Inequality", new Type[] { typeof(UnityEngine.Object), typeof(UnityEngine.Object) });
+        internal static MethodInfo exitDriver = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitDriverSideSeat));
+        internal static MethodInfo exitPassenger = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitPassengerSideSeat));
+        internal static MethodInfo haloSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
+        internal static MethodInfo anySave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfAny), new Type[] { typeof(PlayerControllerB) });
+        internal static MethodInfo killPlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
+        internal static MethodInfo consumedStar = AccessTools.Method(typeof(FyrusStar), nameof(FyrusStar.HasPlayerConsumedStar), new Type[] { typeof(PlayerControllerB) });
+        internal static MethodInfo newHauntClient = AccessTools.Method(typeof(DressGirlAI), nameof(DressGirlAI.ChooseNewHauntingPlayerClientRpc));
+        internal static MethodInfo switchBehaviour = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.SwitchToBehaviourState), new Type[] { typeof(int) });
+        internal static MethodInfo setSpeed = AccessTools.Method(typeof(NavMeshAgent), "set_speed", new Type[] { typeof(float) });
+        internal static MethodInfo allowDeath = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.AllowPlayerDeath));
+        internal static MethodInfo cancelSpecialAnim = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.CancelSpecialAnimationWithPlayer));
+        internal static MethodInfo setCracks = AccessTools.Method(typeof(HUDManager), nameof(HUDManager.SetCracksOnVisor), new Type[] { typeof(float) });
+        internal static MethodInfo getHud = AccessTools.Method(typeof(HUDManager), "get_Instance");
+        internal static MethodInfo beeKill = AccessTools.Method(typeof(RedLocustBees), nameof(RedLocustBees.BeeKillPlayerOnLocalClient), new Type[] { typeof(int) });
+        internal static MethodInfo gameNetworkInstance = AccessTools.Method(typeof(GameNetworkManager), "get_Instance");
+        internal static MethodInfo foxCancelReel = AccessTools.Method(typeof(BushWolfEnemy), nameof(BushWolfEnemy.CancelReelingPlayerIn));
+        internal static MethodInfo cadaverCure = AccessTools.Method(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.CurePlayer), new Type[] { typeof(int) });
+        internal static MethodInfo cadaverCureRPC = AccessTools.Method(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.CurePlayerRpc), new Type[] { typeof(int) });
+        internal static FieldInfo playerName = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.playerUsername));
+        internal static FieldInfo enemyType = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.enemyType));
+        internal static FieldInfo enemyName = AccessTools.Field(typeof(EnemyType), nameof(EnemyType.enemyName));
+        internal static FieldInfo foxInKill = AccessTools.Field(typeof(BushWolfEnemy), nameof(BushWolfEnemy.inKillAnimation));
+        internal static FieldInfo foxDragging = AccessTools.Field(typeof(BushWolfEnemy), nameof(BushWolfEnemy.dragging));
+        internal static FieldInfo hasBurst = AccessTools.Field(typeof(CadaverBloomAI), nameof(CadaverBloomAI.hasBurst));
+        internal static FieldInfo switchHaunt = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.switchedHauntingPlayer));
+        internal static FieldInfo enemyState = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.currentBehaviourStateIndex));
+        internal static FieldInfo enemyAgent = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.agent));
+        internal static FieldInfo brackenEvade = AccessTools.Field(typeof(FlowermanAI), nameof(FlowermanAI.evadeStealthTimer));
+        internal static FieldInfo maskHeldBy = AccessTools.Field(typeof(HauntedMaskItem), nameof(HauntedMaskItem.previousPlayerHeldBy));
+        internal static FieldInfo specialAnim = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.inSpecialAnimationWithPlayer));
+        internal static FieldInfo maskedLastPlayer = AccessTools.Field(typeof(MaskedPlayerEnemy), nameof(MaskedPlayerEnemy.lastPlayerKilled));
+        internal static FieldInfo playerSinking = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.sinkingValue));
+        internal static FieldInfo playerCrouching = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.isCrouching));
+        internal static FieldInfo playerHealth = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.health));
+        internal static FieldInfo playerInjured = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.criticallyInjured));
+        internal static FieldInfo beeZapMode = AccessTools.Field(typeof(RedLocustBees), nameof(RedLocustBees.beesZappingMode));
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void LogString(string toLog)
+        {
+            WildCardMod.Instance.Log.LogDebug(toLog);
+        }
+        internal static List<CodeInstruction> DebugString(string toLog, Label? labelStart = null)
+        {
+            List<CodeInstruction> instructions = new List<CodeInstruction>();
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
+            if (labelStart.HasValue)
+            {
+                instructions[0].labels.Add(labelStart.Value);
+            }
+            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
+            return instructions;
+        }
+        internal static List<CodeInstruction> DebugLoad<T>(string toLog, OpCode opcode, object operand = null, Label? labelStart = null)
+        {
+            List<CodeInstruction> instructions = new List<CodeInstruction>();
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
+            if (labelStart.HasValue)
+            {
+                instructions[0].labels.Add(labelStart.Value);
+            }
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
+            instructions.Add(new CodeInstruction(opcode, operand));
+            instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
+            instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
+            instructions.Add(new CodeInstruction(OpCodes.Call, stringConcat3));
+            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
+            return instructions;
+        }
+        internal static List<CodeInstruction> DebugLoad<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, Label? labelStart = null)
+        {
+            List<CodeInstruction> instructions = new List<CodeInstruction>();
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
+            if (labelStart.HasValue)
+            {
+                instructions[0].labels.Add(labelStart.Value);
+            }
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
+            instructions.AddRange(loadInstructions);
+            instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
+            instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
+            instructions.Add(new CodeInstruction(OpCodes.Call, stringConcat3));
+            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
+            return instructions;
+        }
+        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, Label? labelStart = null)
+        {
+            List<CodeInstruction> instructions = new List<CodeInstruction>();
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
+            if (labelStart.HasValue)
+            {
+                instructions[0].labels.Add(labelStart.Value);
+            }
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
+            instructions.Add(new CodeInstruction(OpCodes.Ldarg, 0));
+            instructions.AddRange(loadInstructions);
+            instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
+            instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
+            instructions.Add(new CodeInstruction(OpCodes.Call, stringConcat3));
+            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
+            return instructions;
+        }
+        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, OpCode opcode, object operand = null, Label? labelStart = null)
+        {
+            List<CodeInstruction> instructions = new List<CodeInstruction>();
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
+            if (labelStart.HasValue)
+            {
+                instructions[0].labels.Add(labelStart.Value);
+            }
+            instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
+            instructions.Add(new CodeInstruction(OpCodes.Ldarg, 0));
+            instructions.Add(new CodeInstruction(opcode, operand));
+            instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
+            instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
+            instructions.Add(new CodeInstruction(OpCodes.Call, stringConcat3));
+            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
+            return instructions;
+        }
+        internal static List<CodeInstruction> DebugThisEnemyName()
+        {
+            return DebugLoadFromThis<string>("Enemy", new List<CodeInstruction>()
+            {
+                new CodeInstruction(OpCodes.Ldflda, enemyType),
+                new CodeInstruction(OpCodes.Ldflda, enemyName)
+            });
+        }
+        internal static List<CodeInstruction> DebugEnemyName(OpCode loadEnemyOpcode, object loadEnemyOperand = null)
+        {
+            return DebugLoad<string>("Enemy", new List<CodeInstruction>()
+            {
+                new CodeInstruction(loadEnemyOpcode, loadEnemyOperand),
+                new CodeInstruction(OpCodes.Ldflda, enemyType),
+                new CodeInstruction(OpCodes.Ldflda, enemyName)
+            });
+        }
+        internal static List<CodeInstruction> DebugThisPlayerName()
+        {
+            return DebugLoadFromThis<string>("Player", new List<CodeInstruction>()
+            {
+                new CodeInstruction(OpCodes.Ldflda, playerName)
+            });
+        }
+        internal static List<CodeInstruction> DebugPlayerName(OpCode loadPlayerOpcode, object loadPlayerOperand = null)
+        {
+            return DebugLoad<string>("Player", new List<CodeInstruction>()
+            {
+                new CodeInstruction(loadPlayerOpcode, loadPlayerOperand),
+                new CodeInstruction(OpCodes.Ldflda, playerName)
+            });
+        }
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        internal static void TestMethod()
+        {
+            int value = 100;
+            LogString(string.Concat("This is the logging message", ": ", value.ToString()));
+        }
+    }
+    [HarmonyPatch(typeof(TranspilerHelper))]
+    public static class TestPatches
+    {
+        [HarmonyPatch(nameof(TranspilerHelper.TestMethod))]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> TestTranspiler(IEnumerable<CodeInstruction> instructions)
+        {
+            List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < codes.Count; i++)
+            {
+                WildCardMod.Instance.Log.LogDebug(codes[i].ToString());
+            }
+            return codes;
+        }
+    }
     internal static class EventsClass
     {
+        internal static bool roundStarted = false;
         internal delegate void RoundStart();
         internal delegate void RoundEnd();
         internal static event RoundStart OnRoundStart;
         internal static event RoundEnd OnRoundEnd;
         internal static void RoundStarted()
         {
+            if (roundStarted)
+            {
+                return;
+            }
             OnRoundStart.Invoke();
         }
         internal static void RoundEnded()
         {
+            if (!roundStarted)
+            {
+                return;
+            }
             OnRoundEnd.Invoke();
         }
     }
@@ -27,13 +220,6 @@ namespace LCWildCardMod.Utils
     {
         [InputAction("<Keyboard>/r", Name = "WildCardUse")]
         internal InputAction WildCardButton { get; set; }
-    }
-    internal static class SoftDepHelper
-    {
-        internal static void LobCompatRegister()
-        {
-            PluginHelper.RegisterPlugin(WildCardMod.modGUID, new Version(WildCardMod.modVersion), CompatibilityLevel.Everyone, VersionStrictness.Patch);
-        }
     }
     public class AdditionalInfo : MonoBehaviour
     {
@@ -276,5 +462,24 @@ namespace LCWildCardMod.Utils
     {
         Item,
         Enemy
+    }
+    [Serializable]
+    public struct NameImagePair
+    {
+        public string name;
+        public Texture2D image;
+        internal static Dictionary<string, Texture2D> ConvertToDict(List<NameImagePair> pairs)
+        {
+            Dictionary<string, Texture2D> dict = new Dictionary<string, Texture2D>();
+            for (int i = 0; i < pairs.Count; i++)
+            {
+                NameImagePair pair = pairs[i];
+                if (!dict.TryAdd(pair.name, pair.image))
+                {
+                    WildCardMod.Instance.Log.LogDebug($"Name image pair of name \"{pair.name}\"");
+                }
+            }
+            return dict;
+        }
     }
 }

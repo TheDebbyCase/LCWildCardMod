@@ -1,10 +1,7 @@
-﻿using GameNetcodeStuff;
-using HarmonyLib;
+﻿using HarmonyLib;
 using LCWildCardMod.Utils;
-using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Reflection.Emit;
 namespace LCWildCardMod.Patches
 {
@@ -12,9 +9,6 @@ namespace LCWildCardMod.Patches
     public static class HauntedMaskItemPatches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        static MethodInfo haloSaveMethod = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
-        static MethodInfo allowDeathMethod = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.AllowPlayerDeath));
-        static FieldInfo maskHeldField = AccessTools.Field(typeof(HauntedMaskItem), nameof(HauntedMaskItem.previousPlayerHeldBy));
         [HarmonyPatch(nameof(HauntedMaskItem.FinishAttaching))]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
@@ -23,13 +17,13 @@ namespace LCWildCardMod.Patches
             List<CodeInstruction> newCodes = new List<CodeInstruction>();
             for (int i = 0; i < codes.Count; i++)
             {
-                if (codes[i].Calls(allowDeathMethod) && codes[i + 1].Branches(out Label? label) && label.HasValue)
+                if (codes[i].Calls(TranspilerHelper.allowDeath) && codes[i + 1].Branches(out Label? label))
                 {
-                    newCodes.Add(new CodeInstruction(OpCodes.Ldc_I4_0));
+                    newCodes.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
                     newCodes.Add(new CodeInstruction(OpCodes.Ceq));
-                    newCodes.Add(new CodeInstruction(OpCodes.Ldarg_0));
-                    newCodes.Add(new CodeInstruction(OpCodes.Ldfld, maskHeldField));
-                    newCodes.Add(new CodeInstruction(OpCodes.Call, haloSaveMethod));
+                    newCodes.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                    newCodes.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.maskHeldBy));
+                    newCodes.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.haloSave));
                     newCodes.Add(new CodeInstruction(OpCodes.Or));
                     codes[i + 1] = new CodeInstruction(OpCodes.Brfalse_S, label.Value);
                     codes.InsertRange(i + 1, newCodes);

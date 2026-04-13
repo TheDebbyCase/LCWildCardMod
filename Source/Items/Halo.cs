@@ -116,13 +116,13 @@ namespace LCWildCardMod.Items
                 hitList.Add(hitComponent);
                 if (hit.transform.TryGetComponent(out PlayerControllerB player))
                 {
-                    hitComponent.Hit(1, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
+                    player.DamagePlayerFromOtherClientServerRpc(10, playerHeldBy.gameplayCamera.transform.forward, (int)playerHeldBy.actualClientId);
                     Log.LogDebug($"Halo Hit {player.playerUsername}");
                 }
-                else if (hit.transform.TryGetComponent(out EnemyAICollisionDetect enemy))
+                else
                 {
-                    hitComponent.Hit(2, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
-                    Log.LogDebug($"Halo Hit {enemy.mainScript.enemyType.enemyName}");
+                    hitComponent.Hit(1, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
+                    Log.LogDebug($"Halo Hit {hitComponent.GetType()}");
                 }
             }
         }
@@ -179,6 +179,7 @@ namespace LCWildCardMod.Items
                 playerHeldBy.throwingObject = false;
             }
             isThrowing = false;
+            hitList.Clear();
             throwAudio.Stop();
             if (isExhausted == 0)
             {

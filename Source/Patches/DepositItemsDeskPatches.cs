@@ -8,9 +8,9 @@ namespace LCWildCardMod.Patches
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(DepositItemsDesk.CollisionDetect))]
         [HarmonyPrefix]
-        public static bool HaloSave()
+        public static bool AnySave()
         {
-            return !GameNetworkManager.Instance.localPlayerController.SaveIfHalo();
+            return !GameNetworkManager.Instance.localPlayerController.SaveIfAny();
         }
     }
 }

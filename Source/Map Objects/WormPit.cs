@@ -12,7 +12,7 @@ namespace LCWildCardMod.MapObjects
         Consuming,
         Sleeping
     }
-    public class WormPit : NetworkBehaviour
+    public class WormPit : NetworkBehaviour, IHittable
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public AudioSource pitSource;
@@ -100,10 +100,7 @@ namespace LCWildCardMod.MapObjects
                         }
                         if (hunger >= 5f)
                         {
-                            peeping = false;
-                            peepCooldown = 0f;
                             netAnim.Animator.SetBool("HoldPeep", false);
-                            hunger = 0f;
                             float pitch = (float)random.Next(9, 11) / 10f;
                             PlayGrowlClientRpc(pitch);
                             SetStateClientRpc(WormState.Hungry);
@@ -122,12 +119,11 @@ namespace LCWildCardMod.MapObjects
                     }
                 case WormState.Hungry:
                     {
-                        if ((playerLookingAt != null && Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 5f) || patience <= 0f)
+                        if ((playerLookingAt != null && Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 2.5f) || patience <= 0f)
                         {
-                            patience = 5f;
                             SetStateClientRpc(WormState.Consuming);
                         }
-                        else if (playerLookingAt != null && Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 15f)
+                        else if (playerLookingAt != null && Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 10f)
                         {
                             patience -= Time.deltaTime;
                         }
@@ -158,7 +154,6 @@ namespace LCWildCardMod.MapObjects
                             {
                                 consuming = false;
                                 netAnim.SetTrigger("Emerge");
-                                sleepiness = 0f;
                                 PitMusicClientRpc(false);
                                 SetStateClientRpc(WormState.Peeping);
                                 break;
@@ -167,7 +162,6 @@ namespace LCWildCardMod.MapObjects
                         else
                         {
                             consuming = true;
-                            sleepiness = 0f;
                             netAnim.SetTrigger("Emerge");
                             PitMusicClientRpc(true);
                             for (int i = 0; i < playersOverlapping.Count; i++)
@@ -321,6 +315,15 @@ namespace LCWildCardMod.MapObjects
         [ClientRpc]
         public void SetStateClientRpc(WormState newState)
         {
+            if (base.IsServer)
+            {
+                peeping = false;
+                consuming = false;
+                peepCooldown = 0f;
+                hunger = 0f;
+                sleepiness = 0f;
+                patience = 5f;
+            }
             State = newState;
         }
         [ClientRpc]
@@ -357,7 +360,7 @@ namespace LCWildCardMod.MapObjects
         public void PlaySquishClientRpc(int id, float pitch)
         {
             miscSource.pitch = pitch;
-            miscSource.PlayOneShot(squishClips[id], 1.5f);
+            miscSource.PlayOneShot(squishClips[id], 0.75f);
         }
         [ClientRpc]
         public void PlayGrowlClientRpc(float pitch)
@@ -374,6 +377,22 @@ namespace LCWildCardMod.MapObjects
                 return;
             }
             pitSource.Stop();
+        }
+        public bool Hit(int force, Vector3 hitDirection, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+        {
+            if (State == WormState.Consuming)
+            {
+                return false;
+            }
+            HitServerRpc(playerWhoHit.actualClientId);
+            return true;
+        }
+        [ServerRpc]
+        public void HitServerRpc(ulong id)
+        {
+            playerLookingAt = SelectNewPlayer(StartOfRound.Instance.allPlayerScripts[(int)id]);
+            netAnim.Animator.SetBool("HoldPeep", false);
+            SetStateClientRpc(WormState.Consuming);
         }
     }
 }

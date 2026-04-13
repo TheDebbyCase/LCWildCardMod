@@ -15,6 +15,8 @@ namespace LCWildCardMod.Items.SmithNote
     {
         BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public Texture2D[] debugTextures;
+        public List<NameImagePair> enemyImagesEditor;
+        internal Dictionary<string, Texture2D> enemyImages;
         public GameObject hudTextures;
         public AudioSource spawnMusic;
         public AudioClip laughAudio;
@@ -36,6 +38,10 @@ namespace LCWildCardMod.Items.SmithNote
         internal static int noteCount = 0;
         internal Coroutine killCoroutine;
         System.Random random;
+        void Awake()
+        {
+            enemyImages = NameImagePair.ConvertToDict(enemyImagesEditor);
+        }
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
@@ -211,7 +217,7 @@ namespace LCWildCardMod.Items.SmithNote
             textMeshList[0].rectTransform.parent.gameObject.SetActive(true);
             rawImageList[0].rectTransform.parent.gameObject.SetActive(true);
             SmithNoteInfo info = playerNotes[currentElement];
-            textMeshList[0].text = info.username;
+            textMeshList[0].text = info.targetName;
             rawImageList[0].texture = info.texture;
             rawImageList[0].color = info.colour;
             if (!base.IsServer)
@@ -241,7 +247,7 @@ namespace LCWildCardMod.Items.SmithNote
             rawImageList[1].texture = info.texture;
             rawImageList[1].color = info.colour;
             SetPages();
-            textMeshList[1].text = info.username;
+            textMeshList[1].text = info.targetName;
             if (!base.IsServer)
             {
                 return;
@@ -263,7 +269,7 @@ namespace LCWildCardMod.Items.SmithNote
         }
         public void FinishFlipping()
         {
-            textMeshList[0].text = playerNotes[currentElement].username;
+            textMeshList[0].text = playerNotes[currentElement].targetName;
             textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
             isFlippable = true;
@@ -286,8 +292,8 @@ namespace LCWildCardMod.Items.SmithNote
                 string user;
                 if ((player.isPlayerDead || killingPlayer == player) && !info.isDead)
                 {
-                    user = info.username;
-                    info.username = $"<s>{user}";
+                    user = info.targetName;
+                    info.targetName = $"<s>{user}";
                     info.colour = new Color(1f, 0.5f, 0.5f);
                     info.isDead = true;
                     for (int j = 0; j < 2; j++)
@@ -297,7 +303,7 @@ namespace LCWildCardMod.Items.SmithNote
                         {
                             continue;
                         }
-                        text.text = info.username;
+                        text.text = info.targetName;
                     }
                     for (int j = 0; j < 2; j++)
                     {
@@ -314,8 +320,8 @@ namespace LCWildCardMod.Items.SmithNote
                 {
                     return;
                 }
-                user = info.username;
-                info.username = $"{player.playerUsername}";
+                user = info.targetName;
+                info.targetName = $"{player.playerUsername}";
                 info.colour = Color.white;
                 info.isDead = false;
                 for (int j = 0; j < 2; j++)
@@ -325,7 +331,7 @@ namespace LCWildCardMod.Items.SmithNote
                     {
                         continue;
                     }
-                    text.text = info.username;
+                    text.text = info.targetName;
                 }
                 for (int j = 0; j < 2; j++)
                 {

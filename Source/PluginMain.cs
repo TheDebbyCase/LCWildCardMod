@@ -11,11 +11,9 @@ using HarmonyLib;
 using LCWildCardMod.Config;
 using LCWildCardMod.Utils;
 using static BepInEx.BepInDependency;
-using System.Runtime.CompilerServices;
 namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
-    [BepInDependency("BMX.LobbyCompatibility", DependencyFlags.SoftDependency)]
     [BepInDependency("me.swipez.melonloader.morecompany", DependencyFlags.SoftDependency)]
     [BepInDependency("evaisa.lethallib", DependencyFlags.HardDependency)]
     [BepInDependency("com.rune580.LethalCompanyInputUtils", DependencyFlags.HardDependency)]
@@ -38,11 +36,6 @@ namespace LCWildCardMod
             Instance = this;
             KeyBinds = new KeyBinds();
             Log = Logger;
-            if (BepInEx.Bootstrap.Chainloader.PluginInfos.ContainsKey("BMX.LobbyCompatibility"))
-            {
-                Log.LogDebug("Registering with LobbyCompatibility");
-                SoftDepHelper.LobCompatRegister();
-            }
             InitializeMethods();
             LoadFromBundle();
             ModConfig = new WildCardConfig(base.Config, scrapList, skinList, mapObjectsList);

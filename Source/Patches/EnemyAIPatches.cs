@@ -1,6 +1,4 @@
-﻿using GameNetcodeStuff;
-using HarmonyLib;
-using LCWildCardMod.Items.Fyrus;
+﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System;
 using System.Collections.Generic;
@@ -33,9 +31,6 @@ namespace LCWildCardMod.Patches
     public static class EnemyAISubsPatch
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        static MethodInfo targetMethod = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.MeetsStandardPlayerCollisionConditions), new Type[] { typeof(Collider), typeof(bool), typeof(bool) });
-        static MethodInfo inequalityMethod = AccessTools.Method(typeof(UnityEngine.Object), "op_Inequality", new Type[] { typeof(UnityEngine.Object), typeof(UnityEngine.Object) });
-        static MethodInfo boolCheckMethod = AccessTools.Method(typeof(FyrusStar), nameof(FyrusStar.HasPlayerConsumedStar), new Type[] { typeof(PlayerControllerB) });
         [HarmonyTargetMethods]
         public static IEnumerable<MethodBase> GetSubEnemyPlayerCollisions()
         {
@@ -47,7 +42,7 @@ namespace LCWildCardMod.Patches
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
             {
-                if (codes[i].Calls(targetMethod) && codes[i + 1].IsStloc())
+                if (codes[i].Calls(TranspilerHelper.collision) && codes[i + 1].IsStloc())
                 {
                     List<CodeInstruction> newCodes = new List<CodeInstruction>();
                     Label newLabel = generator.DefineLabel();
@@ -56,34 +51,34 @@ namespace LCWildCardMod.Patches
                     CodeInstruction loadPlayerLocal;
                     if (codes[i + 1].opcode.Equals(OpCodes.Stloc_0))
                     {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_0);
+                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, 0);
                     }
                     else if (codes[i + 1].opcode.Equals(OpCodes.Stloc_1))
                     {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_1);
+                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, 1);
                     }
                     else if (codes[i + 1].opcode.Equals(OpCodes.Stloc_2))
                     {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_2);
+                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, 2);
                     }
                     else if (codes[i + 1].opcode.Equals(OpCodes.Stloc_3))
                     {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_3);
+                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, 3);
                     }
                     else if (codes[i + 1].opcode.Equals(OpCodes.Stloc_S))
                     {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, (byte)playerLocalOperand);
+                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, playerLocalOperand);
                     }
                     else
                     {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc, (ushort)playerLocalOperand);
+                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc, playerLocalOperand);
                     }
                     newCodes.Add(loadPlayerLocal);
                     newCodes.Add(new CodeInstruction(OpCodes.Ldnull));
-                    newCodes.Add(new CodeInstruction(OpCodes.Call, inequalityMethod));
+                    newCodes.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.inequality));
                     newCodes.Add(new CodeInstruction(OpCodes.Brfalse_S, nullLabel));
                     newCodes.Add(loadPlayerLocal);
-                    newCodes.Add(new CodeInstruction(OpCodes.Call, boolCheckMethod));
+                    newCodes.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.consumedStar));
                     newCodes.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
                     newCodes.Add(new CodeInstruction(OpCodes.Ret));
                     codes[i + 2].labels.Add(newLabel);
