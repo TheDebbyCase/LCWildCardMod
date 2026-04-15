@@ -82,12 +82,32 @@ namespace LCWildCardMod.Patches
             {
                 return codes;
             }
+            bool nullCheckExists = false;
+            for (int i = collisionIndex; i < codes.Count; i++)
+            {
+                if (codes[i].Branches(out _))
+                {
+                    for (int j = i; j > collisionIndex; j--)
+                    {
+                        if (codes[j].Calls(TranspilerHelper.inequality))
+                        {
+                            nullCheckExists = true;
+                            break;
+                        }
+                    }
+                    break;
+                }
+            }
             List<CodeInstruction> finalCode = new List<CodeInstruction>();
-            Label nullLabel = generator.DefineLabel();
-            finalCode.Add(loadPlayerLocal);
-            finalCode.Add(new CodeInstruction(OpCodes.Ldnull));
-            finalCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.inequality));
-            finalCode.Add(new CodeInstruction(OpCodes.Brfalse_S, nullLabel));
+            if (!nullCheckExists)
+            {
+                Label nullLabel = generator.DefineLabel();
+                finalCode.Add(loadPlayerLocal);
+                finalCode.Add(new CodeInstruction(OpCodes.Ldnull));
+                finalCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.inequality));
+                finalCode.Add(new CodeInstruction(OpCodes.Brfalse_S, nullLabel));
+                codes[^1].labels.Add(nullLabel);
+            }
             if (!foundDamage)
             {
                 Label newLabel = generator.DefineLabel();
@@ -98,7 +118,6 @@ namespace LCWildCardMod.Patches
                 finalCode.Add(new CodeInstruction(OpCodes.Ret));
                 codes[collisionIndex + 2].labels.Add(newLabel);
             }
-            codes[^1].labels.Add(nullLabel);
             codes.InsertRange(collisionIndex + 2, finalCode);
             return codes;
         }

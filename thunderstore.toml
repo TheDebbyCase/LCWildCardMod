@@ -1,10 +1,10 @@
 [config]
-schemaVersion = "1.2.4"
+schemaVersion = "1.2.5"
 
 [package]
 namespace = "deB"
 name = "WILDCARDStuff"
-versionNumber = "1.2.4"
+versionNumber = "1.2.5"
 description = "Adds content based on YouTube org WILDCARD!"
 websiteUrl = "https://github.com/TheDebbyCase/LCWildCardMod"
 containsNsfwContent = false

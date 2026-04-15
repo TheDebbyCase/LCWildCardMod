@@ -37,7 +37,7 @@ namespace LCWildCardMod.Items
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             WildCardMod.Instance.KeyBinds.WildCardButton.performed += ThrowButton;
             spinParticle.gameObject.SetActive(false);
-            if (!base.IsServer || hasBeenHeld)
+            if (!base.IsServer)
             {
                 return;
             }
@@ -58,7 +58,10 @@ namespace LCWildCardMod.Items
                 return;
             }
             StartDrip();
-            spawnMusic.Play();
+            if (!hasBeenHeld)
+            {
+                spawnMusic.Play();
+            }
         }
         internal void ThrowButton(InputAction.CallbackContext throwContext)
         {

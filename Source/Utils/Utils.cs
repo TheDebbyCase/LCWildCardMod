@@ -27,7 +27,7 @@ namespace LCWildCardMod.Utils
         internal static MethodInfo anySave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfAny), new Type[] { typeof(PlayerControllerB) });
         internal static MethodInfo killPlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
         internal static MethodInfo damagePlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer), new Type[] { typeof(int), typeof(bool), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(bool), typeof(Vector3) });
-        internal static MethodInfo fyrusSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrus), new Type[] { typeof(PlayerControllerB), typeof(IHittable) });
+        internal static MethodInfo fyrusSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrus), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
         internal static MethodInfo newHauntClient = AccessTools.Method(typeof(DressGirlAI), nameof(DressGirlAI.ChooseNewHauntingPlayerClientRpc));
         internal static MethodInfo switchBehaviour = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.SwitchToBehaviourState), new Type[] { typeof(int) });
         internal static MethodInfo setSpeed = AccessTools.Method(typeof(NavMeshAgent), "set_speed", new Type[] { typeof(float) });
@@ -66,7 +66,7 @@ namespace LCWildCardMod.Utils
         {
             WildCardMod.Instance.Log.LogDebug(toLog);
         }
-        internal static List<CodeInstruction> DebugString(string toLog, IEnumerable<Label> labelsStart)
+        internal static List<CodeInstruction> DebugString(string toLog, IEnumerable<Label> labelsStart = null)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));

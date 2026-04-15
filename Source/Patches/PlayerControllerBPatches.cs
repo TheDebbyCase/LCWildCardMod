@@ -55,6 +55,9 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Ceq));
                     newCode.Add(new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex));
+                    //newCode.AddRange(TranspilerHelper.DebugLoadFromThis<int>("Starting health", OpCodes.Ldfld, TranspilerHelper.playerHealth));
+                    //newCode.AddRange(TranspilerHelper.DebugLoad<int>("Damage", OpCodes.Ldarg_S, 1));
+                    //newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Is Overkill?", OpCodes.Ldloc_S, overkill.LocalIndex));
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
                     codes.RemoveRange(i + 1, 6);
@@ -71,6 +74,7 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, oldLabel1.Value));
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 1));
                     newCode.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
+                    //newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Vanilla critical injury, setting health override to", OpCodes.Ldloc_S, healthOverriden.LocalIndex));
                     codes.InsertRange(i + 1, newCode);
                     i += newCode.Count + 1;
                     newCode.Clear();
@@ -85,13 +89,15 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Ceq));
                     newCode.Add(new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex));
+                    //newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Checking for halo, setting Overkill to", OpCodes.Ldloc_S, overkill.LocalIndex));
                     newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex));
                     newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, noSaveJump));
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 1));
                     newCode.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 50));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 100));
                     newCode.Add(new CodeInstruction(OpCodes.Stfld, TranspilerHelper.playerHealth));
+                    //newCode.AddRange(TranspilerHelper.DebugString("Saved player from death. Setting health to 100"));
                     CodeInstruction newIf = new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex);
                     newIf.labels.Add(newLabel);
                     newIf.labels.Add(noSaveJump);
@@ -108,6 +114,7 @@ namespace LCWildCardMod.Patches
                     Label overkillJump = generator.DefineLabel();
                     newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex));
                     newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, overkillJump));
+                    //newCode.AddRange(TranspilerHelper.DebugString("Critically injuring player"));
                     codes[i + 16].labels.Add(overkillJump);
                     codes[i + 2].MoveLabelsTo(newCode[0]);
                     codes.InsertRange(i + 2, newCode);
@@ -120,29 +127,22 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool SavePlayerKill(PlayerControllerB __instance, ref Vector3 bodyVelocity, ref bool spawnBody, ref CauseOfDeath causeOfDeath)
         {
-            try
+            if (!__instance.IsSaveable(out bool starSave, out SmithHalo haloRef))
             {
-                if (!__instance.IsSaveable(out bool starSave, out SmithHalo haloRef))
-                {
-                    return true;
-                }
-                if (causeOfDeath != CauseOfDeath.Unknown && spawnBody)
-                {
-                    if (starSave)
-                    {
-                        __instance.externalForceAutoFade += bodyVelocity;
-                    }
-                    else
-                    {
-                        Log.LogDebug("Running Halo Exhaust from Kill");
-                        haloRef.ExhaustLocal(__instance, bodyVelocity);
-                    }
-                    return false;
-                }
+                return true;
             }
-            catch (Exception exception)
+            if (causeOfDeath != CauseOfDeath.Unknown && spawnBody)
             {
-                Log.LogError(exception);
+                if (starSave)
+                {
+                    __instance.externalForceAutoFade += bodyVelocity;
+                }
+                else
+                {
+                    Log.LogDebug("Running Halo Exhaust from Kill");
+                    haloRef.ExhaustLocal(__instance, bodyVelocity);
+                }
+                return false;
             }
             return true;
         }
@@ -192,18 +192,11 @@ namespace LCWildCardMod.Patches
         [HarmonyPostfix]
         public static void AntiQuicksandStar(PlayerControllerB __instance, ref bool __result)
         {
-            try
+            if (!__result)
             {
-                if (!__result)
-                {
-                    return;
-                }
-                __result = !__instance.SaveIfFyrus();
+                return;
             }
-            catch (Exception exception)
-            {
-                Log.LogError(exception);
-            }
+            __result = !__instance.SaveIfFyrus();
         }
         [HarmonyPatch(nameof(PlayerControllerB.Update))]
         [HarmonyTranspiler]

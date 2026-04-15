@@ -1,3 +1,5 @@
+## 1.2.5
+
 ## 1.2.4
 - Disabled halo and fyrus star saving for now, until I fix the broken mess
 - Fixed Worm Pit not getting enough rest before attacking again

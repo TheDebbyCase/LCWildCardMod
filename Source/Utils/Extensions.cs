@@ -1,7 +1,6 @@
 ﻿using GameNetcodeStuff;
 using LCWildCardMod.Items.Fyrus;
 using LCWildCardMod.Items;
-using UnityEngine;
 namespace LCWildCardMod.Utils
 {
     internal static class Extensions
@@ -18,16 +17,17 @@ namespace LCWildCardMod.Utils
             {
                 return false;
             }
+            WildCardMod.Instance.Log.LogDebug($"Fyrus star saved {player.playerUsername}!");
             if (enemy == null)
             {
                 return true;
             }
-            EnemyAICollisionDetect collision = enemy.GetComponent<EnemyAICollisionDetect>();
+            EnemyAICollisionDetect collision = enemy.GetComponentInChildren<EnemyAICollisionDetect>();
             if (collision == null)
             {
                 return true;
             }
-            (collision as IHittable).Hit(3, (enemy.transform.position - player.transform.position).normalized * 2.5f, player);
+            (collision as IHittable).Hit(1, (enemy.transform.position - player.transform.position).normalized * 2.5f, player, true);
             return true;
         }
         internal static bool SaveIfAny(this PlayerControllerB player)
