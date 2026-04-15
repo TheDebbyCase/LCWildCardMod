@@ -2,7 +2,6 @@
 using LCWildCardMod.Utils;
 using System.Collections;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 namespace LCWildCardMod.Items.Fyrus
 {
@@ -89,11 +88,6 @@ namespace LCWildCardMod.Items.Fyrus
         internal void ClearPlayersDict()
         {
             playersEffect.Clear();
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static bool HasPlayerConsumedStar(PlayerControllerB player)
-        {
-            return playersEffect.TryGetValue(player.playerSteamId, out bool effect) && effect;
         }
     }
 }

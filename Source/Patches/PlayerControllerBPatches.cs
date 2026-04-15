@@ -4,7 +4,6 @@ using LCWildCardMod.Items;
 using LCWildCardMod.Utils;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 using UnityEngine;
 namespace LCWildCardMod.Patches
@@ -15,9 +14,14 @@ namespace LCWildCardMod.Patches
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyPrefix]
-        public static bool SavePlayerDamage(PlayerControllerB __instance, ref int damageNumber, ref bool hasDamageSFX, ref bool callRPC, ref CauseOfDeath causeOfDeath, ref int deathAnimation, ref bool fallDamage, ref Vector3 force)
+        public static bool SavePlayerDamage(PlayerControllerB __instance, ref Vector3 force)
         {
-            return !__instance.IsFyrusSaveable();
+            bool saved = __instance.SaveIfFyrus();
+            if (saved)
+            {
+                __instance.externalForceAutoFade += force;
+            }
+            return !saved;
         }
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyTranspiler]
@@ -110,7 +114,7 @@ namespace LCWildCardMod.Patches
                     break;
                 }
             }
-            return codes.AsEnumerable();
+            return codes;
         }
         [HarmonyPatch(nameof(PlayerControllerB.KillPlayer))]
         [HarmonyPrefix]
@@ -194,7 +198,7 @@ namespace LCWildCardMod.Patches
                 {
                     return;
                 }
-                __result = !__instance.IsFyrusSaveable();
+                __result = !__instance.SaveIfFyrus();
             }
             catch (Exception exception)
             {
@@ -226,7 +230,7 @@ namespace LCWildCardMod.Patches
                     break;
                 }
             }
-            return codes.AsEnumerable();
+            return codes;
         }
     }
 }

@@ -1,3 +1,11 @@
+## 1.2.4
+- Disabled halo and fyrus star saving for now, until I fix the broken mess
+- Fixed Worm Pit not getting enough rest before attacking again
+- Updated Worm Pit's pull force algorithm
+- Disabled Worm Pit from being hittable for now
+- Made Worm Pit peeping quieter
+- Halo damage reduced but now can hit things twice so long as it passes through them twice
+
 ## 1.2.3
 - Fixed players not dying from damage (oops)
 - Fixed Kidnapper Fox, Cadaver Bloom, Ghost Girl, Masked and Jester behaviour being incorrect

@@ -1,4 +1,5 @@
-﻿using HarmonyLib;
+﻿using GameNetcodeStuff;
+using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -10,9 +11,15 @@ namespace LCWildCardMod.Patches
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(CadaverGrowthAI.CurePlayer))]
         [HarmonyPrefix]
-        public static bool AccurateInfected(CadaverGrowthAI __instance)
+        public static bool CureMore(CadaverGrowthAI __instance)
         {
-            __instance.numberOfInfected--;
+            if (__instance.playerInfections[(int)GameNetworkManager.Instance.localPlayerController.actualClientId].infected)
+            {
+                __instance.numberOfInfected--;
+            }
+            HUDManager.Instance.cadaverFilter = 0f;
+            SoundManager.Instance.alternateEarsRinging = false;
+            SoundManager.Instance.earsRingingTimer = 0f;
             return true;
         }
         [HarmonyPatch(nameof(CadaverGrowthAI.BurstFromPlayer))]
@@ -31,9 +38,13 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, resumeBurstLabel));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 1));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.playerClientID));
+                    newCode.Add(new CodeInstruction(OpCodes.Conv_I4));
                     newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.cadaverCure));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 1));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.playerClientID));
+                    newCode.Add(new CodeInstruction(OpCodes.Conv_I4));
                     newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.cadaverCureRPC));
                     newCode.Add(new CodeInstruction(OpCodes.Ret));
                     codes[i + 2].labels.Add(resumeBurstLabel);

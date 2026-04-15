@@ -32,7 +32,7 @@ namespace LCWildCardMod.Patches
                     break;
                 }
             }
-            return codes.AsEnumerable();
+            return codes;
         }
     }
 }

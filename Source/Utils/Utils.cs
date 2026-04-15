@@ -18,14 +18,16 @@ namespace LCWildCardMod.Utils
         internal static MethodInfo toString = AccessTools.Method(typeof(object), nameof(object.ToString));
         internal static MethodInfo stringConcat3 = AccessTools.Method(typeof(string), nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) });
         internal static MethodInfo logString = AccessTools.Method(typeof(TranspilerHelper), nameof(LogString), new Type[] { typeof(string) });
-        internal static MethodInfo collision = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.MeetsStandardPlayerCollisionConditions), new Type[] { typeof(Collider), typeof(bool), typeof(bool) });
         internal static MethodInfo inequality = AccessTools.Method(typeof(UnityEngine.Object), "op_Inequality", new Type[] { typeof(UnityEngine.Object), typeof(UnityEngine.Object) });
+        internal static MethodInfo getTypeFromHandle = AccessTools.Method(typeof(Type), nameof(Type.GetTypeFromHandle), new Type[] { typeof(RuntimeTypeHandle) });
+        internal static MethodInfo collision = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.MeetsStandardPlayerCollisionConditions), new Type[] { typeof(Collider), typeof(bool), typeof(bool) });
         internal static MethodInfo exitDriver = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitDriverSideSeat));
         internal static MethodInfo exitPassenger = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitPassengerSideSeat));
         internal static MethodInfo haloSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
         internal static MethodInfo anySave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfAny), new Type[] { typeof(PlayerControllerB) });
         internal static MethodInfo killPlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
-        internal static MethodInfo consumedStar = AccessTools.Method(typeof(FyrusStar), nameof(FyrusStar.HasPlayerConsumedStar), new Type[] { typeof(PlayerControllerB) });
+        internal static MethodInfo damagePlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer), new Type[] { typeof(int), typeof(bool), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(bool), typeof(Vector3) });
+        internal static MethodInfo fyrusSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrus), new Type[] { typeof(PlayerControllerB), typeof(IHittable) });
         internal static MethodInfo newHauntClient = AccessTools.Method(typeof(DressGirlAI), nameof(DressGirlAI.ChooseNewHauntingPlayerClientRpc));
         internal static MethodInfo switchBehaviour = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.SwitchToBehaviourState), new Type[] { typeof(int) });
         internal static MethodInfo setSpeed = AccessTools.Method(typeof(NavMeshAgent), "set_speed", new Type[] { typeof(float) });
@@ -38,12 +40,15 @@ namespace LCWildCardMod.Utils
         internal static MethodInfo foxCancelReel = AccessTools.Method(typeof(BushWolfEnemy), nameof(BushWolfEnemy.CancelReelingPlayerIn));
         internal static MethodInfo cadaverCure = AccessTools.Method(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.CurePlayer), new Type[] { typeof(int) });
         internal static MethodInfo cadaverCureRPC = AccessTools.Method(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.CurePlayerRpc), new Type[] { typeof(int) });
+        internal static MethodInfo giantGrabRPC = AccessTools.Method(typeof(ForestGiantAI), nameof(ForestGiantAI.GrabPlayerServerRpc), new Type[] { typeof(int) });
         internal static FieldInfo playerName = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.playerUsername));
+        internal static FieldInfo playerClientID = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.playerClientId));
         internal static FieldInfo enemyType = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.enemyType));
         internal static FieldInfo enemyName = AccessTools.Field(typeof(EnemyType), nameof(EnemyType.enemyName));
         internal static FieldInfo foxInKill = AccessTools.Field(typeof(BushWolfEnemy), nameof(BushWolfEnemy.inKillAnimation));
         internal static FieldInfo foxDragging = AccessTools.Field(typeof(BushWolfEnemy), nameof(BushWolfEnemy.dragging));
         internal static FieldInfo hasBurst = AccessTools.Field(typeof(CadaverBloomAI), nameof(CadaverBloomAI.hasBurst));
+        internal static FieldInfo clingPlayer = AccessTools.Field(typeof(CentipedeAI), nameof(CentipedeAI.clingingToPlayer));
         internal static FieldInfo switchHaunt = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.switchedHauntingPlayer));
         internal static FieldInfo enemyState = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.currentBehaviourStateIndex));
         internal static FieldInfo enemyAgent = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.agent));
@@ -61,24 +66,24 @@ namespace LCWildCardMod.Utils
         {
             WildCardMod.Instance.Log.LogDebug(toLog);
         }
-        internal static List<CodeInstruction> DebugString(string toLog, Label? labelStart = null)
+        internal static List<CodeInstruction> DebugString(string toLog, IEnumerable<Label> labelsStart)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelStart.HasValue)
+            if (labelsStart != null)
             {
-                instructions[0].labels.Add(labelStart.Value);
+                instructions[0].labels.AddRange(labelsStart);
             }
             instructions.Add(new CodeInstruction(OpCodes.Call, logString));
             return instructions;
         }
-        internal static List<CodeInstruction> DebugLoad<T>(string toLog, OpCode opcode, object operand = null, Label? labelStart = null)
+        internal static List<CodeInstruction> DebugLoad<T>(string toLog, OpCode opcode, object operand = null, IEnumerable<Label> labelsStart = null)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelStart.HasValue)
+            if (labelsStart != null)
             {
-                instructions[0].labels.Add(labelStart.Value);
+                instructions[0].labels.AddRange(labelsStart);
             }
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
             instructions.Add(new CodeInstruction(opcode, operand));
@@ -88,13 +93,13 @@ namespace LCWildCardMod.Utils
             instructions.Add(new CodeInstruction(OpCodes.Call, logString));
             return instructions;
         }
-        internal static List<CodeInstruction> DebugLoad<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, Label? labelStart = null)
+        internal static List<CodeInstruction> DebugLoad<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, IEnumerable<Label> labelsStart = null)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelStart.HasValue)
+            if (labelsStart != null)
             {
-                instructions[0].labels.Add(labelStart.Value);
+                instructions[0].labels.AddRange(labelsStart);
             }
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
             instructions.AddRange(loadInstructions);
@@ -104,13 +109,13 @@ namespace LCWildCardMod.Utils
             instructions.Add(new CodeInstruction(OpCodes.Call, logString));
             return instructions;
         }
-        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, Label? labelStart = null)
+        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, IEnumerable<Label> labelsStart = null)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelStart.HasValue)
+            if (labelsStart != null)
             {
-                instructions[0].labels.Add(labelStart.Value);
+                instructions[0].labels.AddRange(labelsStart);
             }
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
             instructions.Add(new CodeInstruction(OpCodes.Ldarg, 0));
@@ -121,16 +126,16 @@ namespace LCWildCardMod.Utils
             instructions.Add(new CodeInstruction(OpCodes.Call, logString));
             return instructions;
         }
-        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, OpCode opcode, object operand = null, Label? labelStart = null)
+        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, OpCode opcode, object operand = null, IEnumerable<Label> labelsStart = null)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelStart.HasValue)
+            if (labelsStart != null)
             {
-                instructions[0].labels.Add(labelStart.Value);
+                instructions[0].labels.AddRange(labelsStart);
             }
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
-            instructions.Add(new CodeInstruction(OpCodes.Ldarg, 0));
+            instructions.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
             instructions.Add(new CodeInstruction(opcode, operand));
             instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
             instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
@@ -170,28 +175,197 @@ namespace LCWildCardMod.Utils
                 new CodeInstruction(OpCodes.Ldflda, playerName)
             });
         }
+        internal static CodeInstruction StoreToLoad(CodeInstruction store)
+        {
+            object operand = store.operand;
+            CodeInstruction load = new CodeInstruction(OpCodes.Nop);
+            if (store.opcode.Equals(OpCodes.Stloc_0))
+            {
+                load = new CodeInstruction(OpCodes.Ldloc_S, 0);
+            }
+            else if (store.opcode.Equals(OpCodes.Stloc_1))
+            {
+                load = new CodeInstruction(OpCodes.Ldloc_S, 1);
+            }
+            else if (store.opcode.Equals(OpCodes.Stloc_2))
+            {
+                load = new CodeInstruction(OpCodes.Ldloc_S, 2);
+            }
+            else if (store.opcode.Equals(OpCodes.Stloc_3))
+            {
+                load = new CodeInstruction(OpCodes.Ldloc_S, 3);
+            }
+            else if (store.opcode.Equals(OpCodes.Stloc_S) || store.opcode.Equals(OpCodes.Ldloc))
+            {
+                load = new CodeInstruction(OpCodes.Ldloc_S, operand);
+            }
+            else if (store.opcode.Equals(OpCodes.Starg_S) || store.opcode.Equals(OpCodes.Starg))
+            {
+                load = new CodeInstruction(OpCodes.Ldarg_S, operand);
+            }
+            else if (store.opcode.Equals(OpCodes.Stfld) || store.opcode.Equals(OpCodes.Stsfld))
+            {
+                load = new CodeInstruction(OpCodes.Ldfld, operand);
+            }
+            else if (store.opcode.Equals(OpCodes.Stobj))
+            {
+                load = new CodeInstruction(OpCodes.Ldobj, operand);
+            }
+            return load;
+        }
+        internal static CodeInstruction LoadToStore(CodeInstruction load)
+        {
+            object operand = load.operand;
+            CodeInstruction store = new CodeInstruction(OpCodes.Nop);
+            if (load.opcode.Equals(OpCodes.Ldloc_0))
+            {
+                store = new CodeInstruction(OpCodes.Stloc_S, 0);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldloc_1))
+            {
+                store = new CodeInstruction(OpCodes.Stloc_S, 1);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldloc_2))
+            {
+                store = new CodeInstruction(OpCodes.Stloc_S, 2);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldloc_3))
+            {
+                store = new CodeInstruction(OpCodes.Stloc_S, 3);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldloc_S) || load.opcode.Equals(OpCodes.Ldloc))
+            {
+                store = new CodeInstruction(OpCodes.Stloc_S, operand);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldarg_0))
+            {
+                store = new CodeInstruction(OpCodes.Starg_S, 0);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldarg_1))
+            {
+                store = new CodeInstruction(OpCodes.Starg_S, 1);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldarg_2))
+            {
+                store = new CodeInstruction(OpCodes.Starg_S, 2);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldarg_3))
+            {
+                store = new CodeInstruction(OpCodes.Starg_S, 3);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldarg_S) || load.opcode.Equals(OpCodes.Ldarg))
+            {
+                store = new CodeInstruction(OpCodes.Starg_S, operand);
+            }
+            else if (load.opcode.Equals(OpCodes.Ldfld))
+            {
+                FieldInfo field = operand as FieldInfo;
+                if (field != null)
+                {
+                    if (field.IsStatic)
+                    {
+                        store = new CodeInstruction(OpCodes.Stsfld, operand);
+                    }
+                    else
+                    {
+                        store = new CodeInstruction(OpCodes.Stfld, operand);
+                    }
+                }
+            }
+            else if (load.opcode.Equals(OpCodes.Ldobj))
+            {
+                store = new CodeInstruction(OpCodes.Stobj, operand);
+            }
+            return store;
+        }
+        internal static bool AreLoadEqual(CodeInstruction load1, CodeInstruction load2)
+        {
+            int? load1Operand = load1.operand as int?;
+            int? load2Operand = load2.operand as int?;
+            if (load1.IsLdloc() && load2.IsLdloc())
+            {
+                if (load1.opcode.Equals(load2.opcode) && load1.OperandIs(load2.operand))
+                {
+                    return true;
+                }
+                else if (load1.opcode.Equals(OpCodes.Ldloc) || load1.opcode.Equals(OpCodes.Ldloc_S))
+                {
+                    return load1.OperandIs(load2.operand);
+                }
+                else if (load1.opcode.Equals(OpCodes.Ldloc_0))
+                {
+                    return load2.opcode.Equals(OpCodes.Ldloc_0) || (load2Operand.HasValue && load2Operand.Value == 0);
+                }
+                else if (load1.opcode.Equals(OpCodes.Ldloc_1))
+                {
+                    return load2.opcode.Equals(OpCodes.Ldloc_1) || (load2Operand.HasValue && load2Operand.Value == 1);
+                }
+                else if (load1.opcode.Equals(OpCodes.Ldloc_2))
+                {
+                    return load2.opcode.Equals(OpCodes.Ldloc_2) || (load2Operand.HasValue && load2Operand.Value == 2);
+                }
+                else if (load1.opcode.Equals(OpCodes.Ldloc_3))
+                {
+                    return load2.opcode.Equals(OpCodes.Ldloc_3) || (load2Operand.HasValue && load2Operand.Value == 3);
+                }
+            }
+            else if ((load1.opcode.Equals(OpCodes.Ldloca) || load1.opcode.Equals(OpCodes.Ldloca_S)) && (load2.opcode.Equals(OpCodes.Ldloca) || load2.opcode.Equals(OpCodes.Ldloca_S)))
+            {
+                return load1.OperandIs(load2.operand);
+            }
+            else if (load1.IsLdarg() && load2.IsLdarg())
+            {
+                return (load2Operand.HasValue && load1.IsLdarg(load2Operand.Value)) || (load1Operand.HasValue && load2.IsLdarg(load1Operand.Value));
+            }
+            else if (load1.IsLdarga() && load2.IsLdarga())
+            {
+                return load1.OperandIs(load2.operand);
+            }
+            return load1.opcode.Equals(load2.opcode) && load1.OperandIs(load2.operand);
+        }
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void TestMethod()
         {
-            int value = 100;
-            LogString(string.Concat("This is the logging message", ": ", value.ToString()));
+            
         }
     }
-    [HarmonyPatch(typeof(TranspilerHelper))]
-    public static class TestPatches
-    {
-        [HarmonyPatch(nameof(TranspilerHelper.TestMethod))]
-        [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> TestTranspiler(IEnumerable<CodeInstruction> instructions)
-        {
-            List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-            for (int i = 0; i < codes.Count; i++)
-            {
-                WildCardMod.Instance.Log.LogDebug(codes[i].ToString());
-            }
-            return codes;
-        }
-    }
+    //[HarmonyPatch(typeof(TranspilerHelper))]
+    //public static class TestPatches
+    //{
+    //    [HarmonyPatch(nameof(TranspilerHelper.TestMethod))]
+    //    [HarmonyTranspiler]
+    //    public static IEnumerable<CodeInstruction> TestTranspiler(IEnumerable<CodeInstruction> instructions)
+    //    {
+    //        List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+    //        for (int i = 0; i < codes.Count; i++)
+    //        {
+    //            object operand = codes[i].operand;
+    //            if (operand != null)
+    //            {
+    //                MethodInfo method = operand as MethodInfo;
+    //                FieldInfo field = null;
+    //                if (method == null)
+    //                {
+    //                    field = operand as FieldInfo;
+    //                }
+    //                WildCardMod.Instance.Log.LogDebug($"{codes[i]} OPERAND ({operand.GetType()}): {operand}");
+    //                if (method != null)
+    //                {
+    //                    WildCardMod.Instance.Log.LogDebug($"Returns: {method.ReturnParameter.ParameterType}, Generic?: {method.IsGenericMethod}, Virtual?: {method.IsVirtual}, Declared by: {method.DeclaringType}");
+    //                }
+    //                else if (field != null)
+    //                {
+    //                    WildCardMod.Instance.Log.LogDebug($"Declared by: {field.DeclaringType}, Type: {field.FieldType}");
+    //                }
+    //            }
+    //            else
+    //            {
+    //                WildCardMod.Instance.Log.LogDebug($"{codes[i]}");
+    //            }
+    //        }
+    //        return codes;
+    //    }
+    //}
     internal static class EventsClass
     {
         internal static bool roundStarted = false;

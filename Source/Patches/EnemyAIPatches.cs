@@ -27,67 +27,80 @@ namespace LCWildCardMod.Patches
         }
     }
     [HarmonyPatch]
-    [HarmonyAfter("LCWildCardMod.BushWolfEnemyPatches.FyrusStarEffect")]
     public static class EnemyAISubsPatch
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyTargetMethods]
         public static IEnumerable<MethodBase> GetSubEnemyPlayerCollisions()
         {
-            return Assembly.GetAssembly(typeof(EnemyAI)).GetTypes().Where(type => typeof(EnemyAI).IsAssignableFrom(type) && type != typeof(EnemyAI)).Select((x) => AccessTools.Method(x, nameof(EnemyAI.OnCollideWithPlayer), new Type[] { typeof(Collider) }));
+            return Assembly.GetAssembly(typeof(EnemyAI)).GetTypes().Where(type => typeof(EnemyAI).IsAssignableFrom(type)).Select((x) => AccessTools.Method(x, nameof(EnemyAI.OnCollideWithPlayer), new Type[] { typeof(Collider) })).Where((x) => x.DeclaringType != typeof(EnemyAI));
         }
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> FyrusStarEffect(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+            bool foundDamage = false;
+            int collisionIndex = -1;
+            int damageParams = TranspilerHelper.damagePlayer.GetParameters().Length;
+            CodeInstruction loadPlayerLocal = null;
             for (int i = 0; i < codes.Count; i++)
             {
                 if (codes[i].Calls(TranspilerHelper.collision) && codes[i + 1].IsStloc())
                 {
-                    List<CodeInstruction> newCodes = new List<CodeInstruction>();
-                    Label newLabel = generator.DefineLabel();
-                    Label nullLabel = generator.DefineLabel();
-                    object playerLocalOperand = codes[i + 1].operand;
-                    CodeInstruction loadPlayerLocal;
-                    if (codes[i + 1].opcode.Equals(OpCodes.Stloc_0))
+                    collisionIndex = i;
+                    loadPlayerLocal = TranspilerHelper.StoreToLoad(codes[i + 1]);
+                }
+                if (loadPlayerLocal != null && codes[i].Calls(TranspilerHelper.damagePlayer))
+                {
+                    foundDamage = true;
+                    int loadPlayer = -1;
+                    for (int j = i - damageParams; j > 0; j--)
                     {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, 0);
+                        if (TranspilerHelper.AreLoadEqual(codes[j], loadPlayerLocal))
+                        {
+                            loadPlayer = j;
+                            break;
+                        }
                     }
-                    else if (codes[i + 1].opcode.Equals(OpCodes.Stloc_1))
+                    if (loadPlayer == -1)
                     {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, 1);
+                        break;
                     }
-                    else if (codes[i + 1].opcode.Equals(OpCodes.Stloc_2))
-                    {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, 2);
-                    }
-                    else if (codes[i + 1].opcode.Equals(OpCodes.Stloc_3))
-                    {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, 3);
-                    }
-                    else if (codes[i + 1].opcode.Equals(OpCodes.Stloc_S))
-                    {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc_S, playerLocalOperand);
-                    }
-                    else
-                    {
-                        loadPlayerLocal = new CodeInstruction(OpCodes.Ldloc, playerLocalOperand);
-                    }
-                    newCodes.Add(loadPlayerLocal);
-                    newCodes.Add(new CodeInstruction(OpCodes.Ldnull));
-                    newCodes.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.inequality));
-                    newCodes.Add(new CodeInstruction(OpCodes.Brfalse_S, nullLabel));
-                    newCodes.Add(loadPlayerLocal);
-                    newCodes.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.consumedStar));
-                    newCodes.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
-                    newCodes.Add(new CodeInstruction(OpCodes.Ret));
-                    codes[i + 2].labels.Add(newLabel);
-                    codes[i + 2].labels.Add(nullLabel);
-                    codes.InsertRange(i + 2, newCodes);
+                    List<CodeInstruction> newCode = new List<CodeInstruction>();
+                    Label destination = generator.DefineLabel();
+                    loadPlayerLocal.labels = codes[loadPlayer].ExtractLabels();
+                    newCode.Add(loadPlayerLocal);
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.fyrusSave));
+                    newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, destination));
+                    codes[i + 1].labels.Add(destination);
+                    codes.InsertRange(loadPlayer, newCode);
                     break;
                 }
             }
-            return codes.AsEnumerable();
+            if (collisionIndex == -1)
+            {
+                return codes;
+            }
+            List<CodeInstruction> finalCode = new List<CodeInstruction>();
+            Label nullLabel = generator.DefineLabel();
+            finalCode.Add(loadPlayerLocal);
+            finalCode.Add(new CodeInstruction(OpCodes.Ldnull));
+            finalCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.inequality));
+            finalCode.Add(new CodeInstruction(OpCodes.Brfalse_S, nullLabel));
+            if (!foundDamage)
+            {
+                Label newLabel = generator.DefineLabel();
+                finalCode.Add(loadPlayerLocal);
+                finalCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                finalCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.fyrusSave));
+                finalCode.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
+                finalCode.Add(new CodeInstruction(OpCodes.Ret));
+                codes[collisionIndex + 2].labels.Add(newLabel);
+            }
+            codes[^1].labels.Add(nullLabel);
+            codes.InsertRange(collisionIndex + 2, finalCode);
+            return codes;
         }
     }
 }

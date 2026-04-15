@@ -12,7 +12,7 @@ namespace LCWildCardMod.MapObjects
         Consuming,
         Sleeping
     }
-    public class WormPit : NetworkBehaviour, IHittable
+    public class WormPit : NetworkBehaviour/*, IHittable*/
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         public AudioSource pitSource;
@@ -236,6 +236,31 @@ namespace LCWildCardMod.MapObjects
             }
             return playerLookingAt;
         }
+        //PlayerControllerB GetClosestPlayer()
+        //{
+        //    PlayerControllerB closest = null;
+        //    float distance = 20f;
+        //    for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
+        //    {
+        //        PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
+        //        float newDistance = Vector3.Distance(player.transform.position, this.transform.position);
+        //        if (newDistance <= 20f)
+        //        {
+        //            playerIDInRange.Add((int)player.actualClientId);
+        //        }
+        //        else
+        //        {
+        //            playerIDInRange.Remove((int)player.actualClientId);
+        //        }
+        //        if (newDistance > distance)
+        //        {
+        //            continue;
+        //        }
+        //        closest = player;
+        //        distance = newDistance;
+        //    }
+        //    return TryNewPlayer(closest);
+        //}
         void OnTriggerEnter(Collider other)
         {
             if (!other.gameObject.TryGetComponent(out PlayerControllerB player))
@@ -378,21 +403,21 @@ namespace LCWildCardMod.MapObjects
             }
             pitSource.Stop();
         }
-        public bool Hit(int force, Vector3 hitDirection, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
-        {
-            if (State == WormState.Consuming)
-            {
-                return false;
-            }
-            HitServerRpc(playerWhoHit.actualClientId);
-            return true;
-        }
-        [ServerRpc]
-        public void HitServerRpc(ulong id)
-        {
-            playerLookingAt = SelectNewPlayer(StartOfRound.Instance.allPlayerScripts[(int)id]);
-            netAnim.Animator.SetBool("HoldPeep", false);
-            SetStateClientRpc(WormState.Consuming);
-        }
+        //public bool Hit(int force, Vector3 hitDirection, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
+        //{
+        //    if (State == WormState.Consuming)
+        //    {
+        //        return false;
+        //    }
+        //    HitServerRpc(playerWhoHit.actualClientId);
+        //    return true;
+        //}
+        //[ServerRpc]
+        //public void HitServerRpc(ulong id)
+        //{
+        //    playerLookingAt = SelectNewPlayer(StartOfRound.Instance.allPlayerScripts[(int)id]);
+        //    netAnim.Animator.SetBool("HoldPeep", false);
+        //    SetStateClientRpc(WormState.Consuming);
+        //}
     }
 }

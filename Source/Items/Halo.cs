@@ -1,6 +1,7 @@
 ﻿using GameNetcodeStuff;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
@@ -28,6 +29,7 @@ namespace LCWildCardMod.Items
         internal Vector3 targetPosition;
         internal Coroutine exhaustCoroutine;
         internal List<IHittable> hitList = new List<IHittable>();
+        internal bool resetList = false;
         System.Random random;
         public override void OnNetworkSpawn()
         {
@@ -102,6 +104,20 @@ namespace LCWildCardMod.Items
                 return;
             }
             RaycastHit[] objectsHit = Physics.SphereCastAll(parentComponent.transform.position, 0.5f, playerHeldBy.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
+            if (throwTime >= 0.5f && !resetList)
+            {
+                IEnumerable<IHittable> hittables = objectsHit.Select((x) => x.transform.GetComponent<IHittable>());
+                for (int i = 0; i < hitList.Count; i++)
+                {
+                    if (hittables.Contains(hitList[i]))
+                    {
+                        continue;
+                    }
+                    hitList.RemoveAt(i);
+                    i--;
+                }
+                resetList = true;
+            }
             for (int i = 0; i < objectsHit.Length; i++)
             {
                 RaycastHit hit = objectsHit[i];
@@ -122,7 +138,15 @@ namespace LCWildCardMod.Items
                 else
                 {
                     hitComponent.Hit(1, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
-                    Log.LogDebug($"Halo Hit {hitComponent.GetType()}");
+                    EnemyAICollisionDetect enemy = hitComponent as EnemyAICollisionDetect;
+                    if (enemy != null)
+                    {
+                        Log.LogDebug($"Halo Hit {enemy.mainScript.enemyType.enemyName}");
+                    }
+                    else
+                    {
+                        Log.LogDebug($"Halo Hit {hitComponent.GetType()}");
+                    }
                 }
             }
         }
@@ -180,6 +204,7 @@ namespace LCWildCardMod.Items
             }
             isThrowing = false;
             hitList.Clear();
+            resetList = false;
             throwAudio.Stop();
             if (isExhausted == 0)
             {
@@ -266,6 +291,7 @@ namespace LCWildCardMod.Items
             player.externalForceAutoFade += hitVelocity;
             if (exhaustCoroutine == null)
             {
+                WildCardMod.Instance.Log.LogDebug("Halo exhausting...");
                 ExhaustHaloServerRpc();
             }
         }

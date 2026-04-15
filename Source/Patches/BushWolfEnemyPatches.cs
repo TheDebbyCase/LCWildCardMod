@@ -47,7 +47,7 @@ namespace LCWildCardMod.Patches
                     codes.InsertRange(i + 2, newCode);
                     //temp
                     newCode.Clear();
-                    newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Tried killing", OpCodes.Ldloc_S, 1, labelStart: notFlagJump));
+                    newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Tried killing", OpCodes.Ldloc_S, 1, new Label[] { notFlagJump.Value }));
                     newCode.AddRange(TranspilerHelper.DebugPlayerName(OpCodes.Ldloc_S, playerLocal.LocalIndex));
                     newCode.AddRange(TranspilerHelper.DebugLoadFromThis<bool>("Dragging", OpCodes.Ldfld, TranspilerHelper.foxDragging));
                     codes.InsertRange(codes.Count - 1, newCode);
@@ -56,7 +56,7 @@ namespace LCWildCardMod.Patches
                     break;
                 }
             }
-            return codes.AsEnumerable();
+            return codes;
         }
     }
 }
