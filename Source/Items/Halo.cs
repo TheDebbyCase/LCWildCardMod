@@ -60,7 +60,7 @@ namespace LCWildCardMod.Items
             StartDrip();
             if (!hasBeenHeld)
             {
-                spawnMusic.Play();
+                spawnMusic.Stop();
             }
         }
         internal void ThrowButton(InputAction.CallbackContext throwContext)
@@ -135,7 +135,7 @@ namespace LCWildCardMod.Items
                 hitList.Add(hitComponent);
                 if (hit.transform.TryGetComponent(out PlayerControllerB player))
                 {
-                    player.DamagePlayerFromOtherClientServerRpc(10, playerHeldBy.gameplayCamera.transform.forward, (int)playerHeldBy.actualClientId);
+                    player.DamagePlayerFromOtherClientServerRpc(10, playerHeldBy.gameplayCamera.transform.forward, (int)playerHeldBy.playerClientId);
                     Log.LogDebug($"Halo Hit {player.playerUsername}");
                 }
                 else
@@ -257,9 +257,33 @@ namespace LCWildCardMod.Items
                 ThrowEndServerRpc();
                 StopDripServerRpc();
             }
-            yield return new WaitForSeconds(2.5f);
+            yield return null;
+            bool didEffect = false;
+            if (base.IsOwner && !HUDManager.Instance.playerIsCriticallyInjured)
+            {
+                HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
+                HUDManager.Instance.UpdateHealthUI(1);
+                didEffect = true;
+            }
+            yield return new WaitForSeconds(2f);
             Log.LogDebug("Halo Fully Exhausted");
             isExhausted = 1;
+            if (base.IsOwner && didEffect)
+            {
+                for (int i = 2; i <= 10; i++)
+                {
+                    if (GameNetworkManager.Instance.localPlayerController.isPlayerDead)
+                    {
+                        yield break;
+                    }
+                    if (!Mathf.Approximately(HUDManager.Instance.selfRedCanvasGroup.alpha, Mathf.Min((float)(100 - ((i - 1) * 10)) / 100f, 0.99f)))
+                    {
+                        yield break;
+                    }
+                    HUDManager.Instance.UpdateHealthUI(i * 10);
+                    yield return new WaitForSeconds(0.1f);
+                }
+            }
             exhaustCoroutine = null;
         }
         internal void StartDrip()
@@ -294,7 +318,7 @@ namespace LCWildCardMod.Items
             player.externalForceAutoFade += hitVelocity;
             if (exhaustCoroutine == null)
             {
-                WildCardMod.Instance.Log.LogDebug("Halo exhausting...");
+                WildCardMod.Instance.Log.LogDebug($"Halo exhausting...");
                 ExhaustHaloServerRpc();
             }
         }

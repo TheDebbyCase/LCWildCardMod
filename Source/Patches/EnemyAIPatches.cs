@@ -33,7 +33,7 @@ namespace LCWildCardMod.Patches
         [HarmonyTargetMethods]
         public static IEnumerable<MethodBase> GetSubEnemyPlayerCollisions()
         {
-            return Assembly.GetAssembly(typeof(EnemyAI)).GetTypes().Where(type => typeof(EnemyAI).IsAssignableFrom(type)).Select((x) => AccessTools.Method(x, nameof(EnemyAI.OnCollideWithPlayer), new Type[] { typeof(Collider) })).Where((x) => x.DeclaringType != typeof(EnemyAI));
+            return Assembly.GetAssembly(typeof(EnemyAI)).GetTypes().Where(type => typeof(EnemyAI).IsAssignableFrom(type)).Select((x) => AccessTools.Method(x, nameof(EnemyAI.OnCollideWithPlayer), new Type[] { typeof(Collider) })).Where((x) => x.DeclaringType != typeof(EnemyAI) && x.DeclaringType != typeof(DressGirlAI));
         }
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> FyrusStarEffect(IEnumerable<CodeInstruction> instructions, ILGenerator generator)

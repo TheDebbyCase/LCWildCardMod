@@ -13,7 +13,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool CureMore(CadaverGrowthAI __instance)
         {
-            if (__instance.playerInfections[(int)GameNetworkManager.Instance.localPlayerController.actualClientId].infected)
+            if (__instance.playerInfections[(int)GameNetworkManager.Instance.localPlayerController.playerClientId].infected)
             {
                 __instance.numberOfInfected--;
             }
@@ -38,12 +38,12 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, resumeBurstLabel));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 1));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.playerClientID));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.playerClientId));
                     newCode.Add(new CodeInstruction(OpCodes.Conv_I4));
                     newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.cadaverCure));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 1));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.playerClientID));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.playerClientId));
                     newCode.Add(new CodeInstruction(OpCodes.Conv_I4));
                     newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.cadaverCureRPC));
                     newCode.Add(new CodeInstruction(OpCodes.Ret));

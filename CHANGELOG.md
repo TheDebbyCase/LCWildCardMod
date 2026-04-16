@@ -1,4 +1,11 @@
 ## 1.2.5
+- Reenabled Halo and Fyrus Star saving! Haven't been able to test every enemy so let me know if there are any issues
+- Reenabled Worm Pit being hittable and simplified the pull force algorithm
+- Being saved by the Halo now plays some of the vanilla HUD effects for being critically injured
+- Halo now restores you to full health upon exhausting
+- Enemies that fail to interact with you due to Fyrus Star invincibility are now damaged
+- Fixed some Halo visual effects not working as expected
+- Fixed Ghost Girl interacting with the Halo and Fyrus Star saves incorrectly
 
 ## 1.2.4
 - Disabled halo and fyrus star saving for now, until I fix the broken mess
