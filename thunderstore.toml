@@ -40,6 +40,6 @@ target = "./LICENSE"
 [publish]
 communities = ["lethal-company"]
 [publish.categories]
-lethal-company = ["bepinex", "mods", "items", "serverside", "clientside", "asset-replacements"]
+lethal-company = ["bepinex", "mods", "items", "serverside", "clientside"]
 
 
