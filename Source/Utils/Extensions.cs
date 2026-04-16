@@ -5,10 +5,10 @@ namespace LCWildCardMod.Utils
 {
     internal static class Extensions
     {
-        internal static bool IsSaveable(this PlayerControllerB player, out bool starSave, out SmithHalo haloRef)
+        internal static bool IsSaveable(this PlayerControllerB player, out bool starSave, out SmithHalo haloRef, EnemyAI enemy = null)
         {
             haloRef = null;
-            starSave = player.SaveIfFyrus();
+            starSave = player.SaveIfFyrus(enemy);
             return starSave || (player.isHoldingObject && player.currentlyHeldObjectServer.TryGetComponent(out haloRef) && haloRef.isExhausted == 0);
         }
         internal static bool SaveIfFyrus(this PlayerControllerB player, EnemyAI enemy = null)
@@ -30,9 +30,9 @@ namespace LCWildCardMod.Utils
             (collision as IHittable).Hit(1, (enemy.transform.position - player.transform.position).normalized * 2.5f, player, true);
             return true;
         }
-        internal static bool SaveIfAny(this PlayerControllerB player)
+        internal static bool SaveIfAny(this PlayerControllerB player, EnemyAI enemy = null)
         {
-            if (player.IsSaveable(out bool starSave, out SmithHalo haloRef))
+            if (player.IsSaveable(out bool starSave, out SmithHalo haloRef, enemy))
             {
                 if (!starSave)
                 {

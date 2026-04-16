@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 namespace LCWildCardMod.Patches
 {
@@ -10,6 +9,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(JesterAI.OnCollideWithPlayer))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {

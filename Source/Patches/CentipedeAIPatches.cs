@@ -2,7 +2,6 @@
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
 using System.Reflection.Emit;
-using UnityEngine;
 namespace LCWildCardMod.Patches
 {
     [HarmonyPatch(typeof(CentipedeAI))]
@@ -10,6 +9,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(CentipedeAI.DamagePlayerOnIntervals))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {

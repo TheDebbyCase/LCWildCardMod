@@ -11,6 +11,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(BushWolfEnemy.OnCollideWithPlayer))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> FyrusStarEffect(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
@@ -39,7 +40,8 @@ namespace LCWildCardMod.Patches
                     List<CodeInstruction> newCode = new List<CodeInstruction>();
                     Label notSavedLabel = generator.DefineLabel();
                     newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, playerLocal.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.haloSave));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.anySave));
                     newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, notSavedLabel));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.foxCancelReel));
@@ -47,7 +49,7 @@ namespace LCWildCardMod.Patches
                     codes.InsertRange(i + 2, newCode);
                     //temp
                     newCode.Clear();
-                    newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Tried killing", OpCodes.Ldloc_S, 1, new Label[] { notFlagJump.Value }));
+                    newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Tried killing", OpCodes.Ldloc_S, 1, notFlagJump.Value));
                     newCode.AddRange(TranspilerHelper.DebugPlayerName(OpCodes.Ldloc_S, playerLocal.LocalIndex));
                     newCode.AddRange(TranspilerHelper.DebugLoadFromThis<bool>("Dragging", OpCodes.Ldfld, TranspilerHelper.foxDragging));
                     codes.InsertRange(codes.Count - 1, newCode);

@@ -7,6 +7,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(DepositItemsDesk.CollisionDetect))]
+        [HarmonyWrapSafe]
         [HarmonyPrefix]
         public static bool AnySave()
         {

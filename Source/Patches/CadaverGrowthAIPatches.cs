@@ -1,5 +1,4 @@
-﻿using GameNetcodeStuff;
-using HarmonyLib;
+﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
 using System.Reflection.Emit;
@@ -10,6 +9,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(CadaverGrowthAI.CurePlayer))]
+        [HarmonyWrapSafe]
         [HarmonyPrefix]
         public static bool CureMore(CadaverGrowthAI __instance)
         {
@@ -23,6 +23,7 @@ namespace LCWildCardMod.Patches
             return true;
         }
         [HarmonyPatch(nameof(CadaverGrowthAI.BurstFromPlayer))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> SaveFromBurst(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
@@ -34,6 +35,7 @@ namespace LCWildCardMod.Patches
                     List<CodeInstruction> newCode = new List<CodeInstruction>();
                     Label resumeBurstLabel = generator.DefineLabel();
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 1));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldnull));
                     newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.anySave));
                     newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, resumeBurstLabel));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));

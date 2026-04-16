@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 namespace LCWildCardMod.Patches
 {
@@ -10,15 +9,16 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(HauntedMaskItem.FinishAttaching))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-            List<CodeInstruction> newCodes = new List<CodeInstruction>();
             for (int i = 0; i < codes.Count; i++)
             {
                 if (codes[i].Calls(TranspilerHelper.allowDeath) && codes[i + 1].Branches(out Label? label))
                 {
+                    List<CodeInstruction> newCodes = new List<CodeInstruction>();
                     newCodes.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
                     newCodes.Add(new CodeInstruction(OpCodes.Ceq));
                     newCodes.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));

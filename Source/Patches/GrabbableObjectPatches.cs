@@ -8,6 +8,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(GrabbableObject.Start))]
+        [HarmonyWrapSafe]
         [HarmonyPostfix]
         public static void ChangeAssets(GrabbableObject __instance)
         {

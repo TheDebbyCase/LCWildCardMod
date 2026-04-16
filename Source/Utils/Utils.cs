@@ -19,22 +19,21 @@ namespace LCWildCardMod.Utils
         internal static MethodInfo stringConcat3 = AccessTools.Method(typeof(string), nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) });
         internal static MethodInfo logString = AccessTools.Method(typeof(TranspilerHelper), nameof(LogString), new Type[] { typeof(string) });
         internal static MethodInfo inequality = AccessTools.Method(typeof(UnityEngine.Object), "op_Inequality", new Type[] { typeof(UnityEngine.Object), typeof(UnityEngine.Object) });
-        internal static MethodInfo getTypeFromHandle = AccessTools.Method(typeof(Type), nameof(Type.GetTypeFromHandle), new Type[] { typeof(RuntimeTypeHandle) });
+        internal static MethodInfo mathfClamp3Int = AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) });
         internal static MethodInfo collision = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.MeetsStandardPlayerCollisionConditions), new Type[] { typeof(Collider), typeof(bool), typeof(bool) });
         internal static MethodInfo exitDriver = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitDriverSideSeat));
         internal static MethodInfo exitPassenger = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitPassengerSideSeat));
+        internal static MethodInfo fyrusSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrus), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
         internal static MethodInfo haloSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
         internal static MethodInfo anySave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfAny), new Type[] { typeof(PlayerControllerB) });
         internal static MethodInfo killPlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
         internal static MethodInfo damagePlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer), new Type[] { typeof(int), typeof(bool), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(bool), typeof(Vector3) });
-        internal static MethodInfo fyrusSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrus), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
+        internal static MethodInfo makeInjured = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.MakeCriticallyInjured), new Type[] { typeof(bool) });
         internal static MethodInfo switchBehaviour = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.SwitchToBehaviourState), new Type[] { typeof(int) });
         internal static MethodInfo switchBehaviourLocal = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.SwitchToBehaviourStateOnLocalClient), new Type[] { typeof(int) });
         internal static MethodInfo setSpeed = AccessTools.Method(typeof(NavMeshAgent), "set_speed", new Type[] { typeof(float) });
         internal static MethodInfo allowDeath = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.AllowPlayerDeath));
         internal static MethodInfo cancelSpecialAnim = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.CancelSpecialAnimationWithPlayer));
-        internal static MethodInfo setCracks = AccessTools.Method(typeof(HUDManager), nameof(HUDManager.SetCracksOnVisor), new Type[] { typeof(float) });
-        internal static MethodInfo getHud = AccessTools.Method(typeof(HUDManager), "get_Instance");
         internal static MethodInfo beeKill = AccessTools.Method(typeof(RedLocustBees), nameof(RedLocustBees.BeeKillPlayerOnLocalClient), new Type[] { typeof(int) });
         internal static MethodInfo gameNetworkInstance = AccessTools.Method(typeof(GameNetworkManager), "get_Instance");
         internal static MethodInfo foxCancelReel = AccessTools.Method(typeof(BushWolfEnemy), nameof(BushWolfEnemy.CancelReelingPlayerIn));
@@ -66,7 +65,7 @@ namespace LCWildCardMod.Utils
         {
             WildCardMod.Instance.Log.LogDebug(toLog);
         }
-        internal static List<CodeInstruction> DebugString(string toLog, IEnumerable<Label> labelsStart = null)
+        internal static List<CodeInstruction> DebugString(string toLog, params Label[] labelsStart)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
@@ -77,7 +76,7 @@ namespace LCWildCardMod.Utils
             instructions.Add(new CodeInstruction(OpCodes.Call, logString));
             return instructions;
         }
-        internal static List<CodeInstruction> DebugLoad<T>(string toLog, OpCode opcode, object operand = null, IEnumerable<Label> labelsStart = null)
+        internal static List<CodeInstruction> DebugLoad<T>(string toLog, OpCode opcode, object operand = null, params Label[] labelsStart)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
@@ -93,7 +92,7 @@ namespace LCWildCardMod.Utils
             instructions.Add(new CodeInstruction(OpCodes.Call, logString));
             return instructions;
         }
-        internal static List<CodeInstruction> DebugLoad<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, IEnumerable<Label> labelsStart = null)
+        internal static List<CodeInstruction> DebugLoad<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, params Label[] labelsStart)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
@@ -109,7 +108,7 @@ namespace LCWildCardMod.Utils
             instructions.Add(new CodeInstruction(OpCodes.Call, logString));
             return instructions;
         }
-        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, IEnumerable<Label> labelsStart = null)
+        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, params Label[] labelsStart)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
@@ -126,7 +125,7 @@ namespace LCWildCardMod.Utils
             instructions.Add(new CodeInstruction(OpCodes.Call, logString));
             return instructions;
         }
-        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, OpCode opcode, object operand = null, IEnumerable<Label> labelsStart = null)
+        internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, OpCode opcode, object operand = null, params Label[] labelsStart)
         {
             List<CodeInstruction> instructions = new List<CodeInstruction>();
             instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));

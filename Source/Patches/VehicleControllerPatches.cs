@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 namespace LCWildCardMod.Patches
 {
@@ -10,6 +9,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(VehicleController.DestroyCar))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
@@ -23,6 +23,7 @@ namespace LCWildCardMod.Patches
                     Label skipKill = generator.DefineLabel();
                     Label skipNew = generator.DefineLabel();
                     preCode.Add(new CodeInstruction(OpCodes.Ldloc_S, 0));
+                    preCode.Add(new CodeInstruction(OpCodes.Ldnull));
                     preCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.anySave));
                     preCode.Add(new CodeInstruction(OpCodes.Brtrue_S, skipKill));
                     postCode.Add(new CodeInstruction(OpCodes.Br_S, skipNew));

@@ -1,7 +1,6 @@
 ﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
-using System.Linq;
 using System.Reflection.Emit;
 namespace LCWildCardMod.Patches
 {
@@ -10,6 +9,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(DressGirlAI.OnCollideWithPlayer))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
@@ -22,6 +22,7 @@ namespace LCWildCardMod.Patches
                     List<CodeInstruction> newCode = new List<CodeInstruction>();
                     newLabel = generator.DefineLabel();
                     newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.anySave));
                     newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, newLabel.Value));
                     codes.InsertRange(i + 3, newCode);
@@ -34,7 +35,6 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Stfld, TranspilerHelper.timesSeenByPlayer));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                     newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.switchBehaviourLocal));
                     codes[i + 1].labels.Add(newLabel.Value);
                     codes.InsertRange(i + 1, newCode);

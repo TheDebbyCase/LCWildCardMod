@@ -26,7 +26,7 @@ namespace LCWildCardMod
         public List<Skin> skinList = new List<Skin>();
         public List<MapObject> mapObjectsList = new List<MapObject>();
         public List<MapObject> autoMapObjectsList = new List<MapObject>();
-        internal ManualLogSource Log { get; private set; } = null!;
+        internal ManualLogSource Log => Logger;
         internal KeyBinds KeyBinds { get; private set; } = null!;
         internal static WildCardMod Instance { get; private set; } = null!;
         internal WildCardConfig ModConfig { get; private set; } = null!;
@@ -35,7 +35,6 @@ namespace LCWildCardMod
         {
             Instance = this;
             KeyBinds = new KeyBinds();
-            Log = Logger;
             InitializeMethods();
             LoadFromBundle();
             ModConfig = new WildCardConfig(base.Config, scrapList, skinList, mapObjectsList);

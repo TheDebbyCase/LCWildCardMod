@@ -23,6 +23,8 @@ namespace LCWildCardMod.MapObjects
         internal WormState State = WormState.Peeping;
         public Transform irisTransform;
         public NetworkAnimator netAnim;
+        public float maxPullDistance = 5f;
+        public float maxPullForce = 3.5f;
         public float peepCooldown;
         public float peepWaitBetween = 5f;
         public float peepWaitHold;
@@ -310,11 +312,11 @@ namespace LCWildCardMod.MapObjects
                 return;
             }
             Vector3 pitPlayerVector = this.transform.position - player.transform.position;
-            if (pitPlayerVector.magnitude >= 5f && Physics.Linecast(this.transform.position + (Vector3.up / 2f), player.cameraContainerTransform.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+            if (pitPlayerVector.magnitude >= maxPullDistance && Physics.Linecast(this.transform.position + (Vector3.up / 2f), player.cameraContainerTransform.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
             {
                 return;
             }
-            player.externalForces += pitPlayerVector.normalized * (4 - Mathf.Pow(pitPlayerVector.magnitude / 2.5f, 2f));
+            player.externalForces += pitPlayerVector.normalized * (maxPullForce - Mathf.Pow(pitPlayerVector.magnitude * (Mathf.Sqrt(maxPullForce) / maxPullDistance), 2f));
         }
         [ClientRpc]
         public void PlayerFearIncreaseClientRpc(bool overTime, float amount, float cap, ulong id)

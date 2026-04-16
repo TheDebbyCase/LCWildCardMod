@@ -13,6 +13,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer))]
+        [HarmonyWrapSafe]
         [HarmonyPrefix]
         public static bool SavePlayerDamage(PlayerControllerB __instance, ref Vector3 force)
         {
@@ -24,6 +25,7 @@ namespace LCWildCardMod.Patches
             return !saved;
         }
         [HarmonyPatch(nameof(PlayerControllerB.DamagePlayer))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> SavePlayerDamage(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
@@ -39,49 +41,82 @@ namespace LCWildCardMod.Patches
                 {
                     continue;
                 }
-                if (codes[i + 2].LoadsField(TranspilerHelper.playerHealth) && codes[i].opcode.Equals(OpCodes.Ret) && codes[i + 3].IsLdarg(1) && codes[i + 4].opcode.Equals(OpCodes.Sub) && codes[i + 5].opcode.Equals(OpCodes.Ldc_I4_0) && codes[i - 1].Branches(out Label? oldLabel0) && codes[i + 6].Branches(out oldLabel1))
+                if (codes[i].Calls(TranspilerHelper.allowDeath))
                 {
-                    List<CodeInstruction> newCode = new List<CodeInstruction>();
-                    overkill = generator.DeclareLocal(typeof(bool));
-                    healthOverriden = generator.DeclareLocal(typeof(bool));
-                    CodeInstruction jumpDest = new CodeInstruction(OpCodes.Ldarg_S, 0);
-                    jumpDest.labels.Add(oldLabel0.Value);
-                    newCode.Add(jumpDest);
-                    newCode.Add(new CodeInstruction(OpCodes.Ldfld, TranspilerHelper.playerHealth));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 1));
-                    newCode.Add(new CodeInstruction(OpCodes.Sub));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Cgt));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Ceq));
-                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex));
-                    //newCode.AddRange(TranspilerHelper.DebugLoadFromThis<int>("Starting health", OpCodes.Ldfld, TranspilerHelper.playerHealth));
-                    //newCode.AddRange(TranspilerHelper.DebugLoad<int>("Damage", OpCodes.Ldarg_S, 1));
-                    //newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Is Overkill?", OpCodes.Ldloc_S, overkill.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
-                    codes.RemoveRange(i + 1, 6);
-                    codes.InsertRange(i + 1, newCode);
-                    i += newCode.Count;
+                    Log.LogDebug("Found PlayerControllerB.AllowPlayerDeath, replacing next branch with setting new locals");
+                    for (int j = i; j < codes.Count; j++)
+                    {
+                        if (!codes[j - 1].Branches(out _) || !codes[j].opcode.Equals(OpCodes.Ret))
+                        {
+                            continue;
+                        }
+                        for (int k = j; k < codes.Count; k++)
+                        {
+                            if (codes[k].Branches(out oldLabel1))
+                            {
+                                overkill = generator.DeclareLocal(typeof(bool));
+                                healthOverriden = generator.DeclareLocal(typeof(bool));
+                                List<CodeInstruction> setNewLocals = new List<CodeInstruction>();
+                                codes[k] = new CodeInstruction(OpCodes.Cgt);
+                                setNewLocals.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
+                                setNewLocals.Add(new CodeInstruction(OpCodes.Ceq));
+                                setNewLocals.Add(new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex));
+                                //setNewLocals.AddRange(TranspilerHelper.DebugLoadFromThis<int>("Starting health", OpCodes.Ldfld, TranspilerHelper.playerHealth));
+                                //setNewLocals.AddRange(TranspilerHelper.DebugLoad<int>("Damage", OpCodes.Ldarg_S, 1));
+                                //setNewLocals.AddRange(TranspilerHelper.DebugLoad<bool>("Is Overkill?", OpCodes.Ldloc_S, overkill.LocalIndex));
+                                setNewLocals.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
+                                setNewLocals.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
+                                codes.InsertRange(k + 1, setNewLocals);
+                                i = k + setNewLocals.Count + 1;
+                                break;
+                            }
+                        }
+                        if (overkill == null || !oldLabel1.HasValue)
+                        {
+                            Log.LogWarning("Unable to apply transpiler to PlayerControllerB.DamagePlayer! Halo save will not work properly!");
+                            return codes;
+                        }
+                        break;
+                    }
                 }
-                if (overkill != null && oldLabel1.HasValue && codes[i - 1].opcode.Equals(OpCodes.Ldc_I4_S) && codes[i - 1].OperandIs(50) && codes[i].Branches(out oldLabel3) && codes[i - 3].Branches(out oldLabel2))
+                if (overkill == null || !oldLabel1.HasValue)
                 {
+                    continue;
+                }
+                if (!oldLabel2.HasValue)
+                {
+                    codes[i].Branches(out oldLabel2);
+                }
+                else if (!oldLabel3.HasValue && codes[i].Branches(out oldLabel3))
+                {
+                    Log.LogDebug("Successfully set locals, adding overkill checks");
+                    List<CodeInstruction> newBranch = new List<CodeInstruction>();
+                    newBranch.Add(new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex));
+                    newBranch.Add(new CodeInstruction(OpCodes.Brfalse_S, oldLabel1.Value));
+                    newBranch.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 1));
+                    newBranch.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
+                    //newBranch.AddRange(TranspilerHelper.DebugLoad<bool>("Vanilla critical injury, setting health override to", OpCodes.Ldloc_S, healthOverriden.LocalIndex));
+                    codes.InsertRange(i + 1, newBranch);
+                    i += newBranch.Count + 1;
                     List<CodeInstruction> newCode = new List<CodeInstruction>();
                     Label newLabel = generator.DefineLabel();
                     Label noSaveJump = generator.DefineLabel();
                     Label overridenJump = generator.DefineLabel();
-                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, oldLabel1.Value));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 1));
-                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
-                    //newCode.AddRange(TranspilerHelper.DebugLoad<bool>("Vanilla critical injury, setting health override to", OpCodes.Ldloc_S, healthOverriden.LocalIndex));
-                    codes.InsertRange(i + 1, newCode);
-                    i += newCode.Count + 1;
-                    newCode.Clear();
                     CodeInstruction elseIfCode = new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex);
-                    elseIfCode.labels.Add(oldLabel1.Value);
-                    elseIfCode.labels.Add(oldLabel2.Value);
-                    elseIfCode.labels.Add(oldLabel3.Value);
+                    for (int j = i; j < codes.Count; j++)
+                    {
+                        if (codes[j].Branches(out _))
+                        {
+                            i = j;
+                        }
+                        if (codes[j].labels.Count < 3)
+                        {
+                            continue;
+                        }
+                        Log.LogDebug("Moving first if statement's branch destinations to the new else if statement");
+                        codes[j].MoveLabelsTo(elseIfCode);
+                        break;
+                    }
                     newCode.Add(elseIfCode);
                     newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
                     newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
@@ -98,55 +133,89 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 100));
                     newCode.Add(new CodeInstruction(OpCodes.Stfld, TranspilerHelper.playerHealth));
                     //newCode.AddRange(TranspilerHelper.DebugString("Saved player from death. Setting health to 100"));
-                    CodeInstruction newIf = new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex);
-                    newIf.labels.Add(newLabel);
-                    newIf.labels.Add(noSaveJump);
-                    newCode.Add(newIf);
+                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex).WithLabels(newLabel, noSaveJump));
                     newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, overridenJump));
-                    codes[i + 4].labels.Clear();
-                    codes[i + 13].labels.Add(overridenJump);
-                    codes.InsertRange(i + 4, newCode);
-                    i += newCode.Count + 4;
+                    for (int j = i; j < codes.Count; j++)
+                    {
+                        if (!codes[j].Calls(TranspilerHelper.mathfClamp3Int))
+                        {
+                            continue;
+                        }
+                        for (int k = j; k < codes.Count; k++)
+                        {
+                            if (!codes[k].StoresField(TranspilerHelper.playerHealth))
+                            {
+                                continue;
+                            }
+                            Log.LogDebug("Found health clamp, adding overriden branch after");
+                            codes[k + 1].labels.Add(overridenJump);
+                            break;
+                        }
+                        break;
+                    }
+                    codes.InsertRange(i + 1, newCode);
                 }
-                if (overkill != null && oldLabel1.HasValue && oldLabel2.HasValue && oldLabel3.HasValue && codes[i].Calls(TranspilerHelper.killPlayer))
+                else if (codes[i].Calls(TranspilerHelper.killPlayer))
                 {
-                    List<CodeInstruction> newCode = new List<CodeInstruction>();
-                    Label overkillJump = generator.DefineLabel();
-                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, overkillJump));
-                    //newCode.AddRange(TranspilerHelper.DebugString("Critically injuring player"));
-                    codes[i + 16].labels.Add(overkillJump);
-                    codes[i + 2].MoveLabelsTo(newCode[0]);
-                    codes.InsertRange(i + 2, newCode);
+                    Log.LogDebug("Found PlayerControllerB.KillPlayer, adding overkillJump jump after next branch");
+                    for (int j = i; j < codes.Count; j++)
+                    {
+                        if (!codes[j].Branches(out _))
+                        {
+                            continue;
+                        }
+                        List<CodeInstruction> newCode = new List<CodeInstruction>();
+                        Label overkillJump = generator.DefineLabel();
+                        newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex));
+                        newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, overkillJump));
+                        newCode.AddRange(TranspilerHelper.DebugString("Critically injuring player"));
+                        codes[j + 1].MoveLabelsTo(newCode[0]);
+                        for (int k = j; k < codes.Count; k++)
+                        {
+                            if (codes[k].Calls(TranspilerHelper.makeInjured))
+                            {
+                                Log.LogDebug("Found PlayerControllerB.MakeCriticallyInjured, adding overkillJump destination to next branch");
+                                for (int l = k; l < codes.Count; l++)
+                                {
+                                    if (codes[l].Branches(out _))
+                                    {
+                                        codes[l + 1].labels.Add(overkillJump);
+                                        break;
+                                    }
+                                }
+                                break;
+                            }
+                        }
+                        codes.InsertRange(j + 1, newCode);
+                        break;
+                    }
                     break;
                 }
             }
             return codes;
         }
         [HarmonyPatch(nameof(PlayerControllerB.KillPlayer))]
+        [HarmonyWrapSafe]
         [HarmonyPrefix]
         public static bool SavePlayerKill(PlayerControllerB __instance, ref Vector3 bodyVelocity, ref bool spawnBody, ref CauseOfDeath causeOfDeath)
         {
-            if (!__instance.IsSaveable(out bool starSave, out SmithHalo haloRef))
+            if (!__instance.IsSaveable(out bool starSave, out SmithHalo haloRef) || causeOfDeath == CauseOfDeath.Unknown || !spawnBody)
             {
                 return true;
             }
-            if (causeOfDeath != CauseOfDeath.Unknown && spawnBody)
+            if (starSave)
             {
-                if (starSave)
-                {
-                    __instance.externalForceAutoFade += bodyVelocity;
-                }
-                else
-                {
-                    Log.LogDebug("Running Halo Exhaust from Kill");
-                    haloRef.ExhaustLocal(__instance, bodyVelocity);
-                }
-                return false;
+                __instance.externalForceAutoFade += bodyVelocity;
             }
-            return true;
+            else
+            {
+                Log.LogDebug("Running Halo Exhaust from Kill");
+                haloRef.ExhaustLocal(__instance, bodyVelocity);
+            }
+            return false;
         }
         [HarmonyPatch(nameof(PlayerControllerB.PlayerHitGroundEffects))]
+        [HarmonyWrapSafe]
         [HarmonyPrefix]
         public static bool PreventFallDamage(PlayerControllerB __instance)
         {
@@ -189,6 +258,7 @@ namespace LCWildCardMod.Patches
             return true;
         }
         [HarmonyPatch(nameof(PlayerControllerB.CheckConditionsForSinkingInQuicksand))]
+        [HarmonyWrapSafe]
         [HarmonyPostfix]
         public static void AntiQuicksandStar(PlayerControllerB __instance, ref bool __result)
         {
@@ -199,29 +269,69 @@ namespace LCWildCardMod.Patches
             __result = !__instance.SaveIfFyrus();
         }
         [HarmonyPatch(nameof(PlayerControllerB.Update))]
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
         public static IEnumerable<CodeInstruction> HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
             {
-                if (codes[i].Calls(TranspilerHelper.killPlayer) && codes[i + 10].LoadsField(TranspilerHelper.playerCrouching) && codes[i - 12].LoadsField(TranspilerHelper.playerSinking))
+                if (!codes[i].Calls(TranspilerHelper.killPlayer))
                 {
-                    List<CodeInstruction> newCode = new List<CodeInstruction>();
-                    Label killLabel = generator.DefineLabel();
-                    Label skipLabel = generator.DefineLabel();
-                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.haloSave));
-                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, killLabel));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_R4, 0f));
-                    newCode.Add(new CodeInstruction(OpCodes.Stfld, TranspilerHelper.playerSinking));
-                    newCode.Add(new CodeInstruction(OpCodes.Br_S, skipLabel));
-                    codes[i - 9].labels.Add(killLabel);
-                    codes[i + 9].labels.Add(skipLabel);
-                    codes.InsertRange(i - 9, newCode);
-                    break;
+                    continue;
                 }
+                int preKillIndex = -1;
+                bool checkForPreSink = false;
+                for (int j = i; j > 0; j--)
+                {
+                    if (!checkForPreSink && codes[j].LoadsField(TranspilerHelper.playerSinking))
+                    {
+                        checkForPreSink = true;
+                        continue;
+                    }
+                    if (preKillIndex == -1 && codes[j].Branches(out _))
+                    {
+                        preKillIndex = j;
+                    }
+                }
+                Label? skipLabel = null;
+                Label? skipKillDestinationRef = null;
+                bool checkForPostSink = false;
+                for (int j = i; j < codes.Count; j++)
+                {
+                    if (!checkForPostSink && codes[j].LoadsField(TranspilerHelper.playerSinking))
+                    {
+                        checkForPostSink = true;
+                        continue;
+                    }
+                    if (!skipKillDestinationRef.HasValue)
+                    {
+                        codes[j].Branches(out skipKillDestinationRef);
+                    }
+                    else if (checkForPreSink && checkForPostSink && codes[j].labels.Contains(skipKillDestinationRef.Value))
+                    {
+                        skipLabel = generator.DefineLabel();
+                        codes[j].labels.Add(skipLabel.Value);
+                        break;
+                    }
+                }
+                if (!checkForPreSink || !checkForPostSink)
+                {
+                    continue;
+                }
+                i = preKillIndex;
+                List<CodeInstruction> newCode = new List<CodeInstruction>();
+                Label killLabel = generator.DefineLabel();
+                newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                newCode.Add(new CodeInstruction(OpCodes.Call, TranspilerHelper.haloSave));
+                newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, killLabel));
+                newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                newCode.Add(new CodeInstruction(OpCodes.Ldc_R4, 0f));
+                newCode.Add(new CodeInstruction(OpCodes.Stfld, TranspilerHelper.playerSinking));
+                newCode.Add(new CodeInstruction(OpCodes.Br_S, skipLabel.Value));
+                codes[i + 1].labels.Add(killLabel);
+                codes.InsertRange(i + 1, newCode);
+                break;
             }
             return codes;
         }

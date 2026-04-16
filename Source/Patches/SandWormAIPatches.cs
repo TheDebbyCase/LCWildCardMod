@@ -9,12 +9,13 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(SandWormAI.EatPlayer))]
+        [HarmonyWrapSafe]
         [HarmonyPrefix]
-        public static bool SavePlayer(ref PlayerControllerB playerScript)
+        public static bool SavePlayer(SandWormAI __instance, ref PlayerControllerB playerScript)
         {
             try
             {
-                return !playerScript.SaveIfAny();
+                return !playerScript.SaveIfAny(__instance);
             }
             catch (Exception exception)
             {

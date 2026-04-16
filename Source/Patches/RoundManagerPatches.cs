@@ -8,6 +8,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(RoundManager.waitForMainEntranceTeleportToSpawn))]
+        [HarmonyWrapSafe]
         [HarmonyPostfix]
         public static void StartRoundInvoke()
         {

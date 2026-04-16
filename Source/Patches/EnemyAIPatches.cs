@@ -13,6 +13,7 @@ namespace LCWildCardMod.Patches
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(nameof(EnemyAI.Start))]
+        [HarmonyWrapSafe]
         [HarmonyPostfix]
         public static void ChangeAssets(EnemyAI __instance)
         {
@@ -35,14 +36,16 @@ namespace LCWildCardMod.Patches
         {
             return Assembly.GetAssembly(typeof(EnemyAI)).GetTypes().Where(type => typeof(EnemyAI).IsAssignableFrom(type)).Select((x) => AccessTools.Method(x, nameof(EnemyAI.OnCollideWithPlayer), new Type[] { typeof(Collider) })).Where((x) => x.DeclaringType != typeof(EnemyAI) && x.DeclaringType != typeof(DressGirlAI));
         }
+        [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> FyrusStarEffect(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        public static IEnumerable<CodeInstruction> FyrusStarEffect(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             bool foundDamage = false;
             int collisionIndex = -1;
             int damageParams = TranspilerHelper.damagePlayer.GetParameters().Length;
             CodeInstruction loadPlayerLocal = null;
+            Log.LogDebug($"Patching {original.DeclaringType}.{original.Name}");
             for (int i = 0; i < codes.Count; i++)
             {
                 if (codes[i].Calls(TranspilerHelper.collision) && codes[i + 1].IsStloc())
