@@ -1,3 +1,8 @@
+## 1.2.6
+- Fixed an issue where if other mods adjust how players take damage the halo would no longer save players from death via damage
+- Adjusted Worm Pit pull force
+- Fixed an issue where if other mods adjust how Ghost Girl interacts with the player the halo and fyrus star would no longer save from death
+
 ## 1.2.5
 - Reenabled Halo and Fyrus Star saving! Haven't been able to test every enemy so let me know if there are any issues
 - Reenabled Worm Pit being hittable and simplified the pull force algorithm
