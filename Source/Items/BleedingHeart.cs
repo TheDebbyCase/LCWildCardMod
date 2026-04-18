@@ -28,6 +28,7 @@ namespace LCWildCardMod.Items
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            beatAudio.volume /= 3f;
             levelLayerIndex = itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer");
             sloshLayerIndex = itemAnimator.Animator.GetLayerIndex("SloshingLayer");
             StartCoroutine(StartingValueCoroutine());
@@ -155,13 +156,13 @@ namespace LCWildCardMod.Items
             EnableItemMeshes(false);
             beatAudio.PlayOneShot(smashClip);
             yield return new WaitForSeconds(0.1f);
-            Landmine.SpawnExplosion(this.transform.position + Vector3.up, true, 5f, 10f, 25, 10f);
+            Landmine.SpawnExplosion(transform.position + Vector3.up, true, 5f, 10f, 25, 10f);
             yield return new WaitForSeconds(0.5f);
             if (!base.IsServer)
             {
                 yield break;
             }
-            this.NetworkObject.Despawn();
+            NetworkObject.Despawn();
         }
         public override int GetItemDataToSave()
         {

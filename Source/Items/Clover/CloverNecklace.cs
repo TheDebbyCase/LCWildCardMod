@@ -67,7 +67,7 @@ namespace LCWildCardMod.Items.Clover
             {
                 return;
             }
-            this.NetworkObject.Despawn();
+            NetworkObject.Despawn();
         }
     }
 }

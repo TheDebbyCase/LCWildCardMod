@@ -52,7 +52,7 @@ namespace LCWildCardMod.Items
         {
             if (isExhausted == 1)
             {
-                this.GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
+                GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
                 spinParticle.gameObject.SetActive(false);
                 StopDrip();
                 return;
@@ -60,7 +60,7 @@ namespace LCWildCardMod.Items
             StartDrip();
             if (!hasBeenHeld)
             {
-                spawnMusic.Stop();
+                spawnMusic.Play();
             }
         }
         internal void ThrowButton(InputAction.CallbackContext throwContext)
@@ -155,7 +155,7 @@ namespace LCWildCardMod.Items
         }
         internal void ThrowCurve()
         {
-            handPosition = playerHeldBy.localItemHolder.transform.position;
+            handPosition = transform.position;
             parentComponent.transform.position = Vector3.Lerp(handPosition, targetPosition, throwCurve.Evaluate(throwTime));
             throwTime += Mathf.Abs(Time.deltaTime * 0.75f);
             ThrowCurveServerRpc(parentComponent.transform.position);
@@ -164,7 +164,8 @@ namespace LCWildCardMod.Items
         {
             base.EquipItem();
             parentComponent.transform.localPosition = Vector3.zero;
-            this.transform.localPosition = itemProperties.positionOffset;
+            transform.localPosition = itemProperties.positionOffset;
+            StartDrip();
             spawnMusic.Stop();
             if (!base.IsServer)
             {
@@ -198,11 +199,14 @@ namespace LCWildCardMod.Items
         }
         internal void ThrowEnd()
         {
+            if (base.IsServer)
+            {
+                itemAnimator.Animator.SetBool("BeingThrown", false);
+            }
             parentComponent.transform.localPosition = Vector3.zero;
-            this.transform.localPosition = itemProperties.positionOffset;
+            transform.localPosition = itemProperties.positionOffset;
             if (playerHeldBy != null)
             {
-                this.transform.position = playerHeldBy.localItemHolder.position;
                 playerHeldBy.throwingObject = false;
             }
             isThrowing = false;
@@ -218,11 +222,6 @@ namespace LCWildCardMod.Items
                 spinParticle.gameObject.SetActive(false);
             }
             Log.LogDebug("Halo Throw Ended");
-            if (!base.IsServer)
-            {
-                return;
-            }
-            itemAnimator.Animator.SetBool("BeingThrown", false);
         } 
         public override void DiscardItem()
         {
@@ -258,30 +257,26 @@ namespace LCWildCardMod.Items
                 StopDripServerRpc();
             }
             yield return null;
-            bool didEffect = false;
+            PlayerControllerB playerAffected = null;
             if (base.IsOwner && !HUDManager.Instance.playerIsCriticallyInjured)
             {
                 HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
                 HUDManager.Instance.UpdateHealthUI(1);
-                didEffect = true;
+                playerAffected = GameNetworkManager.Instance.localPlayerController;
             }
             yield return new WaitForSeconds(2f);
             Log.LogDebug("Halo Fully Exhausted");
             isExhausted = 1;
-            if (base.IsOwner && didEffect)
+            if (playerAffected != null)
             {
                 for (int i = 2; i <= 10; i++)
                 {
-                    if (GameNetworkManager.Instance.localPlayerController.isPlayerDead)
+                    if (playerAffected.isPlayerDead || playerAffected.health < 100)
                     {
-                        yield break;
+                        break;
                     }
-                    if (!Mathf.Approximately(HUDManager.Instance.selfRedCanvasGroup.alpha, Mathf.Min((float)(100 - ((i - 1) * 10)) / 100f, 0.99f)))
-                    {
-                        yield break;
-                    }
-                    HUDManager.Instance.UpdateHealthUI(i * 10);
                     yield return new WaitForSeconds(0.1f);
+                    HUDManager.Instance.UpdateHealthUI(i * 10, false);
                 }
             }
             exhaustCoroutine = null;
@@ -318,7 +313,7 @@ namespace LCWildCardMod.Items
             player.externalForceAutoFade += hitVelocity;
             if (exhaustCoroutine == null)
             {
-                WildCardMod.Instance.Log.LogDebug($"Halo exhausting...");
+                WildCardMod.Instance.Log.LogDebug("Halo exhausting...");
                 ExhaustHaloServerRpc();
             }
         }

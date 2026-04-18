@@ -36,7 +36,7 @@ namespace LCWildCardMod.Items
         public override void PocketItem()
         {
             base.PocketItem();
-            meshTransform.parent = this.transform;
+            meshTransform.parent = transform;
             maskAnimator.SetBool("isHeld", false);
             if (peekCoroutine == null)
             {
@@ -47,7 +47,7 @@ namespace LCWildCardMod.Items
         }
         public override void DiscardItem()
         {
-            meshTransform.parent = this.transform;
+            meshTransform.parent = transform;
             maskAnimator.SetBool("isHeld", false);
             if (peekCoroutine != null)
             {
@@ -62,7 +62,7 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            Log.LogDebug($"\"{this.itemProperties.itemName}\" Beginning Peek");
+            Log.LogDebug($"\"{itemProperties.itemName}\" Beginning Peek");
             peekCoroutine = StartCoroutine(PeekCoroutine(throwContext));
         }
         internal IEnumerator PeekCoroutine(InputAction.CallbackContext throwContext)
@@ -73,12 +73,12 @@ namespace LCWildCardMod.Items
                 {
                     isLifted = true;
                     SetTriggerServerRpc("Lift");
-                    Log.LogDebug($"\"{this.itemProperties.itemName}\" Waiting for Button Release");
+                    Log.LogDebug($"\"{itemProperties.itemName}\" Waiting for Button Release");
                 }
                 yield return new WaitUntil(() => (!throwContext.action.IsPressed() || playerHeldBy == null || playerHeldBy.moveInputVector != Vector2.zero));
                 if (isLifted)
                 {
-                    Log.LogDebug($"\"{this.itemProperties.itemName}\" Button Released");
+                    Log.LogDebug($"\"{itemProperties.itemName}\" Button Released");
                     SetTriggerServerRpc("Lower");
                     isLifted = false;
                 }

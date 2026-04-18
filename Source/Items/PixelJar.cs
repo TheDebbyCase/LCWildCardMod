@@ -13,8 +13,8 @@ namespace LCWildCardMod.Items
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            particle = this.GetComponentInChildren<ParticleSystem>();
-            particleRenderer = this.GetComponentInChildren<ParticleSystemRenderer>();
+            particle = GetComponentInChildren<ParticleSystem>();
+            particleRenderer = GetComponentInChildren<ParticleSystemRenderer>();
             randomIndex = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             if (!base.IsServer)
             {

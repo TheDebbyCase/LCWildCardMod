@@ -85,7 +85,7 @@ namespace LCWildCardMod.Items
                 return;
             }
             handPosition = base.transform.localPosition;
-            Log.LogDebug($"\"{this.itemProperties.itemName}\" Vector in Player Hand: {handPosition}");
+            Log.LogDebug($"\"{itemProperties.itemName}\" Vector in Player Hand: {handPosition}");
             playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
             Throw();
             if (throwAudio == null || throwClips.Length == 0)

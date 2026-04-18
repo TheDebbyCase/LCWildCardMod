@@ -1,7 +1,6 @@
-﻿using GameNetcodeStuff;
+﻿using BepInEx.Configuration;
+using GameNetcodeStuff;
 using HarmonyLib;
-using LCWildCardMod.Config;
-using LCWildCardMod.Items.Fyrus;
 using LethalCompanyInputUtils.Api;
 using System;
 using System.Collections.Generic;
@@ -13,28 +12,36 @@ using UnityEngine.AI;
 using UnityEngine.InputSystem;
 namespace LCWildCardMod.Utils
 {
-    internal static class TranspilerHelper
+    internal static class HarmonyHelper
     {
-        internal static MethodInfo toString = AccessTools.Method(typeof(object), nameof(object.ToString));
+        internal static MethodInfo toString = AccessTools.Method(typeof(object), nameof(ToString));
         internal static MethodInfo stringConcat3 = AccessTools.Method(typeof(string), nameof(string.Concat), new Type[] { typeof(string), typeof(string), typeof(string) });
-        internal static MethodInfo logString = AccessTools.Method(typeof(TranspilerHelper), nameof(LogString), new Type[] { typeof(string) });
+        internal static MethodInfo logString = AccessTools.Method(typeof(HarmonyHelper), nameof(LogString), new Type[] { typeof(string) });
         internal static MethodInfo inequality = AccessTools.Method(typeof(UnityEngine.Object), "op_Inequality", new Type[] { typeof(UnityEngine.Object), typeof(UnityEngine.Object) });
         internal static MethodInfo mathfClamp3Int = AccessTools.Method(typeof(Mathf), nameof(Mathf.Clamp), new Type[] { typeof(int), typeof(int), typeof(int) });
         internal static MethodInfo collision = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.MeetsStandardPlayerCollisionConditions), new Type[] { typeof(Collider), typeof(bool), typeof(bool) });
+        internal static MethodInfo onCollision = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.OnCollideWithPlayer), new Type[] { typeof(Collider) });
         internal static MethodInfo exitDriver = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitDriverSideSeat));
         internal static MethodInfo exitPassenger = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitPassengerSideSeat));
         internal static MethodInfo fyrusSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrus), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
         internal static MethodInfo haloSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
-        internal static MethodInfo anySave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfAny), new Type[] { typeof(PlayerControllerB) });
+        internal static MethodInfo anySave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfAny), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
         internal static MethodInfo killPlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
         internal static MethodInfo damagePlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer), new Type[] { typeof(int), typeof(bool), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(bool), typeof(Vector3) });
         internal static MethodInfo makeInjured = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.MakeCriticallyInjured), new Type[] { typeof(bool) });
+        internal static MethodInfo updateHealth = AccessTools.Method(typeof(HUDManager), nameof(HUDManager.UpdateHealthUI), new Type[] { typeof(int), typeof(bool) });
         internal static MethodInfo switchBehaviour = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.SwitchToBehaviourState), new Type[] { typeof(int) });
         internal static MethodInfo switchBehaviourLocal = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.SwitchToBehaviourStateOnLocalClient), new Type[] { typeof(int) });
         internal static MethodInfo setSpeed = AccessTools.Method(typeof(NavMeshAgent), "set_speed", new Type[] { typeof(float) });
         internal static MethodInfo allowDeath = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.AllowPlayerDeath));
         internal static MethodInfo cancelSpecialAnim = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.CancelSpecialAnimationWithPlayer));
         internal static MethodInfo beeKill = AccessTools.Method(typeof(RedLocustBees), nameof(RedLocustBees.BeeKillPlayerOnLocalClient), new Type[] { typeof(int) });
+        internal static MethodInfo dogKill = AccessTools.Method(typeof(MouthDogAI), nameof(MouthDogAI.KillPlayerServerRpc), new Type[] { typeof(int) });
+        internal static MethodInfo maskKill = AccessTools.Method(typeof(MaskedPlayerEnemy), nameof(MaskedPlayerEnemy.FinishKillAnimation), new Type[] { typeof(bool) });
+        internal static MethodInfo jesterKill = AccessTools.Method(typeof(JesterAI), nameof(JesterAI.KillPlayerServerRpc), new Type[] { typeof(int) });
+        internal static MethodInfo brackenKill = AccessTools.Method(typeof(FlowermanAI), nameof(FlowermanAI.KillPlayerAnimationServerRpc), new Type[] { typeof(int) });
+        internal static MethodInfo dwellerKill = AccessTools.Method(typeof(CaveDwellerAI), nameof(CaveDwellerAI.KillPlayerAnimationServerRpc), new Type[] { typeof(int) });
+        internal static MethodInfo bloomBurst = AccessTools.Method(typeof(CadaverBloomAI), nameof(CadaverBloomAI.BurstForth), new Type[] { typeof(PlayerControllerB), typeof(bool), typeof(Vector3), typeof(Vector3) });
         internal static MethodInfo gameNetworkInstance = AccessTools.Method(typeof(GameNetworkManager), "get_Instance");
         internal static MethodInfo foxCancelReel = AccessTools.Method(typeof(BushWolfEnemy), nameof(BushWolfEnemy.CancelReelingPlayerIn));
         internal static MethodInfo cadaverCure = AccessTools.Method(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.CurePlayer), new Type[] { typeof(int) });
@@ -281,36 +288,38 @@ namespace LCWildCardMod.Utils
         {
             int? load1Operand = load1.operand as int?;
             int? load2Operand = load2.operand as int?;
+            OpCode opCode1 = load1.opcode;
+            OpCode opCode2 = load2.opcode;
             if (load1.IsLdloc() && load2.IsLdloc())
             {
-                if (load1.opcode.Equals(load2.opcode) && load1.OperandIs(load2.operand))
+                if (opCode1.Equals(opCode2) && load1.OperandIs(load2.operand))
                 {
                     return true;
                 }
-                else if (load1.opcode.Equals(OpCodes.Ldloc) || load1.opcode.Equals(OpCodes.Ldloc_S))
+                else if (opCode1.Equals(OpCodes.Ldloc) || opCode1.Equals(OpCodes.Ldloc_S))
                 {
                     return load1.OperandIs(load2.operand);
                 }
-                else if (load1.opcode.Equals(OpCodes.Ldloc_0))
+                else if (opCode1.Equals(OpCodes.Ldloc_0))
                 {
-                    return load2.opcode.Equals(OpCodes.Ldloc_0) || (load2Operand.HasValue && load2Operand.Value == 0);
+                    return opCode2.Equals(OpCodes.Ldloc_0) || (load2Operand.HasValue && load2Operand.Value == 0);
                 }
-                else if (load1.opcode.Equals(OpCodes.Ldloc_1))
+                else if (opCode1.Equals(OpCodes.Ldloc_1))
                 {
-                    return load2.opcode.Equals(OpCodes.Ldloc_1) || (load2Operand.HasValue && load2Operand.Value == 1);
+                    return opCode2.Equals(OpCodes.Ldloc_1) || (load2Operand.HasValue && load2Operand.Value == 1);
                 }
-                else if (load1.opcode.Equals(OpCodes.Ldloc_2))
+                else if (opCode1.Equals(OpCodes.Ldloc_2))
                 {
-                    return load2.opcode.Equals(OpCodes.Ldloc_2) || (load2Operand.HasValue && load2Operand.Value == 2);
+                    return opCode2.Equals(OpCodes.Ldloc_2) || (load2Operand.HasValue && load2Operand.Value == 2);
                 }
-                else if (load1.opcode.Equals(OpCodes.Ldloc_3))
+                else if (opCode1.Equals(OpCodes.Ldloc_3))
                 {
-                    return load2.opcode.Equals(OpCodes.Ldloc_3) || (load2Operand.HasValue && load2Operand.Value == 3);
+                    return opCode2.Equals(OpCodes.Ldloc_3) || (load2Operand.HasValue && load2Operand.Value == 3);
                 }
-            }
-            else if ((load1.opcode.Equals(OpCodes.Ldloca) || load1.opcode.Equals(OpCodes.Ldloca_S)) && (load2.opcode.Equals(OpCodes.Ldloca) || load2.opcode.Equals(OpCodes.Ldloca_S)))
-            {
-                return load1.OperandIs(load2.operand);
+                else if ((opCode1.Equals(OpCodes.Ldloca) || opCode1.Equals(OpCodes.Ldloca_S)) && (opCode2.Equals(OpCodes.Ldloca) || opCode2.Equals(OpCodes.Ldloca_S)))
+                {
+                    return load1.OperandIs(load2.operand);
+                }
             }
             else if (load1.IsLdarg() && load2.IsLdarg())
             {
@@ -320,51 +329,9 @@ namespace LCWildCardMod.Utils
             {
                 return load1.OperandIs(load2.operand);
             }
-            return load1.opcode.Equals(load2.opcode) && load1.OperandIs(load2.operand);
-        }
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        internal static void TestMethod()
-        {
-            
+            return opCode1.Equals(opCode2) && load1.OperandIs(load2.operand);
         }
     }
-    //[HarmonyPatch(typeof(TranspilerHelper))]
-    //public static class TestPatches
-    //{
-    //    [HarmonyPatch(nameof(TranspilerHelper.TestMethod))]
-    //    [HarmonyTranspiler]
-    //    public static IEnumerable<CodeInstruction> TestTranspiler(IEnumerable<CodeInstruction> instructions)
-    //    {
-    //        List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-    //        for (int i = 0; i < codes.Count; i++)
-    //        {
-    //            object operand = codes[i].operand;
-    //            if (operand != null)
-    //            {
-    //                MethodInfo method = operand as MethodInfo;
-    //                FieldInfo field = null;
-    //                if (method == null)
-    //                {
-    //                    field = operand as FieldInfo;
-    //                }
-    //                WildCardMod.Instance.Log.LogDebug($"{codes[i]} OPERAND ({operand.GetType()}): {operand}");
-    //                if (method != null)
-    //                {
-    //                    WildCardMod.Instance.Log.LogDebug($"Returns: {method.ReturnParameter.ParameterType}, Generic?: {method.IsGenericMethod}, Virtual?: {method.IsVirtual}, Declared by: {method.DeclaringType}");
-    //                }
-    //                else if (field != null)
-    //                {
-    //                    WildCardMod.Instance.Log.LogDebug($"Declared by: {field.DeclaringType}, Type: {field.FieldType}");
-    //                }
-    //            }
-    //            else
-    //            {
-    //                WildCardMod.Instance.Log.LogDebug($"{codes[i]}");
-    //            }
-    //        }
-    //        return codes;
-    //    }
-    //}
     internal static class EventsClass
     {
         internal static bool roundStarted = false;
@@ -378,7 +345,7 @@ namespace LCWildCardMod.Utils
             {
                 return;
             }
-            OnRoundStart.Invoke();
+            OnRoundStart?.Invoke();
         }
         internal static void RoundEnded()
         {
@@ -386,7 +353,7 @@ namespace LCWildCardMod.Utils
             {
                 return;
             }
-            OnRoundEnd.Invoke();
+            OnRoundEnd?.Invoke();
         }
     }
     internal class KeyBinds : LcInputActions
@@ -403,7 +370,7 @@ namespace LCWildCardMod.Utils
     internal static class SkinsClass
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        static List<BepInEx.Configuration.ConfigEntry<int>> ConfigChances => WildCardMod.Instance.ModConfig.skinApplyChance;
+        static Dictionary<string, ConfigEntry<int>> ConfigChances => WildCardMod.Instance.ModConfig.skinApplyChance;
         internal static void SetSkin(EnemyAI enemy)
         {
             Skin skinToApply = GetRandomSkin(enemy.enemyType.enemyName, SkinType.Enemy);
@@ -483,7 +450,6 @@ namespace LCWildCardMod.Utils
         static Skin GetRandomSkin(string target, SkinType type)
         {
             System.Random random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            Skin skinToApply = null;
             int nothingWeight = 0;
             int skinsWeight = 0;
             List<Skin> potentialSkins = new List<Skin>();
@@ -494,11 +460,7 @@ namespace LCWildCardMod.Utils
                 {
                     case SkinType.Enemy:
                         {
-                            if (!(skin.target is EnemyType))
-                            {
-                                continue;
-                            }
-                            if ((skin.target as EnemyType).enemyName == target)
+                            if (skin.target is EnemyType enemy && enemy.enemyName == target)
                             {
                                 potentialSkins.Add(skin);
                             }
@@ -506,14 +468,14 @@ namespace LCWildCardMod.Utils
                         }
                     case SkinType.Item:
                         {
-                            if (!(skin.target is Item))
-                            {
-                                continue;
-                            }
-                            if ((skin.target as Item).itemName == target)
+                            if (skin.target is Item item && item.itemName == target)
                             {
                                 potentialSkins.Add(skin);
                             }
+                            break;
+                        }
+                    default:
+                        {
                             break;
                         }
                 }
@@ -524,37 +486,45 @@ namespace LCWildCardMod.Utils
             }
             for (int i = 0; i < potentialSkins.Count; i++)
             {
-                int index = WildCardMod.Instance.skinList.IndexOf(potentialSkins[i]);
-                if (ConfigChances[index].Value <= 0)
+                Skin skin = potentialSkins[i];
+                string skinName = skin.skinName;
+                if (ConfigChances[skinName].Value <= 0)
                 {
-                    Log.LogDebug($"Skin \"{potentialSkins[i].skinName}\" was disabled!");
-                    potentialSkins.Remove(potentialSkins[i]);
+                    Log.LogDebug($"Skin \"{skinName}\" was disabled!");
+                    potentialSkins.RemoveAt(i);
                     i--;
                     continue;
                 }
-                Log.LogDebug($"Adding skin \"{potentialSkins[i].skinName}\"'s chance weight!");
-                skinsWeight += ConfigChances[index].Value;
-                nothingWeight += 100 - ConfigChances[index].Value;
+                Log.LogDebug($"Adding skin \"{skinName}\"'s chance weight!");
+                skinsWeight += ConfigChances[skinName].Value;
+                nothingWeight += 100 - ConfigChances[skinName].Value;
             }
             float applyChance = (float)random.NextDouble();
             Log.LogDebug($"Rolling to see if a skin will be applied!");
-            if (((float)nothingWeight / (float)(nothingWeight + skinsWeight)) < applyChance)
+            if (((float)nothingWeight / (float)(nothingWeight + skinsWeight)) >= applyChance)
             {
-                for (int i = 0; i < potentialSkins.Count; i++)
+                return null;
+            }
+            for (int i = potentialSkins.Count - 1; i > 1; i--)
+            {
+                int j = random.Next(i + 1);
+                (potentialSkins[i], potentialSkins[j]) = (potentialSkins[j], potentialSkins[i]);
+            }
+            for (int i = 0; i < potentialSkins.Count; i++)
+            {
+                Skin skin = potentialSkins[i];
+                string skinName = skin.skinName;
+                Log.LogDebug($"Rolling to see if \"{skinName}\" is selected!");
+                if (ConfigChances[skinName].Value / skinsWeight >= applyChance)
                 {
-                    Log.LogDebug($"Rolling to see if \"{potentialSkins[i].skinName}\" is selected!");
-                    if (ConfigChances[WildCardMod.Instance.skinList.IndexOf(potentialSkins[i])].Value / skinsWeight >= applyChance)
-                    {
-                        Log.LogDebug($"Skin \"{potentialSkins[i].skinName}\" was selected!");
-                        skinToApply = potentialSkins[i];
-                        break;
-                    }
+                    Log.LogDebug($"Skin \"{skinName}\" was selected!");
+                    return skin;
                 }
             }
-            return skinToApply;
+            return null;
         }
     }
-    [CreateAssetMenu(menuName = "WCScriptableObjects/Skin", order = 1)]
+    [CreateAssetMenu(menuName = "WildCard/Skin", order = 1)]
     public class Skin : ScriptableObject
     {
         public string skinName;
@@ -566,70 +536,47 @@ namespace LCWildCardMod.Utils
         public AudioClip[] newAudioClips;
         public RuntimeAnimatorController newAnimationController;
     }
-    [CreateAssetMenu(menuName = "WCScriptableObjects/MapObject", order = 1)]
+    [CreateAssetMenu(menuName = "WildCard/MapObject", order = 1)]
     public class MapObject : ScriptableObject
     {
         public string mapObjectName;
         public SpawnableMapObject spawnableMapObject;
-        public Func<SelectableLevel, AnimationCurve> curveFunc;
         public List<LevelCurve> levelCurves;
         public bool autoHandle;
+        internal Func<SelectableLevel, AnimationCurve> GetCurveFunc()
+        {
+            AnimationCurve curve = new AnimationCurve(new Keyframe(0, 0), new Keyframe(0, 0));
+            if (levelCurves != null && (autoHandle || WildCardMod.Instance.ModConfig.useDefaultMapObjectCurve[mapObjectName].Value))
+            {
+                return (x) =>
+                {
+                    for (int i = 0; i < levelCurves.Count; i++)
+                    {
+                        LevelCurve levelCurve = levelCurves[i];
+                        string checkLevelName = levelCurve.level;
+                        if (checkLevelName != x.name)
+                        {
+                            continue;
+                        }
+                        curve = levelCurve.curve;
+                        break;
+                    }
+                    return curve;
+                };
+            }
+            else if (WildCardMod.Instance.ModConfig.mapObjectMinMax.TryGetValue(mapObjectName, out (ConfigEntry<int>, ConfigEntry<int>) minMax))
+            {
+                curve.keys[0].value = minMax.Item1.Value;
+                curve.keys[1].value = minMax.Item2.Value;
+            }
+            return (x) => curve;
+        }
     }
     [Serializable]
     public class LevelCurve
     {
         public string level;
         public AnimationCurve curve;
-    }
-    internal static class MapObjectHelper
-    {
-        static WildCardConfig ModConfig => WildCardMod.Instance.ModConfig;
-        static List<MapObject> MapObjects => WildCardMod.Instance.mapObjectsList;
-        static List<MapObject> AutoMapObjects => WildCardMod.Instance.autoMapObjectsList;
-        static int mapIndex = 0;
-        internal static AnimationCurve MapObjectFunc(SelectableLevel level)
-        {
-            AnimationCurve curve;
-            List<MapObject> maps = MapObjects;
-            maps.AddRange(AutoMapObjects);
-            if (maps[mapIndex].autoHandle || (ModConfig.useDefaultMapObjectCurve.Count > mapIndex && ModConfig.useDefaultMapObjectCurve[mapIndex].Value))
-            {
-                List<string> levelsList = new List<string>();
-                for (int i = 0; i < maps[mapIndex].levelCurves.Count; i++)
-                {
-                    levelsList.Add(maps[mapIndex].levelCurves[i].level);
-                }
-                for (int i = 0; i < maps[mapIndex].levelCurves.Count; i++)
-                {
-                    LevelCurve levelCurve = maps[mapIndex].levelCurves[i];
-                    if (!levelsList.Contains(levelCurve.level))
-                    {
-                        continue;
-                    }
-                    else if (levelCurve.level == level.name)
-                    {
-                        curve = levelCurve.curve;
-                        mapIndex++;
-                        return curve;
-                    }
-                }
-                curve = maps[mapIndex].spawnableMapObject.numberToSpawn;
-                mapIndex++;
-                return curve;
-            }
-            else if (ModConfig.mapObjectMinNo.Count > mapIndex && ModConfig.mapObjectMaxNo.Count > mapIndex)
-            {
-                curve = new AnimationCurve(new Keyframe(0, ModConfig.mapObjectMinNo[mapIndex].Value), new Keyframe(1, ModConfig.mapObjectMaxNo[mapIndex].Value));
-                mapIndex++;
-                return curve;
-            }
-            else
-            {
-                curve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0f, 0f));
-                mapIndex++;
-                return curve;
-            }
-        }
     }
     internal enum SkinType
     {

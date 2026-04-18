@@ -36,7 +36,7 @@ namespace LCWildCardMod.Items
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            AudioSource audioSource = this.GetComponent<AudioSource>();
+            AudioSource audioSource = GetComponent<AudioSource>();
             int index = random.Next(0, squeakClips.Length);
             audioSource.PlayOneShot(squeakClips[index], 1f);
             WalkieTalkie.TransmitOneShotAudio(audioSource, squeakClips[index]);

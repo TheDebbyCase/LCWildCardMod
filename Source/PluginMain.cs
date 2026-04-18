@@ -11,6 +11,8 @@ using HarmonyLib;
 using LCWildCardMod.Config;
 using LCWildCardMod.Utils;
 using static BepInEx.BepInDependency;
+using BepInEx.Configuration;
+using LCWildCardMod.Patches;
 namespace LCWildCardMod
 {
     [BepInPlugin(modGUID, modName, modVersion)]
@@ -21,11 +23,10 @@ namespace LCWildCardMod
     {
         public const string modGUID = "deB.WildCard";
         public const string modName = "WILDCARD Stuff";
-        public const string modVersion = "1.2.6";
+        public const string modVersion = "1.2.7";
         public List<Item> scrapList = new List<Item>();
         public List<Skin> skinList = new List<Skin>();
         public List<MapObject> mapObjectsList = new List<MapObject>();
-        public List<MapObject> autoMapObjectsList = new List<MapObject>();
         internal ManualLogSource Log => Logger;
         internal KeyBinds KeyBinds { get; private set; } = null!;
         internal static WildCardMod Instance { get; private set; } = null!;
@@ -37,7 +38,7 @@ namespace LCWildCardMod
             KeyBinds = new KeyBinds();
             InitializeMethods();
             LoadFromBundle();
-            ModConfig = new WildCardConfig(base.Config, scrapList, skinList, mapObjectsList);
+            ModConfig = new WildCardConfig(Config, scrapList, skinList, mapObjectsList);
             InitializeAssets();
             HandleHarmony();
             Log.LogInfo("WILDCARD Stuff Successfully Loaded");
@@ -51,10 +52,11 @@ namespace LCWildCardMod
                 for (int j = 0; j < typeMethods.Length; j++)
                 {
                     object[] methodAttributes = typeMethods[j].GetCustomAttributes(typeof(RuntimeInitializeOnLoadMethodAttribute), false);
-                    if (methodAttributes.Length > 0)
+                    if (methodAttributes.Length == 0)
                     {
-                        typeMethods[j].Invoke(null, null);
+                        continue;
                     }
+                    typeMethods[j].Invoke(null, null);
                 }
             }
         }
@@ -64,7 +66,7 @@ namespace LCWildCardMod
             string[] allAssetPaths = bundle.GetAllAssetNames();
             for (int i = 0; i < allAssetPaths.Length; i++)
             {
-                switch (allAssetPaths[i][..allAssetPaths[i].LastIndexOf("/")])
+                switch (allAssetPaths[i][..allAssetPaths[i].LastIndexOf('/')])
                 {
                     case "assets/my creations/scrap items":
                         {
@@ -78,15 +80,7 @@ namespace LCWildCardMod
                         }
                     case "assets/my creations/map objects":
                         {
-                            MapObject asset = bundle.LoadAsset<MapObject>(allAssetPaths[i]);
-                            if (asset.autoHandle)
-                            {
-                                autoMapObjectsList.Add(asset);
-                            }
-                            else
-                            {
-                                mapObjectsList.Add(asset);
-                            }
+                            mapObjectsList.Add(bundle.LoadAsset<MapObject>(allAssetPaths[i]));
                             break;
                         }
                     default:
@@ -107,78 +101,58 @@ namespace LCWildCardMod
         {
             for (int i = 0; i < scrapList.Count; i++)
             {
-                if (scrapList[i].spawnPrefab.GetComponent<AdditionalInfo>().isBonus && !ModConfig.assortedScrap.Value)
+                Item item = scrapList[i];
+                string scrapName = item.itemName;
+                if (!ModConfig.isScrapEnabled[scrapName].Value || (item.spawnPrefab.GetComponent<AdditionalInfo>().isBonus && !ModConfig.assortedScrap.Value))
                 {
-                    Log.LogInfo($"\"{scrapList[i].itemName}\" scrap was disabled!");
+                    Log.LogInfo($"\"{scrapName}\" scrap was disabled!");
+                    scrapList.RemoveAt(i);
+                    i--;
                     continue;
                 }
-                if (ModConfig.isScrapEnabled[i].Value)
+                Dictionary<Levels.LevelTypes, int> scrapLevelWeights = new Dictionary<Levels.LevelTypes, int>();
+                Dictionary<string, int> scrapModdedWeights = new Dictionary<string, int>();
+                string[] configScrapStringArray = ModConfig.scrapSpawnWeights[scrapName].Value.Split(",");
+                for (int j = 0; j < configScrapStringArray.Length; j++)
                 {
-                    Dictionary<Levels.LevelTypes, int> scrapLevelWeights = new Dictionary<Levels.LevelTypes, int>();
-                    Dictionary<string, int> scrapModdedWeights = new Dictionary<string, int>();
-                    string[] configScrapStringArray = ModConfig.scrapSpawnWeights[i].Value.Split(",");
-                    bool isScrapConfigStringValid = new bool();
-                    for (int j = 0; j < configScrapStringArray.Length; j++)
+                    string configScrapString = configScrapStringArray[j];
+                    string[] pair = configScrapString.Split(':');
+                    if (pair.Length != 2)
                     {
-                        if (configScrapStringArray[j].Contains(":") && int.TryParse(configScrapStringArray[j].Split(":")[1], out _))
-                        {
-                            isScrapConfigStringValid = true;
-                        }
-                        else
-                        {
-                            isScrapConfigStringValid = false;
-                            break;
-                        }
+                        continue;
                     }
-                    if (isScrapConfigStringValid)
+                    if (!int.TryParse(pair[1], out int weight))
                     {
-                        for (int j = 0; j < configScrapStringArray.Length; j++)
-                        {
-                            if (Levels.LevelTypes.TryParse(configScrapStringArray[j].Split(":")[0], out Levels.LevelTypes configScrapLevel))
-                            {
-                                scrapLevelWeights.Add(configScrapLevel, int.Parse(configScrapStringArray[j].Split(":")[1]));
-                            }
-                            else
-                            {
-                                scrapModdedWeights.Add(configScrapStringArray[j], int.Parse(configScrapStringArray[j].Split(":")[1]));
-                            }
-
-                        }
-                        NetworkPrefabs.RegisterNetworkPrefab(scrapList[i].spawnPrefab);
-                        Utilities.FixMixerGroups(scrapList[i].spawnPrefab);
-                        LethalLib.Modules.Items.RegisterScrap(scrapList[i], null, scrapModdedWeights);
-                        LethalLib.Modules.Items.RegisterScrap(scrapList[i], scrapLevelWeights);
-                        Log.LogDebug($"\"{scrapList[i].itemName}\" scrap was loaded!");
-                        for (int j = 0; j < LethalLib.Modules.Items.scrapItems.LastOrDefault().levelRarities.Count; j++)
-                        {
-                            Log.LogDebug($"LethalLib Scrap Weights \"{LethalLib.Modules.Items.scrapItems.LastOrDefault().levelRarities.ToArray()[j]}\"");
-                        }
+                        continue;
                     }
-                    else
+                    string levelName = pair[0];
+                    if (Levels.LevelTypes.TryParse(levelName, out Levels.LevelTypes configScrapLevel))
                     {
-                        Log.LogWarning($"\"{scrapList[i].itemName}\" scrap was not loaded as its config was not set up correctly!");
+                        scrapLevelWeights.Add(configScrapLevel, weight);
+                        continue;
                     }
+                    scrapModdedWeights.Add(levelName, weight);
                 }
-                else
-                {
-                    Log.LogInfo($"\"{scrapList[i].itemName}\" scrap was disabled!");
-                    scrapList.Remove(scrapList[i]);
-                    i--;
-                }
+                NetworkPrefabs.RegisterNetworkPrefab(item.spawnPrefab);
+                Utilities.FixMixerGroups(item.spawnPrefab);
+                LethalLib.Modules.Items.RegisterScrap(item, scrapLevelWeights, scrapModdedWeights);
+                Log.LogDebug($"\"{scrapName}\" scrap was loaded!");
             }
         }
         void InitializeSkins()
         {
             for (int i = 0; i < skinList.Count; i++)
             {
-                if (ModConfig.isSkinEnabled[i].Value)
+                Skin skin = skinList[i];
+                string skinName = skin.skinName;
+                if (ModConfig.isSkinEnabled[skinName].Value)
                 {
-                    Log.LogDebug($"\"{skinList[i].skinName}\" skin was loaded!");
+                    Log.LogDebug($"\"{skinName}\" skin was loaded!");
                 }
                 else
                 {
-                    Log.LogInfo($"\"{skinList[i].skinName}\" skin was disabled!");
-                    skinList.Remove(skinList[i]);
+                    Log.LogInfo($"\"{skinName}\" skin was disabled!");
+                    skinList.RemoveAt(i);
                     i--;
                 }
             }
@@ -187,58 +161,45 @@ namespace LCWildCardMod
         {
             for (int i = 0; i < mapObjectsList.Count; i++)
             {
-                if (ModConfig.isMapObjectEnabled[i].Value)
+                MapObject mapObject = mapObjectsList[i];
+                string mapObjectName = mapObject.mapObjectName;
+                if (ModConfig.isMapObjectEnabled.TryGetValue(mapObjectName, out ConfigEntry<bool> isEnabled) && !isEnabled.Value)
                 {
-                    if (!ModConfig.useDefaultMapObjectCurve[i].Value)
-                    {
-                        mapObjectsList[i].curveFunc = MapObjectHelper.MapObjectFunc;
-                        Log.LogInfo($"Using config settings for \"{mapObjectsList[i].mapObjectName}\"'s amount curve!");
-                    }
-                    else
-                    {
-                        mapObjectsList[i].curveFunc = MapObjectHelper.MapObjectFunc;
-                    }
-                    NetworkPrefabs.RegisterNetworkPrefab(mapObjectsList[i].spawnableMapObject.prefabToSpawn);
-                    Utilities.FixMixerGroups(mapObjectsList[i].spawnableMapObject.prefabToSpawn);
-                    if (mapObjectsList[i].spawnableMapObject.prefabToSpawn.TryGetComponent<GrabbableObject>(out GrabbableObject mapObjectScrap))
-                    {
-                        LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
-                    }
-                    LethalLib.Modules.MapObjects.RegisterMapObject(mapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, mapObjectsList[i].curveFunc);
-                    Log.LogDebug($"\"{mapObjectsList[i].mapObjectName}\" map object was loaded!");
-                }
-                else
-                {
-                    Log.LogInfo($"\"{mapObjectsList[i].mapObjectName}\" map object was disabled!");
-                    mapObjectsList.Remove(mapObjectsList[i]);
+                    Log.LogInfo($"\"{mapObjectName}\" map object was disabled!");
+                    mapObjectsList.RemoveAt(i);
                     i--;
+                    continue;
                 }
-            }
-            for (int i = 0; i < autoMapObjectsList.Count; i++)
-            {
-                NetworkPrefabs.RegisterNetworkPrefab(autoMapObjectsList[i].spawnableMapObject.prefabToSpawn);
-                Utilities.FixMixerGroups(autoMapObjectsList[i].spawnableMapObject.prefabToSpawn);
-                if (autoMapObjectsList[i].spawnableMapObject.prefabToSpawn.TryGetComponent<GrabbableObject>(out GrabbableObject mapObjectScrap))
+                NetworkPrefabs.RegisterNetworkPrefab(mapObject.spawnableMapObject.prefabToSpawn);
+                Utilities.FixMixerGroups(mapObject.spawnableMapObject.prefabToSpawn);
+                if (mapObject.spawnableMapObject.prefabToSpawn.TryGetComponent(out GrabbableObject mapObjectScrap))
                 {
                     LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
                 }
-                autoMapObjectsList[i].curveFunc = MapObjectHelper.MapObjectFunc;
-                LethalLib.Modules.MapObjects.RegisterMapObject(autoMapObjectsList[i].spawnableMapObject, Levels.LevelTypes.All, autoMapObjectsList[i].curveFunc);
-                Log.LogDebug($"\"{autoMapObjectsList[i].mapObjectName}\" is being handled automatically!");
+                LethalLib.Modules.MapObjects.RegisterMapObject(mapObject.spawnableMapObject, Levels.LevelTypes.All, mapObject.GetCurveFunc());
+                Log.LogDebug($"\"{mapObjectName}\" map object was loaded!");
             }
         }
         void HandleHarmony()
         {
-            Type[] types = AccessTools.GetTypesFromAssembly(Assembly.GetExecutingAssembly());
-            for (int i = 0; i < types.Length; i++)
-            {
-                Type type = types[i];
-                if (type.GetCustomAttributes(typeof(HarmonyAttribute)).Count() > 0)
-                {
-                    Log.LogDebug($"Running patches of type \"{type}\"");
-                    harmony.PatchAll(type);
-                }
-            }
+            harmony.PatchAll(typeof(NecessaryPatches));
+            harmony.PatchAll(typeof(SkinsPatches));
+            harmony.PatchAll(typeof(CojiroPatches));
+            harmony.PatchAll(typeof(EnemyAIFyrusSavePatch));
+            harmony.PatchAll(typeof(SavePatches));
+            //if (ModConfig.isSkinEnabled.Any((x) => x.Value.Value))
+            //{
+            //    harmony.PatchAll(typeof(SkinsPatches));
+            //}
+            //if (ModConfig.isScrapEnabled.TryGetValue("Cojiro", out ConfigEntry<bool> cojiroEnabled) && cojiroEnabled.Value)
+            //{
+            //    harmony.PatchAll(typeof(CojiroPatches));
+            //}
+            //if ((ModConfig.isScrapEnabled.TryGetValue("Halo", out ConfigEntry<bool> haloEnabled) && haloEnabled.Value) || (ModConfig.isScrapEnabled.TryGetValue("Fyrus Star", out ConfigEntry<bool> starEnabled) && starEnabled.Value))
+            //{
+            //    harmony.PatchAll(typeof(EnemyAIFyrusSavePatch));
+            //    harmony.PatchAll(typeof(SavePatches));
+            //}
         }
     }
 }

@@ -1,3 +1,11 @@
+## 1.2.7
+- The Halo visual effects fixes were not sent in the build, they are uploaded now!
+- Fixed Worm Pit pull force being cosmic horror levels
+- Fixed post-Halo save health indicator flickering the screen and leaving behind cracks on the mask
+- Made some harmony patches reliant on relevant config options. Editing the config ingame will neither unpatch or repatch
+- Improved all transpilers to be much more compatible with other mods
+- Removed some redundant code
+
 ## 1.2.6
 - Fixed an issue where if other mods adjust how players take damage the halo would no longer save players from death via damage
 - Adjusted Worm Pit pull force

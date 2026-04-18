@@ -107,7 +107,7 @@ namespace LCWildCardMod.MapObjects
                         if (playerLookingAt != null && peeping)
                         {
                             hunger += Time.deltaTime * 1.5f;
-                            if (Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 3f)
+                            if (Vector3.Distance(transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 3f)
                             {
                                 hunger += Time.deltaTime * 2f;
                             }
@@ -117,12 +117,12 @@ namespace LCWildCardMod.MapObjects
                     }
                 case WormState.Hungry:
                     {
-                        if ((playerLookingAt != null && Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 5f) || patience <= 0f)
+                        if ((playerLookingAt != null && Vector3.Distance(transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 5f) || patience <= 0f)
                         {
                             patience = 5f;
                             SetStateClientRpc(WormState.Consuming);
                         }
-                        else if (playerLookingAt != null && Vector3.Distance(this.transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 15f)
+                        else if (playerLookingAt != null && Vector3.Distance(transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 15f)
                         {
                             patience -= Time.deltaTime;
                         }
@@ -191,7 +191,7 @@ namespace LCWildCardMod.MapObjects
             {
                 return;
             }
-            RaycastHit[] objectsHit = Physics.SphereCastAll(this.transform.position, 2f, this.transform.up, 0f, 1074266120, QueryTriggerInteraction.Collide);
+            RaycastHit[] objectsHit = Physics.SphereCastAll(transform.position, 2f, transform.up, 0f, 1074266120, QueryTriggerInteraction.Collide);
             for (int i = 0; i < objectsHit.Length; i++)
             {
                 RaycastHit hit = objectsHit[i];
@@ -213,7 +213,7 @@ namespace LCWildCardMod.MapObjects
             {
                 return;
             }
-            player.DamagePlayer(15, true, true, CauseOfDeath.Mauling, 0, false, this.transform.up * -10f);
+            player.DamagePlayer(15, true, true, CauseOfDeath.Mauling, 0, false, transform.up * -10f);
         }
         public void PitAudioAnim()
         {
@@ -229,21 +229,18 @@ namespace LCWildCardMod.MapObjects
         {
             PlayerControllerB closest = null;
             float distance = 20f;
+            playerIDInRange.Clear();
             for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
             {
                 PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
-                if (!player.isPlayerControlled || Physics.Linecast(this.transform.position + (Vector3.up / 2f), player.playerGlobalHead.position, 1107298560, QueryTriggerInteraction.Ignore))
+                if (!player.isPlayerControlled || Physics.Linecast(transform.position + (Vector3.up / 2f), player.playerGlobalHead.position, 1107298560, QueryTriggerInteraction.Ignore))
                 {
                     continue;
                 }
-                float newDistance = Vector3.Distance(player.playerGlobalHead.transform.position, this.transform.position + (Vector3.up / 2f));
+                float newDistance = Vector3.Distance(player.playerGlobalHead.transform.position, transform.position + (Vector3.up / 2f));
                 if (newDistance <= 20f)
                 {
                     playerIDInRange.Add(i);
-                }
-                else
-                {
-                    playerIDInRange.Remove(i);
                 }
                 if (newDistance > distance)
                 {
@@ -251,6 +248,17 @@ namespace LCWildCardMod.MapObjects
                 }
                 closest = player;
                 distance = newDistance;
+            }
+            if (closest != playerLookingAt)
+            {
+                if (closest != null)
+                {
+                    Log.LogDebug($"Worm Pit peeping at {closest.playerUsername}");
+                }
+                else
+                {
+                    Log.LogDebug($"Worm Pit peeping at nobody");
+                }
             }
             return closest;
         }
@@ -277,15 +285,15 @@ namespace LCWildCardMod.MapObjects
             Quaternion newRot;
             if (nullify)
             {
-                newRot = Quaternion.LookRotation(this.transform.up);
+                newRot = Quaternion.LookRotation(transform.up);
             }
             else if (GameNetworkManager.Instance.localPlayerController == StartOfRound.Instance.allPlayerScripts[id])
             {
-                newRot = Quaternion.LookRotation(StartOfRound.Instance.allPlayerScripts[id].gameplayCamera.transform.position - this.transform.position);
+                newRot = Quaternion.LookRotation(StartOfRound.Instance.allPlayerScripts[id].gameplayCamera.transform.position - transform.position);
             }
             else
             {
-                newRot = Quaternion.LookRotation(StartOfRound.Instance.allPlayerScripts[id].playerGlobalHead.transform.position - this.transform.position);
+                newRot = Quaternion.LookRotation(StartOfRound.Instance.allPlayerScripts[id].playerGlobalHead.transform.position - transform.position);
             }
             if (newRot.eulerAngles.x < 225f)
             {
@@ -311,12 +319,13 @@ namespace LCWildCardMod.MapObjects
             {
                 return;
             }
-            Vector3 pitPlayerVector = this.transform.position - player.transform.position;
-            if (pitPlayerVector.magnitude >= maxPullDistance && Physics.Linecast(this.transform.position + (Vector3.up / 2f), player.cameraContainerTransform.position, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+            Vector3 pitPlayerVector = transform.position - player.transform.position;
+            if (pitPlayerVector.magnitude > maxPullDistance)
             {
                 return;
             }
-            player.externalForces += pitPlayerVector.normalized * (maxPullForce - Mathf.Pow(pitPlayerVector.magnitude * (Mathf.Sqrt(maxPullForce) / maxPullDistance), 2f));
+            float multiplier = (maxPullForce - Mathf.Pow(pitPlayerVector.magnitude * (Mathf.Sqrt(maxPullForce) / maxPullDistance), 2f));
+            player.externalForces += pitPlayerVector.normalized * multiplier;
         }
         [ClientRpc]
         public void PlayerFearIncreaseClientRpc(bool overTime, float amount, float cap, ulong id)

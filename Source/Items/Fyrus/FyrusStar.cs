@@ -38,8 +38,8 @@ namespace LCWildCardMod.Items.Fyrus
             itemProperties = newProperties;
             StartCoroutine(StarCoroutine(playerHeldBy));
             playerHeldBy.DiscardHeldObject();
-            this.EnableItemMeshes(false);
-            this.grabbable = false;
+            EnableItemMeshes(false);
+            grabbable = false;
         }
         internal IEnumerator StarCoroutine(PlayerControllerB player)
         {
@@ -56,12 +56,12 @@ namespace LCWildCardMod.Items.Fyrus
             musicSource.PlayOneShot(oofClip, 1f);
             trailRenderer.emitting = false;
             playersEffect[player.playerSteamId] = false;
-            musicAudioObject.parent = this.transform;
+            musicAudioObject.parent = transform;
             Log.LogDebug($"{player.playerUsername}'s Fyrus Star invincibility has ended");
             yield return new WaitForSeconds(0.75f);
             if (base.IsServer)
             {
-                this.NetworkObject.Despawn();
+                NetworkObject.Despawn();
             }
         }
         internal void SetPlayersDict()
