@@ -183,23 +183,19 @@ namespace LCWildCardMod
         void HandleHarmony()
         {
             harmony.PatchAll(typeof(NecessaryPatches));
-            harmony.PatchAll(typeof(SkinsPatches));
-            harmony.PatchAll(typeof(CojiroPatches));
-            harmony.PatchAll(typeof(EnemyAIFyrusSavePatch));
-            harmony.PatchAll(typeof(SavePatches));
-            //if (ModConfig.isSkinEnabled.Any((x) => x.Value.Value))
-            //{
-            //    harmony.PatchAll(typeof(SkinsPatches));
-            //}
-            //if (ModConfig.isScrapEnabled.TryGetValue("Cojiro", out ConfigEntry<bool> cojiroEnabled) && cojiroEnabled.Value)
-            //{
-            //    harmony.PatchAll(typeof(CojiroPatches));
-            //}
-            //if ((ModConfig.isScrapEnabled.TryGetValue("Halo", out ConfigEntry<bool> haloEnabled) && haloEnabled.Value) || (ModConfig.isScrapEnabled.TryGetValue("Fyrus Star", out ConfigEntry<bool> starEnabled) && starEnabled.Value))
-            //{
-            //    harmony.PatchAll(typeof(EnemyAIFyrusSavePatch));
-            //    harmony.PatchAll(typeof(SavePatches));
-            //}
+            if (ModConfig.isSkinEnabled.Any((x) => x.Value.Value))
+            {
+                harmony.PatchAll(typeof(SkinsPatches));
+            }
+            if (ModConfig.isScrapEnabled.TryGetValue("Cojiro", out ConfigEntry<bool> cojiroEnabled) && cojiroEnabled.Value)
+            {
+                harmony.PatchAll(typeof(CojiroPatches));
+            }
+            if ((ModConfig.isScrapEnabled.TryGetValue("Halo", out ConfigEntry<bool> haloEnabled) && haloEnabled.Value) || (ModConfig.isScrapEnabled.TryGetValue("Fyrus Star", out ConfigEntry<bool> starEnabled) && starEnabled.Value))
+            {
+                harmony.PatchAll(typeof(EnemyAIFyrusSavePatch));
+                harmony.PatchAll(typeof(SavePatches));
+            }
         }
     }
 }
