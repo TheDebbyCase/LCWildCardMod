@@ -11,7 +11,7 @@ using UnityEngine;
 using static LCWildCardMod.Utils.HarmonyHelper;
 namespace LCWildCardMod.Patches
 {
-    public static class EnemyAIFyrusSavePatch
+    public static class EnemyAIFyrusOrHaloGraceSavePatch
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyTargetMethods]
@@ -26,7 +26,7 @@ namespace LCWildCardMod.Patches
         }
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> FyrusSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
+        public static IEnumerable<CodeInstruction> FyrusOrHaloGraceSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             bool foundDamage = false;
@@ -67,7 +67,7 @@ namespace LCWildCardMod.Patches
                 {
                     newLoadPlayerLocal,
                     new CodeInstruction(OpCodes.Ldarg_S, 0),
-                    new CodeInstruction(OpCodes.Call, fyrusSave),
+                    new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved),
                     new CodeInstruction(OpCodes.Brtrue_S, destination)
                 };
                 codes[i + 1].labels.Add(destination);
@@ -78,10 +78,11 @@ namespace LCWildCardMod.Patches
             {
                 return codes;
             }
+            int inverseNullCheckIndex = -1;
             bool nullCheckExists = false;
             for (int i = collisionIndex; i < codes.Count; i++)
             {
-                if (!codes[i].Branches(out _))
+                if (!codes[i].Branches(out Label? inequalityLabel))
                 {
                     continue;
                 }
@@ -91,11 +92,20 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
+                    if (codes[^1].labels.Contains(inequalityLabel.Value))
+                    {
+                        inverseNullCheckIndex = i + 1;
+                    }
+                    else if (codes[i + 1].opcode.Equals(OpCodes.Ret))
+                    {
+                        inverseNullCheckIndex = i + 2;
+                    }
                     nullCheckExists = true;
                     break;
                 }
                 break;
             }
+            int insertAt = collisionIndex + 2;
             List<CodeInstruction> finalCode = new List<CodeInstruction>();
             if (!nullCheckExists)
             {
@@ -111,12 +121,17 @@ namespace LCWildCardMod.Patches
                 Label newLabel = generator.DefineLabel();
                 finalCode.Add(loadPlayerLocal);
                 finalCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
-                finalCode.Add(new CodeInstruction(OpCodes.Call, fyrusSave));
+                finalCode.Add(new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved));
                 finalCode.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
                 finalCode.Add(new CodeInstruction(OpCodes.Ret));
-                codes[collisionIndex + 2].labels.Add(newLabel);
+                if (inverseNullCheckIndex != -1 && finalCode.Count > 0)
+                {
+                    insertAt = inverseNullCheckIndex;
+                    codes[insertAt].MoveLabelsTo(finalCode[0]);
+                }
+                codes[insertAt].labels.Add(newLabel);
             }
-            codes.InsertRange(collisionIndex + 2, finalCode);
+            codes.InsertRange(insertAt, finalCode);
             return codes;
         }
     }
@@ -248,7 +263,7 @@ namespace LCWildCardMod.Patches
                     }
                     int oldSkipIndex = -1;
                     Label? oldSkip = null;
-                    for (int k = j; j >= 0; j--)
+                    for (int k = j; k >= 0; k--)
                     {
                         if (!codes[k].Branches(out oldSkip))
                         {
@@ -262,7 +277,7 @@ namespace LCWildCardMod.Patches
                         return codes;
                     }
                     Label newSkip = generator.DefineLabel();
-                    for (int k = j; j < codes.Count; j++)
+                    for (int k = j; k < codes.Count; k++)
                     {
                         if (!codes[k].labels.Contains(oldSkip.Value))
                         {
@@ -277,6 +292,9 @@ namespace LCWildCardMod.Patches
                             new CodeInstruction(OpCodes.Brfalse_S, notSavedLabel),
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
                             new CodeInstruction(OpCodes.Call, foxCancelReel),
+                            new CodeInstruction(OpCodes.Ldarg_S, 0),
+                            new CodeInstruction(OpCodes.Ldc_I4_S, 0),
+                            new CodeInstruction(OpCodes.Call, switchBehaviourLocal),
                             new CodeInstruction(OpCodes.Br_S, newSkip)
                         };
                         codes[k].labels.Add(newSkip);
@@ -405,7 +423,7 @@ namespace LCWildCardMod.Patches
                         first,
                         new CodeInstruction(OpCodes.Ldfld, clingPlayer),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Call, fyrusSave),
+                        new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved),
                         new CodeInstruction(OpCodes.Brtrue_S, destination)
                     };
                     codes[i + 1].labels.Add(destination);
@@ -443,7 +461,8 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Call, anySave),
                         new CodeInstruction(OpCodes.Brtrue_S, newLabel.Value)
                     };
-                    codes.InsertRange(i + 1, preCode);
+                    codes.InsertRange(j + 1, preCode);
+                    i += preCode.Count;
                     break;
                 }
                 if (!newLabel.HasValue)
@@ -453,14 +472,63 @@ namespace LCWildCardMod.Patches
                 List<CodeInstruction> postCode = new List<CodeInstruction>
                 {
                     new CodeInstruction(OpCodes.Ldarg_S, 0),
-                    new CodeInstruction(OpCodes.Ldc_I4_S, 0),
-                    new CodeInstruction(OpCodes.Stfld, timesSeenByPlayer),
-                    new CodeInstruction(OpCodes.Ldarg_S, 0),
-                    new CodeInstruction(OpCodes.Ldc_I4_S, 0),
-                    new CodeInstruction(OpCodes.Call, switchBehaviourLocal)
+                    new CodeInstruction(OpCodes.Call, ghostStopChase)
                 };
-                codes[i + 1].labels.Add(newLabel.Value);
+                codes[^1].labels.Add(newLabel.Value);
                 codes.InsertRange(i + 1, postCode);
+                break;
+            }
+            return codes;
+        }
+        [HarmonyPatch(typeof(DressGirlAI), nameof(DressGirlAI.Update))]
+        [HarmonyWrapSafe]
+        [HarmonyTranspiler]
+        public static IEnumerable<CodeInstruction> DressGirlAI_Switch(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        {
+            List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
+            for (int i = 0; i < codes.Count; i++)
+            {
+                if (!codes[i].Branches(out Label? serverLabel))
+                {
+                    continue;
+                }
+                Label newLabel = generator.DefineLabel();
+                for (int j = i; j < codes.Count; j++)
+                {
+                    if (!codes[j].labels.Remove(serverLabel.Value))
+                    {
+                        continue;
+                    }
+                    codes[j].labels.Add(newLabel);
+                    for (int k = i + 1; k < codes.Count; k++)
+                    {
+                        if (!codes[k].Branches(out Label? controlledLabel))
+                        {
+                            continue;
+                        }
+                        codes[k].opcode = OpCodes.Brfalse_S;
+                        for (int l = k; l < codes.Count; l++)
+                        {
+                            if (!codes[l].labels.Remove(controlledLabel.Value))
+                            {
+                                continue;
+                            }
+                            break;
+                        }
+                        codes[k + 1].labels.Add(controlledLabel.Value);
+                        List<CodeInstruction> newCode = new List<CodeInstruction>
+                        {
+                            new CodeInstruction(OpCodes.Ldarg_S, 0).WithLabels(serverLabel.Value),
+                            new CodeInstruction(OpCodes.Ldfld, hauntingPlayer),
+                            new CodeInstruction(OpCodes.Ldarg_S, 0),
+                            new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved),
+                            new CodeInstruction(OpCodes.Brfalse_S, newLabel)
+                        };
+                        codes.InsertRange(k + 1, newCode);
+                        break;
+                    }
+                    break;
+                }
                 break;
             }
             return codes;
@@ -519,52 +587,50 @@ namespace LCWildCardMod.Patches
             }
             return codes;
         }
-        [HarmonyPatch(typeof(ForestGiantAI), nameof(ForestGiantAI.OnCollideWithPlayer))]
+        [HarmonyPatch(typeof(ForestGiantAI), nameof(ForestGiantAI.EatPlayerAnimation), MethodType.Enumerator)]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> ForestGiantAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        public static IEnumerable<CodeInstruction> ForestGiantAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-            for (int i = codes.Count - 1; i >= 0; i--)
+            FieldInfo playerEaten = original.DeclaringType.GetField("playerBeingEaten");
+            for (int i = 0; i < codes.Count; i++)
             {
-                if (!codes[i].Calls(giantGrabRPC))
+                if (!codes[i].Calls(killPlayer))
                 {
                     continue;
                 }
-                int skipToIndex = -1;
-                for (int j = i; j < codes.Count; j++)
-                {
-                    if (codes[j].labels.Count > 0)
-                    {
-                        skipToIndex = j;
-                        break;
-                    }
-                }
                 for (int j = i; j >= 0; j--)
                 {
-                    if (codes[j].labels.Count == 0)
+                    if (!codes[j].Branches(out _))
                     {
                         continue;
                     }
                     Label newLabel = generator.DefineLabel();
-                    Label skipLabel = generator.DefineLabel();
-                    List<CodeInstruction> newCode = new List<CodeInstruction>
+                    List<CodeInstruction> newCodes = new List<CodeInstruction>
                     {
-                        new CodeInstruction(OpCodes.Ldloc_S, 0),
+                        new CodeInstruction(OpCodes.Ldarg_S, 0),
+                        new CodeInstruction(OpCodes.Ldfld, playerEaten),
                         new CodeInstruction(OpCodes.Call, haloSave),
                         new CodeInstruction(OpCodes.Brfalse_S, newLabel),
+                        new CodeInstruction(OpCodes.Ldloc_S, 1),
+                        new CodeInstruction(OpCodes.Call, giantStopKill),
+                        new CodeInstruction(OpCodes.Ldloc_S, 1),
+                        new CodeInstruction(OpCodes.Ldfld, giantPlayerStealth),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
+                        new CodeInstruction(OpCodes.Ldfld, playerEaten),
+                        new CodeInstruction(OpCodes.Ldfld, playerClientId),
+                        new CodeInstruction(OpCodes.Conv_I4),
+                        new CodeInstruction(OpCodes.Ldc_R4, 0f),
+                        new CodeInstruction(OpCodes.Stelem_R4),
+                        new CodeInstruction(OpCodes.Ldloc_S, 1),
                         new CodeInstruction(OpCodes.Ldc_I4_S, 0),
                         new CodeInstruction(OpCodes.Call, switchBehaviour),
-                        new CodeInstruction(OpCodes.Br_S, skipLabel)
+                        new CodeInstruction(OpCodes.Ldc_I4_S, 0),
+                        new CodeInstruction(OpCodes.Ret)
                     };
-                    if (skipToIndex == -1)
-                    {
-                        skipToIndex = codes.Count - 1;
-                    }
-                    codes[skipToIndex].labels.Add(skipLabel);
-                    codes[j].labels.Add(newLabel);
-                    codes.InsertRange(j, newCode);
+                    codes[j + 1].labels.Add(newLabel);
+                    codes.InsertRange(j + 1, newCodes);
                     break;
                 }
                 break;
@@ -635,7 +701,7 @@ namespace LCWildCardMod.Patches
                 }
                 for (int j = i; j >= 0; j--)
                 {
-                    if (!codes[j].Branches(out _))
+                    if (!codes[j].opcode.Equals(OpCodes.Ret))
                     {
                         continue;
                     }
@@ -650,6 +716,7 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Call, switchBehaviour),
                         new CodeInstruction(OpCodes.Ret)
                     };
+                    codes[j + 1].MoveLabelsTo(newCode[0]);
                     codes[j + 1].labels.Add(newLabel);
                     codes.InsertRange(j + 1, newCode);
                     break;
@@ -780,26 +847,25 @@ namespace LCWildCardMod.Patches
                         }
                         for (int k = j; k < codes.Count; k++)
                         {
-                            if (codes[k].Branches(out oldLabel1))
+                            if (!codes[k].Branches(out oldLabel1))
                             {
-                                overkill = generator.DeclareLocal(typeof(bool));
-                                healthOverriden = generator.DeclareLocal(typeof(bool));
-                                codes[k] = new CodeInstruction(OpCodes.Cgt);
-                                List<CodeInstruction> setNewLocals = new List<CodeInstruction>
-                                {
-                                    new CodeInstruction(OpCodes.Ldc_I4_S, 0),
-                                    new CodeInstruction(OpCodes.Ceq),
-                                    new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex),
-                                    //DebugLoadFromThis<int>("Starting health", OpCodes.Ldfld, playerHealth),
-                                    //DebugLoad<int>("Damage", OpCodes.Ldarg_S, 1),
-                                    //DebugLoad<bool>("Is Overkill?", OpCodes.Ldloc_S, overkill.LocalIndex),
-                                    new CodeInstruction(OpCodes.Ldc_I4_S, 0),
-                                    new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex)
-                                };
-                                codes.InsertRange(k + 1, setNewLocals);
-                                i = k + setNewLocals.Count + 1;
-                                break;
+                                continue;
                             }
+                            overkill = generator.DeclareLocal(typeof(bool));
+                            healthOverriden = generator.DeclareLocal(typeof(bool));
+                            codes[k] = new CodeInstruction(OpCodes.Cgt);
+                            List<CodeInstruction> setNewLocals = new List<CodeInstruction>();
+                            setNewLocals.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
+                            setNewLocals.Add(new CodeInstruction(OpCodes.Ceq));
+                            setNewLocals.Add(new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex));
+                            setNewLocals.AddRange(DebugLoadFromThis<int>("Starting health", OpCodes.Ldfld, playerHealth));
+                            setNewLocals.AddRange(DebugLoad<int>("Damage", OpCodes.Ldarg_S, 1));
+                            setNewLocals.AddRange(DebugLoad<bool>("Is Overkill?", OpCodes.Ldloc_S, overkill.LocalIndex));
+                            setNewLocals.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
+                            setNewLocals.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
+                            codes.InsertRange(k + 1, setNewLocals);
+                            i = k + setNewLocals.Count + 1;
+                            break;
                         }
                         if (overkill == null || !oldLabel1.HasValue)
                         {
@@ -826,8 +892,8 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Brfalse_S, oldLabel1.Value),
                         new CodeInstruction(OpCodes.Ldc_I4_S, 1),
                         new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex)//,
-                        //DebugLoad<bool>("Vanilla critical injury, setting health override to", OpCodes.Ldloc_S, healthOverriden.LocalIndex)
                     };
+                    newBranch.AddRange(DebugLoad<bool>("Vanilla critical injury, setting health override to", OpCodes.Ldloc_S, healthOverriden.LocalIndex));
                     codes.InsertRange(i + 1, newBranch);
                     i += newBranch.Count + 1;
                     Label newLabel = generator.DefineLabel();
@@ -848,27 +914,25 @@ namespace LCWildCardMod.Patches
                         codes[j].MoveLabelsTo(elseIfCode);
                         break;
                     }
-                    List<CodeInstruction> newCode = new List<CodeInstruction>
-                    {
-                        elseIfCode,
-                        new CodeInstruction(OpCodes.Brfalse_S, newLabel),
-                        new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Call, haloSave),
-                        new CodeInstruction(OpCodes.Ldc_I4_S, 0),
-                        new CodeInstruction(OpCodes.Ceq),
-                        new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex),
-                        //DebugLoad<bool>("Checking for halo, setting Overkill to", OpCodes.Ldloc_S, overkill.LocalIndex),
-                        new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex),
-                        new CodeInstruction(OpCodes.Brtrue_S, noSaveJump),
-                        new CodeInstruction(OpCodes.Ldc_I4_S, 1),
-                        new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex),
-                        new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Ldc_I4_S, 100),
-                        new CodeInstruction(OpCodes.Stfld, playerHealth),
-                        //DebugString("Saved player from death. Setting health to 100"),
-                        new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex).WithLabels(newLabel, noSaveJump),
-                        new CodeInstruction(OpCodes.Brtrue_S, overridenJump)
-                    };
+                    List<CodeInstruction> newCode = new List<CodeInstruction>();
+                    newCode.Add(elseIfCode);
+                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Call, haloSave));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Ceq));
+                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex));
+                    newCode.AddRange(DebugLoad<bool>("Checking for halo, setting Overkill to", OpCodes.Ldloc_S, overkill.LocalIndex));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex));
+                    newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, noSaveJump));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 1));
+                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 100));
+                    newCode.Add(new CodeInstruction(OpCodes.Stfld, playerHealth));
+                    newCode.AddRange(DebugString("Saved player from death. Setting health to 100"));
+                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex).WithLabels(newLabel, noSaveJump));
+                    newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, overridenJump));
                     for (int j = i; j < codes.Count; j++)
                     {
                         if (!codes[j].Calls(mathfClamp3Int))
@@ -1052,15 +1116,24 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
-                    skipKill = generator.DefineLabel();
-                    List<CodeInstruction> newCode = new List<CodeInstruction>
+                    for (int k = j; k >= 0; k--)
                     {
-                        new CodeInstruction(OpCodes.Ldloc_S, 0),
-                        new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Call, anySave),
-                        new CodeInstruction(OpCodes.Brtrue_S, skipKill.Value)
-                    };
-                    codes.InsertRange(j + 1, newCode);
+                        if (!codes[k].Branches(out _))
+                        {
+                            continue;
+                        }
+                        skipKill = generator.DefineLabel();
+                        List<CodeInstruction> newCode = new List<CodeInstruction>
+                        {
+                            new CodeInstruction(OpCodes.Ldloc_S, 0),
+                            new CodeInstruction(OpCodes.Ldarg_S, 0),
+                            new CodeInstruction(OpCodes.Call, anySave),
+                            new CodeInstruction(OpCodes.Brtrue_S, skipKill.Value)
+                        };
+                        codes[j + 1].MoveLabelsTo(newCode[0]);
+                        codes.InsertRange(j + 1, newCode);
+                        break;
+                    }
                     break;
                 }
                 if (!skipKill.HasValue)
@@ -1145,6 +1218,16 @@ namespace LCWildCardMod.Patches
                 break;
             }
             return codes;
+        }
+        [HarmonyPatch(typeof(EnemyAI), nameof(EnemyAI.PlayerIsTargetable))]
+        [HarmonyWrapSafe]
+        [HarmonyPostfix]
+        public static void EnemyAI_HaloGraceUntargetable(ref PlayerControllerB playerScript, ref bool __result)
+        {
+            if (__result)
+            {
+                __result = !playerScript.WasHaloSaved(out _);
+            }
         }
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.CheckConditionsForSinkingInQuicksand))]
         [HarmonyWrapSafe]

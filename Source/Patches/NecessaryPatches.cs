@@ -1,8 +1,6 @@
 ﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System;
-using System.Collections.Generic;
-using System.Reflection;
 namespace LCWildCardMod.Patches
 {
     public static class NecessaryPatches
@@ -51,31 +49,6 @@ namespace LCWildCardMod.Patches
             {
                 Log.LogError(exception);
             }
-        }
-        [HarmonyPatch(typeof(InitializeGame), nameof(InitializeGame.Start))]
-        [HarmonyWrapSafe]
-        [HarmonyPostfix]
-        public static void InitializeGame_ClearTranspilerHelper()
-        {
-            Traverse traverse = Traverse.Create(typeof(HarmonyHelper));
-            List<string> fields = traverse.Fields();
-            for (int i = 0; i < fields.Count; i++)
-            {
-                Traverse field = traverse.Field(fields[i]);
-                if (field.GetValueType() != typeof(MethodInfo) && field.GetValueType() != typeof(FieldInfo))
-                {
-                    continue;
-                }
-                field.SetValue(null);
-            }
-        }
-        [HarmonyPatch(typeof(HUDManager), nameof(HUDManager.UpdateHealthUI))]
-        [HarmonyWrapSafe]
-        [HarmonyPrefix]
-        public static bool Temp(ref int health)
-        {
-            Log.LogDebug($"UPDATING HEALTH UI WITH {health}");
-            return true;
         }
     }
 }

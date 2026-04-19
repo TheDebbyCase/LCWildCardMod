@@ -13,7 +13,7 @@ BepInEx-BepInExPack = "5.4.2305"
 Evaisa-LethalLib = "1.2.0"
 Rune580-LethalCompany_InputUtils = "0.7.13"
 Evaisa-FixPluginTypesSerialization = "1.1.4"
-deB-WILDCARD_Cosmetics = "1.0.4"
+deB-WILDCARD_Cosmetics = "1.0.5"
 
 
 [build]

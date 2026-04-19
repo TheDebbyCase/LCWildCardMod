@@ -23,9 +23,9 @@ namespace LCWildCardMod.Utils
         internal static MethodInfo onCollision = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.OnCollideWithPlayer), new Type[] { typeof(Collider) });
         internal static MethodInfo exitDriver = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitDriverSideSeat));
         internal static MethodInfo exitPassenger = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitPassengerSideSeat));
-        internal static MethodInfo fyrusSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrus), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
         internal static MethodInfo haloSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
         internal static MethodInfo anySave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfAny), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
+        internal static MethodInfo wasFyrusOrHaloGraceSaved = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrusOrHaloExhausting), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
         internal static MethodInfo killPlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
         internal static MethodInfo damagePlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer), new Type[] { typeof(int), typeof(bool), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(bool), typeof(Vector3) });
         internal static MethodInfo makeInjured = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.MakeCriticallyInjured), new Type[] { typeof(bool) });
@@ -46,7 +46,8 @@ namespace LCWildCardMod.Utils
         internal static MethodInfo foxCancelReel = AccessTools.Method(typeof(BushWolfEnemy), nameof(BushWolfEnemy.CancelReelingPlayerIn));
         internal static MethodInfo cadaverCure = AccessTools.Method(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.CurePlayer), new Type[] { typeof(int) });
         internal static MethodInfo cadaverCureRPC = AccessTools.Method(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.CurePlayerRpc), new Type[] { typeof(int) });
-        internal static MethodInfo giantGrabRPC = AccessTools.Method(typeof(ForestGiantAI), nameof(ForestGiantAI.GrabPlayerServerRpc), new Type[] { typeof(int) });
+        internal static MethodInfo giantStopKill = AccessTools.Method(typeof(ForestGiantAI), nameof(ForestGiantAI.StopKillAnimation));
+        internal static MethodInfo ghostStopChase = AccessTools.Method(typeof(DressGirlAI), nameof(DressGirlAI.StopChasing));
         internal static FieldInfo playerName = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.playerUsername));
         internal static FieldInfo playerClientId = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.playerClientId));
         internal static FieldInfo enemyType = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.enemyType));
@@ -56,6 +57,7 @@ namespace LCWildCardMod.Utils
         internal static FieldInfo hasBurst = AccessTools.Field(typeof(CadaverBloomAI), nameof(CadaverBloomAI.hasBurst));
         internal static FieldInfo clingPlayer = AccessTools.Field(typeof(CentipedeAI), nameof(CentipedeAI.clingingToPlayer));
         internal static FieldInfo timesSeenByPlayer = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.timesSeenByPlayer));
+        internal static FieldInfo hauntingPlayer = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.hauntingPlayer));
         internal static FieldInfo enemyState = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.currentBehaviourStateIndex));
         internal static FieldInfo enemyAgent = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.agent));
         internal static FieldInfo brackenEvade = AccessTools.Field(typeof(FlowermanAI), nameof(FlowermanAI.evadeStealthTimer));
@@ -66,7 +68,9 @@ namespace LCWildCardMod.Utils
         internal static FieldInfo playerCrouching = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.isCrouching));
         internal static FieldInfo playerHealth = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.health));
         internal static FieldInfo playerInjured = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.criticallyInjured));
+        internal static FieldInfo playerID = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.playerClientId));
         internal static FieldInfo beeZapMode = AccessTools.Field(typeof(RedLocustBees), nameof(RedLocustBees.beesZappingMode));
+        internal static FieldInfo giantPlayerStealth = AccessTools.Field(typeof(ForestGiantAI), nameof(ForestGiantAI.playerStealthMeters));
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void LogString(string toLog)
         {

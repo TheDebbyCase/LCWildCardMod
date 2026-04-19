@@ -23,7 +23,7 @@ namespace LCWildCardMod
     {
         public const string modGUID = "deB.WildCard";
         public const string modName = "WILDCARD Stuff";
-        public const string modVersion = "1.2.7";
+        public const string modVersion = "1.2.8";
         public List<Item> scrapList = new List<Item>();
         public List<Skin> skinList = new List<Skin>();
         public List<MapObject> mapObjectsList = new List<MapObject>();
@@ -193,7 +193,7 @@ namespace LCWildCardMod
             }
             if ((ModConfig.isScrapEnabled.TryGetValue("Halo", out ConfigEntry<bool> haloEnabled) && haloEnabled.Value) || (ModConfig.isScrapEnabled.TryGetValue("Fyrus Star", out ConfigEntry<bool> starEnabled) && starEnabled.Value))
             {
-                harmony.PatchAll(typeof(EnemyAIFyrusSavePatch));
+                harmony.PatchAll(typeof(EnemyAIFyrusOrHaloGraceSavePatch));
                 harmony.PatchAll(typeof(SavePatches));
             }
         }

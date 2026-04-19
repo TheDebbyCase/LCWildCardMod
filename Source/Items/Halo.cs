@@ -22,7 +22,9 @@ namespace LCWildCardMod.Items
         public NetworkAnimator itemAnimator;
         public AnimationCurve throwCurve;
         public Component parentComponent;
+        internal PlayerControllerB savedPlayer;
         internal int isExhausted = 0;
+        internal bool exhausting = false;
         internal bool isThrowing = false;
         internal float throwTime = 0;
         internal Vector3 handPosition;
@@ -47,6 +49,10 @@ namespace LCWildCardMod.Items
         {
             base.OnNetworkDespawn();
             WildCardMod.Instance.KeyBinds.WildCardButton.performed -= ThrowButton;
+            if (exhausting && savedPlayer == GameNetworkManager.Instance.localPlayerController)
+            {
+                HUDManager.Instance.UpdateHealthUI(savedPlayer.health, false);
+            }
         }
         internal void BeginMusic()
         {
@@ -247,31 +253,29 @@ namespace LCWildCardMod.Items
         }
         internal IEnumerator ExhaustCoroutine()
         {
+            exhausting = true;
             AudioSource audio = GetComponent<AudioSource>();
             audio.clip = breakSound;
             audio.Play();
             GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
-            if (base.IsOwner)
+            if (savedPlayer == GameNetworkManager.Instance.localPlayerController)
             {
                 ThrowEndServerRpc();
                 StopDripServerRpc();
             }
             yield return null;
-            PlayerControllerB playerAffected = null;
-            if (base.IsOwner && !HUDManager.Instance.playerIsCriticallyInjured)
+            if (savedPlayer == GameNetworkManager.Instance.localPlayerController && !HUDManager.Instance.playerIsCriticallyInjured)
             {
                 HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
                 HUDManager.Instance.UpdateHealthUI(1);
-                playerAffected = GameNetworkManager.Instance.localPlayerController;
             }
             yield return new WaitForSeconds(2f);
             Log.LogDebug("Halo Fully Exhausted");
-            isExhausted = 1;
-            if (playerAffected != null)
+            if (savedPlayer == GameNetworkManager.Instance.localPlayerController)
             {
                 for (int i = 2; i <= 10; i++)
                 {
-                    if (playerAffected.isPlayerDead || playerAffected.health < 100)
+                    if (savedPlayer.isPlayerDead || savedPlayer.health < 100)
                     {
                         break;
                     }
@@ -279,6 +283,8 @@ namespace LCWildCardMod.Items
                     HUDManager.Instance.UpdateHealthUI(i * 10, false);
                 }
             }
+            isExhausted = 1;
+            exhausting = false;
             exhaustCoroutine = null;
         }
         internal void StartDrip()
@@ -311,11 +317,16 @@ namespace LCWildCardMod.Items
         internal void ExhaustLocal(PlayerControllerB player, Vector3 hitVelocity = default)
         {
             player.externalForceAutoFade += hitVelocity;
-            if (exhaustCoroutine == null)
+            if (exhausting)
             {
-                WildCardMod.Instance.Log.LogDebug("Halo exhausting...");
-                ExhaustHaloServerRpc();
+                return;
             }
+            WildCardMod.Instance.Log.LogDebug("Halo exhausting...");
+            if (player.criticallyInjured)
+            {
+                player.MakeCriticallyInjured(false);
+            }
+            ExhaustHaloServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId);
         }
         public override int GetItemDataToSave()
         {
@@ -396,13 +407,14 @@ namespace LCWildCardMod.Items
             targetPosition = target;
         }
         [ServerRpc(RequireOwnership = false)]
-        public void ExhaustHaloServerRpc()
+        public void ExhaustHaloServerRpc(int id)
         {
-            ExhaustHaloClientRpc();
+            ExhaustHaloClientRpc(id);
         }
         [ClientRpc]
-        public void ExhaustHaloClientRpc()
+        public void ExhaustHaloClientRpc(int id)
         {
+            savedPlayer = StartOfRound.Instance.allPlayerScripts[id];
             exhaustCoroutine = StartCoroutine(ExhaustCoroutine());
         }
         [ServerRpc(RequireOwnership = false)]

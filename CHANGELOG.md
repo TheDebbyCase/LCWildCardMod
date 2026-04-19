@@ -1,3 +1,8 @@
+## 1.2.8
+- Fixed a few rare case bugs with the halo save
+- Currently the halo still has a visual bug with the HUD that I will get to next update
+- Fixed a few halo/fyrus star interactions with different enemies
+
 ## 1.2.7
 - The Halo visual effects fixes were not sent in the build, they are uploaded now!
 - Fixed Worm Pit pull force being cosmic horror levels
