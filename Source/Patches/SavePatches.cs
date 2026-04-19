@@ -471,10 +471,18 @@ namespace LCWildCardMod.Patches
                 }
                 List<CodeInstruction> postCode = new List<CodeInstruction>
                 {
+                    new CodeInstruction(OpCodes.Ldarg_S, 0).WithLabels(newLabel.Value),
+                    new CodeInstruction(OpCodes.Call, ghostStopChase),
                     new CodeInstruction(OpCodes.Ldarg_S, 0),
-                    new CodeInstruction(OpCodes.Call, ghostStopChase)
+                    new CodeInstruction(OpCodes.Ldc_I4_S, 0),
+                    new CodeInstruction(OpCodes.Stfld, timesStared),
+                    new CodeInstruction(OpCodes.Ldarg_S, 0),
+                    new CodeInstruction(OpCodes.Ldc_I4_S, 0),
+                    new CodeInstruction(OpCodes.Stfld, timesSeenByPlayer),
+                    new CodeInstruction(OpCodes.Ldarg_S, 0),
+                    new CodeInstruction(OpCodes.Ldc_I4_S, 0),
+                    new CodeInstruction(OpCodes.Stfld, couldNotStare)
                 };
-                codes[^1].labels.Add(newLabel.Value);
                 codes.InsertRange(i + 1, postCode);
                 break;
             }
@@ -492,13 +500,13 @@ namespace LCWildCardMod.Patches
                 {
                     continue;
                 }
-                Label newLabel = generator.DefineLabel();
                 for (int j = i; j < codes.Count; j++)
                 {
-                    if (!codes[j].labels.Remove(serverLabel.Value))
+                    if (!codes[j].labels.Contains(serverLabel.Value))
                     {
                         continue;
                     }
+                    Label newLabel = generator.DefineLabel();
                     codes[j].labels.Add(newLabel);
                     for (int k = i + 1; k < codes.Count; k++)
                     {
@@ -518,7 +526,7 @@ namespace LCWildCardMod.Patches
                         codes[k + 1].labels.Add(controlledLabel.Value);
                         List<CodeInstruction> newCode = new List<CodeInstruction>
                         {
-                            new CodeInstruction(OpCodes.Ldarg_S, 0).WithLabels(serverLabel.Value),
+                            new CodeInstruction(OpCodes.Ldarg_S, 0),
                             new CodeInstruction(OpCodes.Ldfld, hauntingPlayer),
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
                             new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved),

@@ -4,6 +4,8 @@
 - Made halo checker slightly more efficient
 - Added an extra null check to Smith Note for a little added error avoidance
 - Added a cooldown to when the Fyrus Star can hit enemies back when being saved from them, so it doesn't instakill enemies that collide with the player
+- Fixed halo saving from ghost girl not halting the chase
+- Made it so that when the halo saves the player from the ghost girl, she will choose to haunt a new player and reset all timers
 - Shuffled some code around to be more readable and potentially efficient
 
 ## 1.2.8

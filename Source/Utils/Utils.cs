@@ -59,6 +59,8 @@ namespace LCWildCardMod.Utils
         internal static FieldInfo hasBurst = AccessTools.Field(typeof(CadaverBloomAI), nameof(CadaverBloomAI.hasBurst));
         internal static FieldInfo clingPlayer = AccessTools.Field(typeof(CentipedeAI), nameof(CentipedeAI.clingingToPlayer));
         internal static FieldInfo timesSeenByPlayer = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.timesSeenByPlayer));
+        internal static FieldInfo timesStared = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.timesStared));
+        internal static FieldInfo couldNotStare = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.couldNotStareLastAttempt));
         internal static FieldInfo hauntingPlayer = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.hauntingPlayer));
         internal static FieldInfo enemyState = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.currentBehaviourStateIndex));
         internal static FieldInfo enemyAgent = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.agent));
@@ -142,37 +144,29 @@ namespace LCWildCardMod.Utils
                 new CodeInstruction(OpCodes.Call, logString)
             };
         }
-        internal static List<CodeInstruction> DebugThisEnemyName()
+        internal static List<CodeInstruction> DebugThisEnemyName(params Label[] labelsStart)
         {
-            return DebugLoadFromThis<string>("Enemy", new List<CodeInstruction>()
-            {
-                new CodeInstruction(OpCodes.Ldflda, enemyType),
-                new CodeInstruction(OpCodes.Ldflda, enemyName)
-            });
+            return DebugEnemyName(OpCodes.Ldarg_S, 0, labelsStart);
         }
-        internal static List<CodeInstruction> DebugEnemyName(OpCode loadEnemyOpcode, object loadEnemyOperand = null)
+        internal static List<CodeInstruction> DebugEnemyName(OpCode loadEnemyOpcode, object loadEnemyOperand = null, params Label[] labelsStart)
         {
-            return DebugLoad<string>("Enemy", new List<CodeInstruction>()
-            {
-                new CodeInstruction(loadEnemyOpcode, loadEnemyOperand),
-                new CodeInstruction(OpCodes.Ldflda, enemyType),
-                new CodeInstruction(OpCodes.Ldflda, enemyName)
-            });
+            return DebugLoad<string>("Enemy", new List<CodeInstruction>() { new CodeInstruction(loadEnemyOpcode, loadEnemyOperand), new CodeInstruction(OpCodes.Ldfld, enemyType), new CodeInstruction(OpCodes.Ldfld, enemyName) }, labelsStart);
         }
-        internal static List<CodeInstruction> DebugThisPlayerName()
+        internal static List<CodeInstruction> DebugEnemyName(IEnumerable<CodeInstruction> loadEnemyInstructions, params Label[] labelsStart)
         {
-            return DebugLoadFromThis<string>("Player", new List<CodeInstruction>()
-            {
-                new CodeInstruction(OpCodes.Ldflda, playerName)
-            });
+            return DebugLoad<string>("Enemy", new List<CodeInstruction>(loadEnemyInstructions) { new CodeInstruction(OpCodes.Ldfld, enemyType), new CodeInstruction(OpCodes.Ldfld, enemyName) }, labelsStart);
         }
-        internal static List<CodeInstruction> DebugPlayerName(OpCode loadPlayerOpcode, object loadPlayerOperand = null)
+        internal static List<CodeInstruction> DebugThisPlayerName(params Label[] labelsStart)
         {
-            return DebugLoad<string>("Player", new List<CodeInstruction>()
-            {
-                new CodeInstruction(loadPlayerOpcode, loadPlayerOperand),
-                new CodeInstruction(OpCodes.Ldflda, playerName)
-            });
+            return DebugPlayerName(OpCodes.Ldarg_S, 0, labelsStart);
+        }
+        internal static List<CodeInstruction> DebugPlayerName(OpCode loadPlayerOpcode, object loadPlayerOperand = null, params Label[] labelsStart)
+        {
+            return DebugLoad<string>("Player", new List<CodeInstruction>() { new CodeInstruction(loadPlayerOpcode, loadPlayerOperand), new CodeInstruction(OpCodes.Ldfld, playerName) }, labelsStart);
+        }
+        internal static List<CodeInstruction> DebugPlayerName(IEnumerable<CodeInstruction> loadPlayerInstructions, params Label[] labelsStart)
+        {
+            return DebugLoad<string>("Player", new List<CodeInstruction>(loadPlayerInstructions) { new CodeInstruction(OpCodes.Ldfld, playerName) }, labelsStart);
         }
         internal static CodeInstruction StoreToLoad(CodeInstruction store)
         {
