@@ -541,53 +541,41 @@ namespace LCWildCardMod.Patches
             }
             return codes;
         }
-        [HarmonyPatch(typeof(FlowermanAI), nameof(FlowermanAI.OnCollideWithPlayer))]
+        [HarmonyPatch(typeof(FlowermanAI), nameof(FlowermanAI.killAnimation), MethodType.Enumerator)]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> FlowermanAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        public static IEnumerable<CodeInstruction> FlowermanAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = codes.Count - 1; i >= 0; i--)
             {
-                if (!codes[i].Calls(brackenKill))
+                if (!codes[i].Calls(killPlayer))
                 {
                     continue;
                 }
-                Label skipKill = generator.DefineLabel();
-                for (int j = i; j < codes.Count; j++)
-                {
-                    if (codes[j].labels.Count == 0)
-                    {
-                        continue;
-                    }
-                    codes[j].labels.Add(skipKill);
-                    break;
-                }
                 for (int j = i; j >= 0; j--)
                 {
-                    if (!codes[j].Branches(out _))
+                    if (!codes[j].Branches(out Label? inequalBranch))
                     {
                         continue;
                     }
                     Label newLabel = generator.DefineLabel();
+                    for (int k = j; k < codes.Count; k++)
+                    {
+                        if (!codes[k].labels.Contains(inequalBranch.Value))
+                        {
+                            continue;
+                        }
+                        codes[k].labels.Add(newLabel);
+                        break;
+                    }
                     List<CodeInstruction> newCode = new List<CodeInstruction>
                     {
-                        new CodeInstruction(OpCodes.Ldloc_S, 0),
+                        new CodeInstruction(OpCodes.Ldloc_S, 1),
+                        new CodeInstruction(OpCodes.Ldfld, specialAnim),
                         new CodeInstruction(OpCodes.Call, haloSave),
-                        new CodeInstruction(OpCodes.Brfalse_S, newLabel),
-                        new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Ldc_I4_S, 1),
-                        new CodeInstruction(OpCodes.Call, switchBehaviour),
-                        new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Ldfld, enemyAgent),
-                        new CodeInstruction(OpCodes.Ldc_R4, 0f),
-                        new CodeInstruction(OpCodes.Callvirt, setSpeed),
-                        new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Ldc_R4, 0f),
-                        new CodeInstruction(OpCodes.Stfld, brackenEvade),
-                        new CodeInstruction(OpCodes.Br_S, skipKill)
+                        new CodeInstruction(OpCodes.Brtrue_S, newLabel)
                     };
-                    codes[j + 1].labels.Add(newLabel);
                     codes.InsertRange(j + 1, newCode);
                     break;
                 }

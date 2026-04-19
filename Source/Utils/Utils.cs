@@ -41,7 +41,6 @@ namespace LCWildCardMod.Utils
         internal static MethodInfo dogKill = AccessTools.Method(typeof(MouthDogAI), nameof(MouthDogAI.KillPlayerServerRpc), new Type[] { typeof(int) });
         internal static MethodInfo maskKill = AccessTools.Method(typeof(MaskedPlayerEnemy), nameof(MaskedPlayerEnemy.FinishKillAnimation), new Type[] { typeof(bool) });
         internal static MethodInfo jesterKill = AccessTools.Method(typeof(JesterAI), nameof(JesterAI.KillPlayerServerRpc), new Type[] { typeof(int) });
-        internal static MethodInfo brackenKill = AccessTools.Method(typeof(FlowermanAI), nameof(FlowermanAI.KillPlayerAnimationServerRpc), new Type[] { typeof(int) });
         internal static MethodInfo dwellerKill = AccessTools.Method(typeof(CaveDwellerAI), nameof(CaveDwellerAI.KillPlayerAnimationServerRpc), new Type[] { typeof(int) });
         internal static MethodInfo bloomBurst = AccessTools.Method(typeof(CadaverBloomAI), nameof(CadaverBloomAI.BurstForth), new Type[] { typeof(PlayerControllerB), typeof(bool), typeof(Vector3), typeof(Vector3) });
         internal static MethodInfo gameNetworkInstance = AccessTools.Method(typeof(GameNetworkManager), "get_Instance");
@@ -62,9 +61,6 @@ namespace LCWildCardMod.Utils
         internal static FieldInfo timesStared = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.timesStared));
         internal static FieldInfo couldNotStare = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.couldNotStareLastAttempt));
         internal static FieldInfo hauntingPlayer = AccessTools.Field(typeof(DressGirlAI), nameof(DressGirlAI.hauntingPlayer));
-        internal static FieldInfo enemyState = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.currentBehaviourStateIndex));
-        internal static FieldInfo enemyAgent = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.agent));
-        internal static FieldInfo brackenEvade = AccessTools.Field(typeof(FlowermanAI), nameof(FlowermanAI.evadeStealthTimer));
         internal static FieldInfo maskHeldBy = AccessTools.Field(typeof(HauntedMaskItem), nameof(HauntedMaskItem.previousPlayerHeldBy));
         internal static FieldInfo specialAnim = AccessTools.Field(typeof(EnemyAI), nameof(EnemyAI.inSpecialAnimationWithPlayer));
         internal static FieldInfo maskedLastPlayer = AccessTools.Field(typeof(MaskedPlayerEnemy), nameof(MaskedPlayerEnemy.lastPlayerKilled));
@@ -358,7 +354,7 @@ namespace LCWildCardMod.Utils
             {
                 return true;
             }
-            if (star.hitCooldown <= 0f)
+            if (star.hitCooldown <= 0f && GameNetworkManager.Instance.localPlayerController == player)
             {
                 (collision as IHittable).Hit(1, (enemy.transform.position - player.transform.position).normalized * 2.5f, player, true);
                 star.hitCooldown = star.hitCooldownMax;

@@ -1,3 +1,6 @@
+## 1.2.11
+- Changed how the halo saves from Bracken kills to still play the neck snap animation
+
 ## 1.2.10
 - Fixed some visual bugs with the halo throw
 

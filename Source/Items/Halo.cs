@@ -283,10 +283,8 @@ namespace LCWildCardMod.Items
                     yield return new WaitForSeconds(0.1f);
                     HUDManager.Instance.UpdateHealthUI(i * 10, false);
                 }
+                EndExhaustServerRpc();
             }
-            isExhausted = 1;
-            exhausting = false;
-            exhaustCoroutine = null;
         }
         internal void StartDrip()
         {
@@ -432,6 +430,18 @@ namespace LCWildCardMod.Items
         public void StopDripClientRpc()
         {
             StopDrip();
+        }
+        [ServerRpc(RequireOwnership = false)]
+        public void EndExhaustServerRpc()
+        {
+            EndExhaustClientRpc();
+        }
+        [ClientRpc]
+        public void EndExhaustClientRpc()
+        {
+            isExhausted = 1;
+            exhausting = false;
+            exhaustCoroutine = null;
         }
     }
 }
