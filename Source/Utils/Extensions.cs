@@ -1,7 +1,6 @@
 ﻿using GameNetcodeStuff;
 using LCWildCardMod.Items.Fyrus;
 using LCWildCardMod.Items;
-using UnityEngine;
 namespace LCWildCardMod.Utils
 {
     internal static class Extensions
@@ -10,23 +9,6 @@ namespace LCWildCardMod.Utils
         {
             halo = null;
             starSave = player.SaveIfFyrus(enemy);
-            if (player.isHoldingObject)
-            {
-                WildCardMod.Instance.Log.LogDebug("Player is holding something");
-                GrabbableObject item = player.currentlyHeldObjectServer;
-                if (item.TryGetComponent(out SmithHalo testHalo))
-                {
-                    WildCardMod.Instance.Log.LogDebug("Found holding halo");
-                    if ((testHalo.savedPlayer == player && testHalo.exhausting) || testHalo.isExhausted == 0)
-                    {
-                        WildCardMod.Instance.Log.LogDebug("Halo can save");
-                    }
-                }
-            }
-            else if (player.HasSavedHalo(out SmithHalo testHalo2))
-            {
-                WildCardMod.Instance.Log.LogDebug("A halo has already saved this player");
-            }
             return starSave || (player.isHoldingObject && player.currentlyHeldObjectServer.TryGetComponent(out halo) && ((halo.savedPlayer == player && halo.exhausting) || halo.isExhausted == 0)) || player.HasSavedHalo(out halo);
         }
         internal static bool SaveIfFyrus(this PlayerControllerB player, EnemyAI enemy = null)
@@ -35,7 +17,18 @@ namespace LCWildCardMod.Utils
             {
                 return false;
             }
-            if (!(FyrusStar.playersEffect.TryGetValue(player.playerSteamId, out bool effect) && effect))
+            FyrusStar star = null;
+            for (int i = 0; i < FyrusStar.allSpawnedStars.Count; i++)
+            {
+                FyrusStar checkingStar = FyrusStar.allSpawnedStars[i];
+                if (checkingStar.affectingPlayer != player)
+                {
+                    continue;
+                }
+                star = checkingStar;
+                break;
+            }
+            if (star == null)
             {
                 return false;
             }
@@ -49,7 +42,11 @@ namespace LCWildCardMod.Utils
             {
                 return true;
             }
-            (collision as IHittable).Hit(1, (enemy.transform.position - player.transform.position).normalized * 2.5f, player, true);
+            if (star.hitCooldown <= 0f)
+            {
+                (collision as IHittable).Hit(1, (enemy.transform.position - player.transform.position).normalized * 2.5f, player, true);
+                star.hitCooldown = star.hitCooldownMax;
+            }
             return true;
         }
         internal static bool SaveIfAny(this PlayerControllerB player, EnemyAI enemy = null)
@@ -114,10 +111,9 @@ namespace LCWildCardMod.Utils
             {
                 return false;
             }
-            SmithHalo[] halos = Object.FindObjectsOfType<SmithHalo>();
-            for (int i = 0; i < halos.Length; i++)
+            for (int i = 0; i < SmithHalo.allSpawnedHalos.Count; i++)
             {
-                SmithHalo haloCheck = halos[i];
+                SmithHalo haloCheck = SmithHalo.allSpawnedHalos[i];
                 if (haloCheck.savedPlayer != player || !haloCheck.exhausting)
                 {
                     continue;

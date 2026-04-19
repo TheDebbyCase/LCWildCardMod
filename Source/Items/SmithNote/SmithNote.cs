@@ -61,7 +61,7 @@ namespace LCWildCardMod.Items.SmithNote
             base.OnNetworkDespawn();
             noteCount--;
             EventsClass.OnRoundStart -= SetHUDAnimator;
-            if (noteCount <= 0)
+            if (noteCount <= 0 && localHudAnim == null)
             {
                 Destroy(localHudAnim.gameObject);
                 localHudAnim = null;

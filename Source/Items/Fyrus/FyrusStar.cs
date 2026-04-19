@@ -1,5 +1,4 @@
 ﻿using GameNetcodeStuff;
-using LCWildCardMod.Utils;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,6 +7,7 @@ namespace LCWildCardMod.Items.Fyrus
     public class FyrusStar : PhysicsProp
     {
         BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
+        internal static List<FyrusStar> allSpawnedStars = new List<FyrusStar>();
         public Transform musicAudioObject;
         public AudioSource musicSource;
         public AudioClip consumeClip;
@@ -15,79 +15,71 @@ namespace LCWildCardMod.Items.Fyrus
         public TrailRenderer trailRenderer;
         public float speedMultiplier = 1.25f;
         internal Item newProperties;
-        internal static Dictionary<ulong, bool> playersEffect = new Dictionary<ulong, bool>();
+        internal PlayerControllerB affectingPlayer = null;
+        internal float hitCooldownMax = 0.5f;
+        internal float hitCooldown;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            allSpawnedStars.Add(this);
+            hitCooldown = hitCooldownMax;
             newProperties = Instantiate(itemProperties);
             newProperties.dropSFX = null;
-            EventsClass.OnRoundStart += SetPlayersDict;
-            EventsClass.OnRoundEnd += ClearPlayersDict;
         }
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            EventsClass.OnRoundStart -= SetPlayersDict;
-            EventsClass.OnRoundEnd -= ClearPlayersDict;
+            allSpawnedStars.Remove(this);
+            if (affectingPlayer != null)
+            {
+                affectingPlayer.movementSpeed /= speedMultiplier;
+            }
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            musicAudioObject.parent = playerHeldBy.transform;
+            affectingPlayer = playerHeldBy;
+            musicAudioObject.parent = affectingPlayer.transform;
             musicAudioObject.localPosition = new Vector3(0f, 1f, -1f);
             itemProperties = newProperties;
-            StartCoroutine(StarCoroutine(playerHeldBy));
-            playerHeldBy.DiscardHeldObject();
+            affectingPlayer.DiscardHeldObject();
             EnableItemMeshes(false);
             grabbable = false;
+            StartCoroutine(StarCoroutine());
         }
-        internal IEnumerator StarCoroutine(PlayerControllerB player)
+        public override void Update()
         {
-            Log.LogDebug($"{player.playerUsername} has consumed Fyrus Star");
+            base.Update();
+            if (affectingPlayer == null)
+            {
+                return;
+            }
+            if (hitCooldown <= 0f)
+            {
+                return;
+            }
+            hitCooldown -= Time.deltaTime;
+        }
+        internal IEnumerator StarCoroutine()
+        {
+            Log.LogDebug($"{affectingPlayer.playerUsername} has consumed Fyrus Star");
             musicSource.PlayOneShot(consumeClip, 1f);
-            playersEffect[player.playerSteamId] = true;
             yield return new WaitForSeconds(1.2f);
-            Log.LogDebug($"{player.playerUsername} has begun Fyrus Star invincibility");
-            player.movementSpeed *= speedMultiplier;
+            Log.LogDebug($"{affectingPlayer.playerUsername} has begun Fyrus Star invincibility");
+            affectingPlayer.movementSpeed *= speedMultiplier;
             musicSource.Play();
             trailRenderer.emitting = true;
             yield return new WaitForSeconds(21f);
-            player.movementSpeed /= speedMultiplier;
+            affectingPlayer.movementSpeed /= speedMultiplier;
             musicSource.PlayOneShot(oofClip, 1f);
             trailRenderer.emitting = false;
-            playersEffect[player.playerSteamId] = false;
             musicAudioObject.parent = transform;
-            Log.LogDebug($"{player.playerUsername}'s Fyrus Star invincibility has ended");
+            Log.LogDebug($"{affectingPlayer.playerUsername}'s Fyrus Star invincibility has ended");
             yield return new WaitForSeconds(0.75f);
             if (base.IsServer)
             {
                 NetworkObject.Despawn();
             }
-        }
-        internal void SetPlayersDict()
-        {
-            if (playersEffect.Count > 0)
-            {
-                return;
-            }
-            PlayerControllerB[] players = RoundManager.Instance.playersManager.allPlayerScripts;
-            for (int i = 0; i < players.Length; i++)
-            {
-                PlayerControllerB player = players[i];
-                if (player == null)
-                {
-                    continue;
-                }
-                if (player.playerSteamId == 0)
-                {
-                    continue;
-                }
-                playersEffect.TryAdd(player.playerSteamId, false);
-            }
-        }
-        internal void ClearPlayersDict()
-        {
-            playersEffect.Clear();
         }
     }
 }

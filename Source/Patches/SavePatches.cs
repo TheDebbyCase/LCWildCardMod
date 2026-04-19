@@ -891,7 +891,7 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex),
                         new CodeInstruction(OpCodes.Brfalse_S, oldLabel1.Value),
                         new CodeInstruction(OpCodes.Ldc_I4_S, 1),
-                        new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex)//,
+                        new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex)
                     };
                     newBranch.AddRange(DebugLoad<bool>("Vanilla critical injury, setting health override to", OpCodes.Ldloc_S, healthOverriden.LocalIndex));
                     codes.InsertRange(i + 1, newBranch);
@@ -927,10 +927,7 @@ namespace LCWildCardMod.Patches
                     newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, noSaveJump));
                     newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 1));
                     newCode.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 100));
-                    newCode.Add(new CodeInstruction(OpCodes.Stfld, playerHealth));
-                    newCode.AddRange(DebugString("Saved player from death. Setting health to 100"));
+                    newCode.AddRange(DebugString("Saved player from death"));
                     newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex).WithLabels(newLabel, noSaveJump));
                     newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, overridenJump));
                     for (int j = i; j < codes.Count; j++)

@@ -1,3 +1,10 @@
+## 1.2.9
+- Fixed halo not setting health to 100 upon saving the player in certain circumstances
+- Fixed Fyrus Star movement speed buff staying if the item was despawned before invincibility had ended
+- Made halo checker slightly more efficient
+- Added an extra null check to Smith Note for a little added error avoidance
+- Added a cooldown to when the Fyrus Star can hit enemies back when being saved from them, so it doesn't instakill enemies that collide with the player
+
 ## 1.2.8
 - Fixed a few rare case bugs with the halo save
 - Currently the halo still has a visual bug with the HUD that I will get to next update

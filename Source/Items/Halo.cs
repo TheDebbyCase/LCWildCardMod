@@ -11,6 +11,7 @@ namespace LCWildCardMod.Items
     public class SmithHalo : PhysicsProp
     {
         BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
+        internal static List<SmithHalo> allSpawnedHalos = new List<SmithHalo>();
         public ParticleSystem[] dripParticles;
         public ParticleSystem spinParticle;
         public AudioSource spawnMusic;
@@ -36,6 +37,7 @@ namespace LCWildCardMod.Items
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
+            allSpawnedHalos.Add(this);
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             WildCardMod.Instance.KeyBinds.WildCardButton.performed += ThrowButton;
             spinParticle.gameObject.SetActive(false);
@@ -48,6 +50,7 @@ namespace LCWildCardMod.Items
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
+            allSpawnedHalos.Remove(this);
             WildCardMod.Instance.KeyBinds.WildCardButton.performed -= ThrowButton;
             if (exhausting && savedPlayer == GameNetworkManager.Instance.localPlayerController)
             {
@@ -316,6 +319,10 @@ namespace LCWildCardMod.Items
         }
         internal void ExhaustLocal(PlayerControllerB player, Vector3 hitVelocity = default)
         {
+            if (player != GameNetworkManager.Instance.localPlayerController)
+            {
+                return;
+            }
             player.externalForceAutoFade += hitVelocity;
             if (exhausting)
             {
@@ -326,7 +333,8 @@ namespace LCWildCardMod.Items
             {
                 player.MakeCriticallyInjured(false);
             }
-            ExhaustHaloServerRpc((int)GameNetworkManager.Instance.localPlayerController.playerClientId);
+            player.health = 100;
+            ExhaustHaloServerRpc((int)player.playerClientId);
         }
         public override int GetItemDataToSave()
         {
