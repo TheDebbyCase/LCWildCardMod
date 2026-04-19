@@ -45,7 +45,7 @@ namespace LCWildCardMod.Items
         public override void Update()
         {
             base.Update();
-            if (base.IsServer && currentUseCooldown <= 0f && startingValue > 0 && !StartOfRound.Instance.inShipPhase)
+            if (IsServer && currentUseCooldown <= 0f && startingValue > 0 && !StartOfRound.Instance.inShipPhase)
             {
                 playerMovementMag = 0f;
                 if (scrapValue > 0)
@@ -93,7 +93,7 @@ namespace LCWildCardMod.Items
             base.EquipItem();
             dripParticles.Play();
             dripParticles.Emit(2);
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -111,7 +111,7 @@ namespace LCWildCardMod.Items
             dripParticles.Play();
             dripParticles.Emit(2);
             itemAnimator.Animator.SetLayerWeight(sloshLayerIndex, 0.1f);
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -126,10 +126,10 @@ namespace LCWildCardMod.Items
                 WalkieTalkie.TransmitOneShotAudio(beatAudio, beatAudio.clip);
                 if (StartOfRound.Instance.currentLevel.planetHasTime)
                 {
-                    RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+                    RoundManager.Instance.PlayAudibleNoise(transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
                 }
             }
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -158,7 +158,7 @@ namespace LCWildCardMod.Items
             yield return new WaitForSeconds(0.1f);
             Landmine.SpawnExplosion(transform.position + Vector3.up, true, 5f, 10f, 25, 10f);
             yield return new WaitForSeconds(0.5f);
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 yield break;
             }

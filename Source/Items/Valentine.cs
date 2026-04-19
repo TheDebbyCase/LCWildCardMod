@@ -35,7 +35,7 @@ namespace LCWildCardMod.Items
         public override void Update()
         {
             base.Update();
-            if (base.IsOwner && playerHeldBy != null && !isPocketed && StartOfRound.Instance.currentLevel.planetHasTime && !StartOfRound.Instance.inShipPhase && currentUseCooldown <= 0f && standStillAmount < 11)
+            if (IsOwner && playerHeldBy != null && !isPocketed && StartOfRound.Instance.currentLevel.planetHasTime && !StartOfRound.Instance.inShipPhase && currentUseCooldown <= 0f && standStillAmount < 11)
             {
                 ScrapValueServerRpc(scanNode.scrapValue + 1);
                 currentUseCooldown = 2.5f;
@@ -51,9 +51,9 @@ namespace LCWildCardMod.Items
         {
             base.EquipItem();
             currentUseCooldown = 2.5f;
-            lastUpdatePosition = base.transform.position;
+            lastUpdatePosition = transform.position;
             standStillAmount = 0;
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -63,7 +63,7 @@ namespace LCWildCardMod.Items
         {
             base.PocketItem();
             standStillAmount = 0;
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -73,7 +73,7 @@ namespace LCWildCardMod.Items
         {
             base.DiscardItem();
             standStillAmount = 0;
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -85,16 +85,16 @@ namespace LCWildCardMod.Items
             beatAudio.Play();
             if (StartOfRound.Instance.currentLevel.planetHasTime)
             {
-                RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+                RoundManager.Instance.PlayAudibleNoise(transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             }
             WalkieTalkie.TransmitOneShotAudio(beatAudio, beatAudio.clip);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
             standStillAmount++;
-            if ((base.transform.position - lastUpdatePosition).magnitude >= 3f)
+            if ((transform.position - lastUpdatePosition).magnitude >= 3f)
             {
                 standStillAmount = 0;
             }
-            lastUpdatePosition = base.transform.position;
+            lastUpdatePosition = transform.position;
         }
         public override int GetItemDataToSave()
         {

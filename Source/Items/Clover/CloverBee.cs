@@ -38,7 +38,7 @@ namespace LCWildCardMod.Items.Clover
             deactivatedProperties.toolTips = new string[2] { $"<s>[LMB] : Fire Stinger", "It doesn't seem to recognise you... Find the pendant..." };
             localPosition = stinger.localPosition;
             insertedBattery.charge = 1f;
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -57,7 +57,7 @@ namespace LCWildCardMod.Items.Clover
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             base.ItemActivate(used, buttonDown);
-            if (!base.IsOwner)
+            if (!IsOwner)
             {
                 return;
             }
@@ -92,7 +92,7 @@ namespace LCWildCardMod.Items.Clover
                 StartCoroutine(WaitForParticles());
                 return;
             }
-            if (!base.IsOwner)
+            if (!IsOwner)
             {
                 return;
             }
@@ -113,7 +113,7 @@ namespace LCWildCardMod.Items.Clover
             stinger.localPosition = localPosition;
             stingerTime = 0;
             Log.LogDebug("Clover Bee Resetting Projectile");
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 yield break;
             }

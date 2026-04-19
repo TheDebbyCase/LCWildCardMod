@@ -41,7 +41,7 @@ namespace LCWildCardMod.Items
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             WildCardMod.Instance.KeyBinds.WildCardButton.performed += ThrowButton;
             spinParticle.gameObject.SetActive(false);
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -59,7 +59,7 @@ namespace LCWildCardMod.Items
         }
         internal void BeginMusic()
         {
-            if (isExhausted == 1)
+            if (isExhausted == 1 || exhausting)
             {
                 GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
                 spinParticle.gameObject.SetActive(false);
@@ -78,7 +78,7 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            if (!base.IsOwner || playerHeldBy.currentlyHeldObjectServer != this || isExhausted == 1 || isThrowing)
+            if (!IsOwner || playerHeldBy.currentlyHeldObjectServer != this || isExhausted == 1 || isThrowing || exhausting)
             {
                 return;
             }
@@ -93,7 +93,7 @@ namespace LCWildCardMod.Items
         public override void Update()
         {
             base.Update();
-            if (!base.IsOwner)
+            if (!IsOwner)
             {
                 return;
             }
@@ -176,7 +176,7 @@ namespace LCWildCardMod.Items
             transform.localPosition = itemProperties.positionOffset;
             StartDrip();
             spawnMusic.Stop();
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -188,11 +188,11 @@ namespace LCWildCardMod.Items
             throwTime = 0;
             isThrowing = true;
             playerHeldBy.throwingObject = true;
-            if (base.IsServer)
+            if (IsServer)
             {
                 itemAnimator.Animator.SetBool("BeingThrown", true);
             }
-            if (!base.IsOwner)
+            if (!IsOwner)
             {
                 return;
             }
@@ -208,7 +208,7 @@ namespace LCWildCardMod.Items
         }
         internal void ThrowEnd()
         {
-            if (base.IsServer)
+            if (IsServer)
             {
                 itemAnimator.Animator.SetBool("BeingThrown", false);
             }
@@ -218,27 +218,25 @@ namespace LCWildCardMod.Items
             {
                 playerHeldBy.throwingObject = false;
             }
-            isThrowing = false;
+            StartCoroutine(NextFrameAllowThrowCoroutine());
             hitList.Clear();
             resetList = false;
             throwAudio.Stop();
-            if (isExhausted == 0)
-            {
-                StartDrip();
-            }
-            else
-            {
-                spinParticle.gameObject.SetActive(false);
-            }
+            StartDrip();
             Log.LogDebug("Halo Throw Ended");
-        } 
+        }
+        internal IEnumerator NextFrameAllowThrowCoroutine()
+        {
+            yield return new WaitForFixedUpdate();
+            isThrowing = false;
+        }
         public override void DiscardItem()
         {
-            if (base.IsServer)
+            if (IsServer)
             {
                 itemAnimator.Animator.SetBool("BeingHeld", false);
             }
-            if (base.IsOwner && (isThrowing || playerHeldBy.throwingObject))
+            if (IsOwner && (isThrowing || playerHeldBy.throwingObject))
             {
                 ThrowCurveServerRpc(parentComponent.transform.position);
                 ThrowEndServerRpc();
@@ -248,7 +246,7 @@ namespace LCWildCardMod.Items
         public override void PocketItem()
         {
             base.PocketItem();
-            if (isExhausted == 1 || !base.IsOwner)
+            if (isExhausted == 1 || exhausting || !IsOwner)
             {
                 return;
             }
@@ -293,7 +291,7 @@ namespace LCWildCardMod.Items
         internal void StartDrip()
         {
             spinParticle.gameObject.SetActive(false);
-            if (isExhausted == 1)
+            if (isExhausted == 1 || exhausting)
             {
                 return;
             }
@@ -310,7 +308,7 @@ namespace LCWildCardMod.Items
             {
                 dripParticles[i].gameObject.SetActive(false);
             }
-            if (isExhausted == 1 || !itemAnimator.Animator.GetBool("BeingThrown"))
+            if (isExhausted == 1 || exhausting || !isThrowing)
             {
                 return;
             }
@@ -323,7 +321,7 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            player.externalForceAutoFade += hitVelocity;
+            player.externalForceAutoFade += hitVelocity / 2f;
             if (exhausting)
             {
                 return;
@@ -368,7 +366,7 @@ namespace LCWildCardMod.Items
             throwAudio.clip = throwClips[selectedClip];
             throwAudio.Play();
             WalkieTalkie.TransmitOneShotAudio(throwAudio, throwAudio.clip);
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            RoundManager.Instance.PlayAudibleNoise(transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
         }
         [ServerRpc(RequireOwnership = false)]

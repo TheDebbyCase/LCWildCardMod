@@ -1,3 +1,6 @@
+## 1.2.10
+- Fixed some visual bugs with the halo throw
+
 ## 1.2.9
 - Fixed halo not setting health to 100 upon saving the player in certain circumstances
 - Fixed Fyrus Star movement speed buff staying if the item was despawned before invincibility had ended

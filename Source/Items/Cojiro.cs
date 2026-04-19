@@ -27,9 +27,9 @@ namespace LCWildCardMod.Items
             noiseAudio.pitch = pitch;
             noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
             WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            RoundManager.Instance.PlayAudibleNoise(transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -43,7 +43,7 @@ namespace LCWildCardMod.Items
                 if (!isFloating)
                 {
                     isFloating = true;
-                    if (base.IsServer)
+                    if (IsServer)
                     {
                         itemAnimator.Animator.SetBool("Floating", true);
                     }
@@ -56,7 +56,7 @@ namespace LCWildCardMod.Items
             else if (isFloating)
             {
                 isFloating = false;
-                if (base.IsServer)
+                if (IsServer)
                 {
                     itemAnimator.Animator.SetBool("Floating", false);
                 }

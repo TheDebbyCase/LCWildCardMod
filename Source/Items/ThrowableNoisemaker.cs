@@ -24,7 +24,7 @@ namespace LCWildCardMod.Items
             base.OnNetworkSpawn();
             WildCardMod.Instance.KeyBinds.WildCardButton.performed += ThrowButton;
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            if (base.IsServer && spawnMusic != null && spawnMusic.clip != null)
+            if (IsServer && spawnMusic != null && spawnMusic.clip != null)
             {
                 BeginMusicClientRpc(hasBeenHeld);
             }
@@ -66,12 +66,12 @@ namespace LCWildCardMod.Items
                 noiseAudioFar.pitch = pitch;
                 noiseAudioFar.PlayOneShot(noiseSFXFar[noiseIndex], volume);
             }
-            if (base.IsServer && validParameters.Contains(Animator.StringToHash("Activate")))
+            if (IsServer && validParameters.Contains(Animator.StringToHash("Activate")))
             {
                 triggerAnimator?.SetTrigger("Activate");
             }
             WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            RoundManager.Instance.PlayAudibleNoise(transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             if (minLoudness < 0.6f || playerHeldBy == null)
             {
                 return;
@@ -84,7 +84,7 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            handPosition = base.transform.localPosition;
+            handPosition = transform.localPosition;
             Log.LogDebug($"\"{itemProperties.itemName}\" Vector in Player Hand: {handPosition}");
             playerHeldBy.DiscardHeldObject(placeObject: true, null, GetThrowDestination());
             Throw();
@@ -107,12 +107,12 @@ namespace LCWildCardMod.Items
         }
         public override void DiscardItem()
         {
-            handPosition = base.transform.localPosition;
+            handPosition = transform.localPosition;
             base.DiscardItem();
         }
         internal virtual void Throw()
         {
-            if (!base.IsOwner)
+            if (!IsOwner)
             {
                 return;
             }
@@ -121,14 +121,14 @@ namespace LCWildCardMod.Items
         public override void FallWithCurve()
         {
             float magnitude = (startFallingPosition - targetFloorPosition).magnitude;
-            base.transform.rotation = Quaternion.Lerp(base.transform.rotation, Quaternion.Euler(itemProperties.restingRotation.x, (float)(floorYRot + itemProperties.floorYOffset) + 90f, itemProperties.restingRotation.z), 14f * Time.deltaTime / magnitude);
-            base.transform.localPosition = Vector3.Lerp(startFallingPosition, targetFloorPosition, throwFallCurve.Evaluate(fallTime));
+            transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(itemProperties.restingRotation.x, (float)(floorYRot + itemProperties.floorYOffset) + 90f, itemProperties.restingRotation.z), 14f * Time.deltaTime / magnitude);
+            transform.localPosition = Vector3.Lerp(startFallingPosition, targetFloorPosition, throwFallCurve.Evaluate(fallTime));
             AnimationCurve curve = throwVerticalFallCurve;
             if (magnitude > 5f)
             {
                 curve = throwVerticalFallCurveNoBounce;
             }
-            base.transform.localPosition = Vector3.Lerp(new Vector3(base.transform.localPosition.x, startFallingPosition.y, base.transform.localPosition.z), new Vector3(base.transform.localPosition.x, targetFloorPosition.y, base.transform.localPosition.z), curve.Evaluate(fallTime));
+            transform.localPosition = Vector3.Lerp(new Vector3(transform.localPosition.x, startFallingPosition.y, transform.localPosition.z), new Vector3(transform.localPosition.x, targetFloorPosition.y, transform.localPosition.z), curve.Evaluate(fallTime));
             fallTime += Mathf.Abs(Time.deltaTime * 4f / magnitude);
         }
         internal virtual Vector3 GetThrowDestination()

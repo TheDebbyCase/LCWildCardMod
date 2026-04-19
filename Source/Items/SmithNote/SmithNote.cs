@@ -51,7 +51,7 @@ namespace LCWildCardMod.Items.SmithNote
             textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
             lastFrameLivingPlayers = StartOfRound.Instance.livingPlayers;
             WildCardMod.Instance.KeyBinds.WildCardButton.performed += SelectPage;
-            if (base.IsOwner)
+            if (IsOwner)
             {
                 BeginMusicServerRpc();
             }
@@ -111,7 +111,7 @@ namespace LCWildCardMod.Items.SmithNote
             noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
             WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
             playerHeldBy.timeSinceMakingLoudNoise = 0f;
-            RoundManager.Instance.PlayAudibleNoise(base.transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+            RoundManager.Instance.PlayAudibleNoise(transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
         }
         public override void Update()
         {
@@ -220,7 +220,7 @@ namespace LCWildCardMod.Items.SmithNote
             textMeshList[0].text = info.targetName;
             rawImageList[0].texture = info.texture;
             rawImageList[0].color = info.colour;
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -231,7 +231,7 @@ namespace LCWildCardMod.Items.SmithNote
             textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
             isFlippable = false;
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -248,7 +248,7 @@ namespace LCWildCardMod.Items.SmithNote
             rawImageList[1].color = info.colour;
             SetPages();
             textMeshList[1].text = info.targetName;
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -376,7 +376,7 @@ namespace LCWildCardMod.Items.SmithNote
         {
             PlayerControllerB selectingPlayer = StartOfRound.Instance.allPlayerScripts[id];
             Log.LogDebug($"Adding player {selectingPlayer.playerUsername} to players list!");
-            SmithNoteInfo info = Instantiate(infoPrefab.GetComponent<SmithNoteInfo>(), base.transform);
+            SmithNoteInfo info = Instantiate(infoPrefab.GetComponent<SmithNoteInfo>(), transform);
             playerNotes.Add((int)id, info);
             info.Spawn(this, selectingPlayer);
             if (!isPocketed)

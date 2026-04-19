@@ -47,7 +47,7 @@ namespace LCWildCardMod.MapObjects
         }
         void Update()
         {
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -187,7 +187,7 @@ namespace LCWildCardMod.MapObjects
         }
         public void PitChomp()
         {
-            if (!base.IsServer || !consuming)
+            if (!IsServer || !consuming)
             {
                 return;
             }

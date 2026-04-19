@@ -27,7 +27,7 @@ namespace LCWildCardMod.Items
         {
             base.OnNetworkSpawn();
             random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -40,7 +40,7 @@ namespace LCWildCardMod.Items
             int index = random.Next(0, squeakClips.Length);
             audioSource.PlayOneShot(squeakClips[index], 1f);
             WalkieTalkie.TransmitOneShotAudio(audioSource, squeakClips[index]);
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -64,7 +64,7 @@ namespace LCWildCardMod.Items
         public override void GrabItem()
         {
             base.GrabItem();
-            if (!base.IsServer || agitateCounter != null)
+            if (!IsServer || agitateCounter != null)
             {
                 return;
             }
@@ -147,7 +147,7 @@ namespace LCWildCardMod.Items
         }
         public override void LoadItemSaveData(int saveData)
         {
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -164,7 +164,7 @@ namespace LCWildCardMod.Items
         {
             if (StartOfRound.Instance.currentLevel.planetHasTime)
             {
-                RoundManager.Instance.PlayAudibleNoise(base.transform.position, 25f, 1f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+                RoundManager.Instance.PlayAudibleNoise(transform.position, 25f, 1f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
             }
             if (playerHeldBy == null)
             {

@@ -27,7 +27,7 @@ namespace LCWildCardMod.Items.Clover
         public override void GrabItem()
         {
             base.GrabItem();
-            if (base.IsServer)
+            if (IsServer)
             {
                 itemAnimator.Animator.SetBool("isHeld", true);
             }
@@ -50,7 +50,7 @@ namespace LCWildCardMod.Items.Clover
                 }
             }
             base.DiscardItem();
-            if (base.IsServer)
+            if (IsServer)
             {
                 itemAnimator.Animator.SetBool("isHeld", false);
             }
@@ -63,7 +63,7 @@ namespace LCWildCardMod.Items.Clover
                 return;
             }
             Log.LogDebug($"{itemProperties.itemName} is Despawning");
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }

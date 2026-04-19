@@ -21,7 +21,7 @@ namespace LCWildCardMod.Items
         internal override void BeginMusic()
         {
             base.BeginMusic();
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -35,7 +35,7 @@ namespace LCWildCardMod.Items
         public override void GrabItem()
         {
             base.GrabItem();
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -46,7 +46,7 @@ namespace LCWildCardMod.Items
         public override void EquipItem()
         {
             base.EquipItem();
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -55,7 +55,7 @@ namespace LCWildCardMod.Items
         public override void PocketItem()
         {
             base.PocketItem();
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -64,7 +64,7 @@ namespace LCWildCardMod.Items
         public override void DiscardItem()
         {
             base.DiscardItem();
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -74,7 +74,7 @@ namespace LCWildCardMod.Items
         public override void OnHitGround()
         {
             base.OnHitGround();
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -84,7 +84,7 @@ namespace LCWildCardMod.Items
         {
             base.Throw();
             Log.LogDebug("Giwi Worm being thrown!");
-            if (!base.IsServer)
+            if (!IsServer)
             {
                 return;
             }
@@ -104,7 +104,7 @@ namespace LCWildCardMod.Items
         }
         internal IEnumerator IdleAnimation(bool idleHand)
         {
-            yield return new WaitUntil(() => base.IsSpawned);
+            yield return new WaitUntil(() => IsSpawned);
             while (true)
             {
                 if (idleHand)

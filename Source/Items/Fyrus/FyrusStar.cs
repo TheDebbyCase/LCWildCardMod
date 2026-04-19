@@ -77,7 +77,7 @@ namespace LCWildCardMod.Items.Fyrus
             Log.LogDebug($"{affectingPlayer.playerUsername}'s Fyrus Star invincibility has ended");
             affectingPlayer = null;
             yield return new WaitForSeconds(0.75f);
-            if (base.IsServer)
+            if (IsServer)
             {
                 NetworkObject.Despawn();
             }

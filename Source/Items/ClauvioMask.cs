@@ -21,7 +21,7 @@ namespace LCWildCardMod.Items
         public override void EquipItem()
         {
             base.EquipItem();
-            if (base.IsOwner)
+            if (IsOwner)
             {
                 meshTransform.parent = playerHeldBy.gameplayCamera.transform;
             }
@@ -29,7 +29,7 @@ namespace LCWildCardMod.Items
             {
                 meshTransform.parent = playerHeldBy.bodyParts[0];
             }
-            maskAnimator.SetBool("isOwner", base.IsOwner);
+            maskAnimator.SetBool("isOwner", IsOwner);
             maskAnimator.SetBool("isHeld", true);
             previousPlayer = playerHeldBy;
         }
@@ -58,7 +58,7 @@ namespace LCWildCardMod.Items
         }
         internal void MaskPeek(InputAction.CallbackContext throwContext)
         {
-            if (!base.IsOwner || playerHeldBy == null)
+            if (!IsOwner || playerHeldBy == null)
             {
                 return;
             }
