@@ -1,6 +1,8 @@
 ﻿using BepInEx.Configuration;
 using GameNetcodeStuff;
 using HarmonyLib;
+using LCWildCardMod.Items.Fyrus;
+using LCWildCardMod.Items;
 using LethalCompanyInputUtils.Api;
 using System;
 using System.Collections.Generic;
@@ -23,9 +25,9 @@ namespace LCWildCardMod.Utils
         internal static MethodInfo onCollision = AccessTools.Method(typeof(EnemyAI), nameof(EnemyAI.OnCollideWithPlayer), new Type[] { typeof(Collider) });
         internal static MethodInfo exitDriver = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitDriverSideSeat));
         internal static MethodInfo exitPassenger = AccessTools.Method(typeof(VehicleController), nameof(VehicleController.ExitPassengerSideSeat));
-        internal static MethodInfo haloSave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
-        internal static MethodInfo anySave = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfAny), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
-        internal static MethodInfo wasFyrusOrHaloGraceSaved = AccessTools.Method(typeof(Extensions), nameof(Extensions.SaveIfFyrusOrHaloExhausting), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
+        internal static MethodInfo haloSave = AccessTools.Method(typeof(SaveHelper), nameof(SaveHelper.SaveIfHalo), new Type[] { typeof(PlayerControllerB) });
+        internal static MethodInfo anySave = AccessTools.Method(typeof(SaveHelper), nameof(SaveHelper.SaveIfAny), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
+        internal static MethodInfo wasFyrusOrHaloGraceSaved = AccessTools.Method(typeof(SaveHelper), nameof(SaveHelper.SaveIfFyrusOrHaloExhausting), new Type[] { typeof(PlayerControllerB), typeof(EnemyAI) });
         internal static MethodInfo killPlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer), new Type[] { typeof(Vector3), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(Vector3), typeof(bool) });
         internal static MethodInfo damagePlayer = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer), new Type[] { typeof(int), typeof(bool), typeof(bool), typeof(CauseOfDeath), typeof(int), typeof(bool), typeof(Vector3) });
         internal static MethodInfo makeInjured = AccessTools.Method(typeof(PlayerControllerB), nameof(PlayerControllerB.MakeCriticallyInjured), new Type[] { typeof(bool) });
@@ -78,80 +80,67 @@ namespace LCWildCardMod.Utils
         }
         internal static List<CodeInstruction> DebugString(string toLog, params Label[] labelsStart)
         {
-            List<CodeInstruction> instructions = new List<CodeInstruction>();
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelsStart != null)
+            return new List<CodeInstruction>
             {
-                instructions[0].labels.AddRange(labelsStart);
-            }
-            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
-            return instructions;
+                new CodeInstruction(OpCodes.Ldstr, toLog).WithLabels(labelsStart),
+                new CodeInstruction(OpCodes.Call, logString)
+            };
         }
         internal static List<CodeInstruction> DebugLoad<T>(string toLog, OpCode opcode, object operand = null, params Label[] labelsStart)
         {
-            List<CodeInstruction> instructions = new List<CodeInstruction>();
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelsStart != null)
+            return new List<CodeInstruction>
             {
-                instructions[0].labels.AddRange(labelsStart);
-            }
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
-            instructions.Add(new CodeInstruction(opcode, operand));
-            instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
-            instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
-            instructions.Add(new CodeInstruction(OpCodes.Call, stringConcat3));
-            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
-            return instructions;
+                new CodeInstruction(OpCodes.Ldstr, toLog).WithLabels(labelsStart),
+                new CodeInstruction(OpCodes.Ldstr, ": "),
+                new CodeInstruction(opcode, operand),
+                new CodeInstruction(OpCodes.Box, typeof(T)),
+                new CodeInstruction(OpCodes.Callvirt, toString),
+                new CodeInstruction(OpCodes.Call, stringConcat3),
+                new CodeInstruction(OpCodes.Call, logString)
+            };
         }
         internal static List<CodeInstruction> DebugLoad<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, params Label[] labelsStart)
         {
-            List<CodeInstruction> instructions = new List<CodeInstruction>();
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelsStart != null)
+            List<CodeInstruction> instructions = new List<CodeInstruction>
             {
-                instructions[0].labels.AddRange(labelsStart);
-            }
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
-            instructions.AddRange(loadInstructions);
-            instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
-            instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
-            instructions.Add(new CodeInstruction(OpCodes.Call, stringConcat3));
-            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
+                new CodeInstruction(OpCodes.Ldstr, toLog).WithLabels(labelsStart),
+                new CodeInstruction(OpCodes.Ldstr, ": "),
+                new CodeInstruction(OpCodes.Box, typeof(T)),
+                new CodeInstruction(OpCodes.Callvirt, toString),
+                new CodeInstruction(OpCodes.Call, stringConcat3),
+                new CodeInstruction(OpCodes.Call, logString)
+            };
+            instructions.InsertRange(2, loadInstructions);
             return instructions;
         }
         internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, IEnumerable<CodeInstruction> loadInstructions, params Label[] labelsStart)
         {
-            List<CodeInstruction> instructions = new List<CodeInstruction>();
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelsStart != null)
+            List<CodeInstruction> instructions = new List<CodeInstruction>
             {
-                instructions[0].labels.AddRange(labelsStart);
-            }
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
-            instructions.Add(new CodeInstruction(OpCodes.Ldarg, 0));
-            instructions.AddRange(loadInstructions);
-            instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
-            instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
-            instructions.Add(new CodeInstruction(OpCodes.Call, stringConcat3));
-            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
+                new CodeInstruction(OpCodes.Ldstr, toLog).WithLabels(labelsStart),
+                new CodeInstruction(OpCodes.Ldstr, ": "),
+                new CodeInstruction(OpCodes.Ldarg, 0),
+                new CodeInstruction(OpCodes.Box, typeof(T)),
+                new CodeInstruction(OpCodes.Callvirt, toString),
+                new CodeInstruction(OpCodes.Call, stringConcat3),
+                new CodeInstruction(OpCodes.Call, logString)
+            };
+            instructions.InsertRange(3, loadInstructions);
             return instructions;
         }
         internal static List<CodeInstruction> DebugLoadFromThis<T>(string toLog, OpCode opcode, object operand = null, params Label[] labelsStart)
         {
-            List<CodeInstruction> instructions = new List<CodeInstruction>();
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, toLog));
-            if (labelsStart != null)
+            return new List<CodeInstruction>
             {
-                instructions[0].labels.AddRange(labelsStart);
-            }
-            instructions.Add(new CodeInstruction(OpCodes.Ldstr, ": "));
-            instructions.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
-            instructions.Add(new CodeInstruction(opcode, operand));
-            instructions.Add(new CodeInstruction(OpCodes.Box, typeof(T)));
-            instructions.Add(new CodeInstruction(OpCodes.Callvirt, toString));
-            instructions.Add(new CodeInstruction(OpCodes.Call, stringConcat3));
-            instructions.Add(new CodeInstruction(OpCodes.Call, logString));
-            return instructions;
+                new CodeInstruction(OpCodes.Ldstr, toLog).WithLabels(labelsStart),
+                new CodeInstruction(OpCodes.Ldstr, ": "),
+                new CodeInstruction(OpCodes.Ldarg_S, 0),
+                new CodeInstruction(opcode, operand),
+                new CodeInstruction(OpCodes.Box, typeof(T)),
+                new CodeInstruction(OpCodes.Callvirt, toString),
+                new CodeInstruction(OpCodes.Call, stringConcat3),
+                new CodeInstruction(OpCodes.Call, logString)
+            };
         }
         internal static List<CodeInstruction> DebugThisEnemyName()
         {
@@ -189,35 +178,35 @@ namespace LCWildCardMod.Utils
         {
             object operand = store.operand;
             CodeInstruction load = new CodeInstruction(OpCodes.Nop);
-            if (store.opcode.Equals(OpCodes.Stloc_0))
+            if (store.opcode == OpCodes.Stloc_0)
             {
                 load = new CodeInstruction(OpCodes.Ldloc_S, 0);
             }
-            else if (store.opcode.Equals(OpCodes.Stloc_1))
+            else if (store.opcode == OpCodes.Stloc_1)
             {
                 load = new CodeInstruction(OpCodes.Ldloc_S, 1);
             }
-            else if (store.opcode.Equals(OpCodes.Stloc_2))
+            else if (store.opcode == OpCodes.Stloc_2)
             {
                 load = new CodeInstruction(OpCodes.Ldloc_S, 2);
             }
-            else if (store.opcode.Equals(OpCodes.Stloc_3))
+            else if (store.opcode == OpCodes.Stloc_3)
             {
                 load = new CodeInstruction(OpCodes.Ldloc_S, 3);
             }
-            else if (store.opcode.Equals(OpCodes.Stloc_S) || store.opcode.Equals(OpCodes.Ldloc))
+            else if (store.opcode == OpCodes.Stloc_S || store.opcode == OpCodes.Ldloc)
             {
                 load = new CodeInstruction(OpCodes.Ldloc_S, operand);
             }
-            else if (store.opcode.Equals(OpCodes.Starg_S) || store.opcode.Equals(OpCodes.Starg))
+            else if (store.opcode == OpCodes.Starg_S || store.opcode == OpCodes.Starg)
             {
                 load = new CodeInstruction(OpCodes.Ldarg_S, operand);
             }
-            else if (store.opcode.Equals(OpCodes.Stfld) || store.opcode.Equals(OpCodes.Stsfld))
+            else if (store.opcode == OpCodes.Stfld || store.opcode == OpCodes.Stsfld)
             {
                 load = new CodeInstruction(OpCodes.Ldfld, operand);
             }
-            else if (store.opcode.Equals(OpCodes.Stobj))
+            else if (store.opcode == OpCodes.Stobj)
             {
                 load = new CodeInstruction(OpCodes.Ldobj, operand);
             }
@@ -227,47 +216,47 @@ namespace LCWildCardMod.Utils
         {
             object operand = load.operand;
             CodeInstruction store = new CodeInstruction(OpCodes.Nop);
-            if (load.opcode.Equals(OpCodes.Ldloc_0))
+            if (load.opcode == OpCodes.Ldloc_0)
             {
                 store = new CodeInstruction(OpCodes.Stloc_S, 0);
             }
-            else if (load.opcode.Equals(OpCodes.Ldloc_1))
+            else if (load.opcode == OpCodes.Ldloc_1)
             {
                 store = new CodeInstruction(OpCodes.Stloc_S, 1);
             }
-            else if (load.opcode.Equals(OpCodes.Ldloc_2))
+            else if (load.opcode == OpCodes.Ldloc_2)
             {
                 store = new CodeInstruction(OpCodes.Stloc_S, 2);
             }
-            else if (load.opcode.Equals(OpCodes.Ldloc_3))
+            else if (load.opcode == OpCodes.Ldloc_3)
             {
                 store = new CodeInstruction(OpCodes.Stloc_S, 3);
             }
-            else if (load.opcode.Equals(OpCodes.Ldloc_S) || load.opcode.Equals(OpCodes.Ldloc))
+            else if (load.opcode == OpCodes.Ldloc_S || load.opcode == OpCodes.Ldloc)
             {
                 store = new CodeInstruction(OpCodes.Stloc_S, operand);
             }
-            else if (load.opcode.Equals(OpCodes.Ldarg_0))
+            else if (load.opcode == OpCodes.Ldarg_0)
             {
                 store = new CodeInstruction(OpCodes.Starg_S, 0);
             }
-            else if (load.opcode.Equals(OpCodes.Ldarg_1))
+            else if (load.opcode == OpCodes.Ldarg_1)
             {
                 store = new CodeInstruction(OpCodes.Starg_S, 1);
             }
-            else if (load.opcode.Equals(OpCodes.Ldarg_2))
+            else if (load.opcode == OpCodes.Ldarg_2)
             {
                 store = new CodeInstruction(OpCodes.Starg_S, 2);
             }
-            else if (load.opcode.Equals(OpCodes.Ldarg_3))
+            else if (load.opcode == OpCodes.Ldarg_3)
             {
                 store = new CodeInstruction(OpCodes.Starg_S, 3);
             }
-            else if (load.opcode.Equals(OpCodes.Ldarg_S) || load.opcode.Equals(OpCodes.Ldarg))
+            else if (load.opcode == OpCodes.Ldarg_S || load.opcode == OpCodes.Ldarg)
             {
                 store = new CodeInstruction(OpCodes.Starg_S, operand);
             }
-            else if (load.opcode.Equals(OpCodes.Ldfld))
+            else if (load.opcode == OpCodes.Ldfld)
             {
                 FieldInfo field = operand as FieldInfo;
                 if (field != null)
@@ -282,7 +271,7 @@ namespace LCWildCardMod.Utils
                     }
                 }
             }
-            else if (load.opcode.Equals(OpCodes.Ldobj))
+            else if (load.opcode == OpCodes.Ldobj)
             {
                 store = new CodeInstruction(OpCodes.Stobj, operand);
             }
@@ -296,31 +285,31 @@ namespace LCWildCardMod.Utils
             OpCode opCode2 = load2.opcode;
             if (load1.IsLdloc() && load2.IsLdloc())
             {
-                if (opCode1.Equals(opCode2) && load1.OperandIs(load2.operand))
+                if (opCode1 == opCode2 && load1.OperandIs(load2.operand))
                 {
                     return true;
                 }
-                else if (opCode1.Equals(OpCodes.Ldloc) || opCode1.Equals(OpCodes.Ldloc_S))
+                else if (opCode1 == OpCodes.Ldloc || opCode1 == OpCodes.Ldloc_S)
                 {
                     return load1.OperandIs(load2.operand);
                 }
-                else if (opCode1.Equals(OpCodes.Ldloc_0))
+                else if (opCode1 == OpCodes.Ldloc_0)
                 {
-                    return opCode2.Equals(OpCodes.Ldloc_0) || (load2Operand.HasValue && load2Operand.Value == 0);
+                    return opCode2 == OpCodes.Ldloc_0 || (load2Operand.HasValue && load2Operand.Value == 0);
                 }
-                else if (opCode1.Equals(OpCodes.Ldloc_1))
+                else if (opCode1 == OpCodes.Ldloc_1)
                 {
-                    return opCode2.Equals(OpCodes.Ldloc_1) || (load2Operand.HasValue && load2Operand.Value == 1);
+                    return opCode2 == OpCodes.Ldloc_1 || (load2Operand.HasValue && load2Operand.Value == 1);
                 }
-                else if (opCode1.Equals(OpCodes.Ldloc_2))
+                else if (opCode1 == OpCodes.Ldloc_2)
                 {
-                    return opCode2.Equals(OpCodes.Ldloc_2) || (load2Operand.HasValue && load2Operand.Value == 2);
+                    return opCode2 == OpCodes.Ldloc_2 || (load2Operand.HasValue && load2Operand.Value == 2);
                 }
-                else if (opCode1.Equals(OpCodes.Ldloc_3))
+                else if (opCode1 == OpCodes.Ldloc_3)
                 {
-                    return opCode2.Equals(OpCodes.Ldloc_3) || (load2Operand.HasValue && load2Operand.Value == 3);
+                    return opCode2 == OpCodes.Ldloc_3 || (load2Operand.HasValue && load2Operand.Value == 3);
                 }
-                else if ((opCode1.Equals(OpCodes.Ldloca) || opCode1.Equals(OpCodes.Ldloca_S)) && (opCode2.Equals(OpCodes.Ldloca) || opCode2.Equals(OpCodes.Ldloca_S)))
+                else if ((opCode1 == OpCodes.Ldloca || opCode1 == OpCodes.Ldloca_S) && (opCode2 == OpCodes.Ldloca || opCode2 == OpCodes.Ldloca_S))
                 {
                     return load1.OperandIs(load2.operand);
                 }
@@ -333,7 +322,128 @@ namespace LCWildCardMod.Utils
             {
                 return load1.OperandIs(load2.operand);
             }
-            return opCode1.Equals(opCode2) && load1.OperandIs(load2.operand);
+            return opCode1 == opCode2 && load1.OperandIs(load2.operand);
+        }
+    }
+    internal static class SaveHelper
+    {
+        internal static bool IsSaveable(PlayerControllerB player, out bool starSave, out SmithHalo halo, EnemyAI enemy = null)
+        {
+            halo = null;
+            starSave = SaveIfFyrus(player, enemy);
+            return starSave || (player.isHoldingObject && player.currentlyHeldObjectServer.TryGetComponent(out halo) && ((halo.savedPlayer == player && halo.exhausting) || halo.isExhausted == 0)) || HasSavedHalo(player, out halo);
+        }
+        internal static bool SaveIfFyrus(PlayerControllerB player, EnemyAI enemy = null)
+        {
+            if (player == null)
+            {
+                return false;
+            }
+            FyrusStar star = null;
+            for (int i = 0; i < FyrusStar.allSpawnedStars.Count; i++)
+            {
+                FyrusStar checkingStar = FyrusStar.allSpawnedStars[i];
+                if (checkingStar.affectingPlayer != player)
+                {
+                    continue;
+                }
+                star = checkingStar;
+                break;
+            }
+            if (star == null)
+            {
+                return false;
+            }
+            WildCardMod.Instance.Log.LogDebug($"Fyrus star saved {player.playerUsername}!");
+            if (enemy == null)
+            {
+                return true;
+            }
+            EnemyAICollisionDetect collision = enemy.GetComponentInChildren<EnemyAICollisionDetect>();
+            if (collision == null)
+            {
+                return true;
+            }
+            if (star.hitCooldown <= 0f)
+            {
+                (collision as IHittable).Hit(1, (enemy.transform.position - player.transform.position).normalized * 2.5f, player, true);
+                star.hitCooldown = star.hitCooldownMax;
+            }
+            return true;
+        }
+        internal static bool SaveIfAny(PlayerControllerB player, EnemyAI enemy = null)
+        {
+            if (IsSaveable(player, out bool starSave, out SmithHalo halo, enemy))
+            {
+                if (!starSave)
+                {
+                    halo.ExhaustLocal(player);
+                }
+                return true;
+            }
+            return false;
+        }
+        internal static bool SaveIfHalo(PlayerControllerB player)
+        {
+            if (IsSaveable(player, out bool starSave, out SmithHalo halo) && !starSave && halo.savedPlayer != player)
+            {
+                halo.ExhaustLocal(player);
+                return true;
+            }
+            return false;
+        }
+        internal static bool WasHaloSaved(PlayerControllerB player, out SmithHalo halo)
+        {
+            return IsSaveable(player, out bool starSave, out halo) && !starSave && halo.savedPlayer == player;
+        }
+        internal static bool SaveIfFyrusOrHaloExhausting(PlayerControllerB player, EnemyAI enemy = null)
+        {
+            return SaveIfFyrus(player, enemy) || WasHaloSaved(player, out _);
+        }
+        internal static bool HasSavedHalo(PlayerControllerB player, out SmithHalo halo)
+        {
+            halo = null;
+            if (player == null)
+            {
+                return false;
+            }
+            for (int i = 0; i < player.ItemSlots.Length; i++)
+            {
+                GrabbableObject item = player.ItemSlots[i];
+                if (item == null)
+                {
+                    continue;
+                }
+                if (!item.TryGetComponent(out halo))
+                {
+                    continue;
+                }
+                if (halo.savedPlayer != player || !halo.exhausting)
+                {
+                    continue;
+                }
+                return true;
+            }
+            return HasSavedHaloAnywhere(player, out halo);
+        }
+        internal static bool HasSavedHaloAnywhere(PlayerControllerB player, out SmithHalo halo)
+        {
+            halo = null;
+            if (player == null)
+            {
+                return false;
+            }
+            for (int i = 0; i < SmithHalo.allSpawnedHalos.Count; i++)
+            {
+                SmithHalo haloCheck = SmithHalo.allSpawnedHalos[i];
+                if (haloCheck.savedPlayer != player || !haloCheck.exhausting)
+                {
+                    continue;
+                }
+                halo = haloCheck;
+                return true;
+            }
+            return false;
         }
     }
     internal static class EventsClass
@@ -349,6 +459,7 @@ namespace LCWildCardMod.Utils
             {
                 return;
             }
+            roundStarted = true;
             OnRoundStart?.Invoke();
         }
         internal static void RoundEnded()
@@ -357,6 +468,7 @@ namespace LCWildCardMod.Utils
             {
                 return;
             }
+            roundStarted = false;
             OnRoundEnd?.Invoke();
         }
     }
@@ -374,7 +486,6 @@ namespace LCWildCardMod.Utils
     internal static class SkinsClass
     {
         static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        static Dictionary<string, ConfigEntry<int>> ConfigChances => WildCardMod.Instance.ModConfig.skinApplyChance;
         internal static void SetSkin(EnemyAI enemy)
         {
             Skin skinToApply = GetRandomSkin(enemy.enemyType.enemyName, SkinType.Enemy);
@@ -492,7 +603,7 @@ namespace LCWildCardMod.Utils
             {
                 Skin skin = potentialSkins[i];
                 string skinName = skin.skinName;
-                if (ConfigChances[skinName].Value <= 0)
+                if (WildCardMod.Instance.ModConfig.skinApplyChance[skinName].Value <= 0)
                 {
                     Log.LogDebug($"Skin \"{skinName}\" was disabled!");
                     potentialSkins.RemoveAt(i);
@@ -500,8 +611,8 @@ namespace LCWildCardMod.Utils
                     continue;
                 }
                 Log.LogDebug($"Adding skin \"{skinName}\"'s chance weight!");
-                skinsWeight += ConfigChances[skinName].Value;
-                nothingWeight += 100 - ConfigChances[skinName].Value;
+                skinsWeight += WildCardMod.Instance.ModConfig.skinApplyChance[skinName].Value;
+                nothingWeight += 100 - WildCardMod.Instance.ModConfig.skinApplyChance[skinName].Value;
             }
             float applyChance = (float)random.NextDouble();
             Log.LogDebug($"Rolling to see if a skin will be applied!");
@@ -519,7 +630,7 @@ namespace LCWildCardMod.Utils
                 Skin skin = potentialSkins[i];
                 string skinName = skin.skinName;
                 Log.LogDebug($"Rolling to see if \"{skinName}\" is selected!");
-                if (ConfigChances[skinName].Value / skinsWeight >= applyChance)
+                if (WildCardMod.Instance.ModConfig.skinApplyChance[skinName].Value / skinsWeight >= applyChance)
                 {
                     Log.LogDebug($"Skin \"{skinName}\" was selected!");
                     return skin;

@@ -157,14 +157,14 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool DepositItemsDesk_Save()
         {
-            return !GameNetworkManager.Instance.localPlayerController.SaveIfAny();
+            return !SaveHelper.SaveIfAny(GameNetworkManager.Instance.localPlayerController);
         }
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyWrapSafe]
         [HarmonyPrefix]
         public static bool PlayerControllerB_FyrusSaveDamage(PlayerControllerB __instance, ref Vector3 force)
         {
-            bool saved = __instance.SaveIfFyrus();
+            bool saved = SaveHelper.SaveIfFyrus(__instance);
             if (saved)
             {
                 __instance.externalForceAutoFade += force;
@@ -176,7 +176,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPrefix]
         public static bool PlayerControllerB_SaveKill(PlayerControllerB __instance, ref Vector3 bodyVelocity, ref bool spawnBody, ref CauseOfDeath causeOfDeath)
         {
-            if (!__instance.IsSaveable(out bool starSave, out SmithHalo haloRef) || causeOfDeath == CauseOfDeath.Unknown || !spawnBody)
+            if (!SaveHelper.IsSaveable(__instance, out bool starSave, out SmithHalo haloRef) || causeOfDeath == CauseOfDeath.Unknown || !spawnBody)
             {
                 return true;
             }
@@ -198,7 +198,7 @@ namespace LCWildCardMod.Patches
         {
             try
             {
-                return !playerScript.SaveIfAny(__instance);
+                return !SaveHelper.SaveIfAny(playerScript, __instance);
             }
             catch (Exception exception)
             {
@@ -1223,7 +1223,7 @@ namespace LCWildCardMod.Patches
         {
             if (__result)
             {
-                __result = !playerScript.WasHaloSaved(out _);
+                __result = !SaveHelper.WasHaloSaved(playerScript, out _);
             }
         }
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.CheckConditionsForSinkingInQuicksand))]
@@ -1235,7 +1235,7 @@ namespace LCWildCardMod.Patches
             {
                 return;
             }
-            __result = !__instance.SaveIfFyrus();
+            __result = !SaveHelper.SaveIfFyrus(__instance);
         }
     }
 }

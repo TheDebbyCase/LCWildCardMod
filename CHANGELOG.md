@@ -4,6 +4,7 @@
 - Made halo checker slightly more efficient
 - Added an extra null check to Smith Note for a little added error avoidance
 - Added a cooldown to when the Fyrus Star can hit enemies back when being saved from them, so it doesn't instakill enemies that collide with the player
+- Shuffled some code around to be more readable and potentially efficient
 
 ## 1.2.8
 - Fixed a few rare case bugs with the halo save

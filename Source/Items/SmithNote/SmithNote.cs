@@ -349,7 +349,7 @@ namespace LCWildCardMod.Items.SmithNote
             isKillRunning = true;
             yield return new WaitForSeconds(4.5f);
             PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
-            if (!localPlayer.SaveIfHalo())
+            if (!SaveHelper.SaveIfHalo(localPlayer))
             {
                 localPlayer.KillPlayer(Vector3.up, true, CauseOfDeath.Unknown, 1);
             }
