@@ -75,6 +75,7 @@ namespace LCWildCardMod.Items.Fyrus
             trailRenderer.emitting = false;
             musicAudioObject.parent = transform;
             Log.LogDebug($"{affectingPlayer.playerUsername}'s Fyrus Star invincibility has ended");
+            affectingPlayer = null;
             yield return new WaitForSeconds(0.75f);
             if (base.IsServer)
             {
