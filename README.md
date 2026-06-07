@@ -124,15 +124,6 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	</details>
 
 	<details>
-	<summary>Remaining WILDCARD members items</summary>
-
-	No functionality (Fyrus Star has since been upgraded)
-	
-	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/AssortedPreview.png)
-	
-	</details>
-
-	<details>
 	<summary>Valentine</summary>
 
 	The more you hold it, the more valuable it becomes
@@ -162,22 +153,22 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	</details>
 
 	<details>
-	<summary>Clauvio Mouse</summary>
+	<summary>Clauvi Mouse</summary>
 
-	Original design by [Clauvio](https://www.twitch.tv/clauvio),  
+	Original design by [Clauvi](https://www.twitch.tv/clauvi),  
 	A mouse with an attitude
 	
-	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMousePreview.png)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauviMousePreview.png)
 	
 	</details>
 
 	<details>
-	<summary>Clauvio Mask</summary>
+	<summary>Clauvi Mask</summary>
 
-	Original design by [Clauvio](https://www.twitch.tv/clauvio),  
+	Original design by [Clauvi](https://www.twitch.tv/clauvi),  
 	Bring it back to the ship, I dare you
 	
-	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauvioMaskPreview.png)
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/ClauviMaskPreview.png)
 	
 	</details>
 
@@ -188,6 +179,96 @@ or the GitHub page [here](https://github.com/TheDebbyCase/LCWildCardMod)!
 	Where did I even get this?
 	
 	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/BleedingHeartPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Mario Party Dice</summary>
+
+	Original designs by [Nintendo](https://www.nintendo.com),   
+	I know you love to gamble, you sicken me
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/MarioPartyDicePreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Ari</summary>
+
+	Based on art of her own bird by [JaidenAnimations](https://www.youtube.com/@jaidenanimations),  
+	Much like a real bird, she can almost fly
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/AriPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Fyrus Poppy</summary>
+
+	Based on... [poppies](https://en.wikipedia.org/wiki/Papaver_rhoeas),  
+	Make every day one to remember
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/PoppyPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Fyrus Star</summary>
+
+	Based on Fyrus' profile picture (unsure who made it, lmk) [Fyrus](https://www.youtube.com/@fyrus),  
+	It's Mario time
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/StarPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Kidd Squirtle</summary>
+
+	Original designs by [Game Freak](https://www.gamefreak.co.jp),  
+	Not a lot to say, this one
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/KiddSquirtlePreview.png)
+	
+	</details>
+
+	<details>
+	<summary>King K. Rool Gem</summary>
+
+	Original designs by [Nintendo](https://www.nintendo.com),  
+	It's rather fragile without the big guy
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/GemPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Void Crown</summary>
+
+	Based on gsmVoiD's YouTube banner (unsure who made it, lmk) [gsmVoiD](https://www.twitch.tv/gsmvoid),  
+	You want to wear the crown? Come get it
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/VoidCrownPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Hellgato</summary>
+
+	Based on an original design by [Oniimely](https://www.twitch.tv/oniimely),  
+	Fiesty, hurts, owie owie meowie meowie
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/HellgatoPreview.png)
+	
+	</details>
+
+	<details>
+	<summary>Gojo Glasses</summary>
+
+	Based on an original design by [Gege Akutami](https://en.wikipedia.org/wiki/Gege_Akutami),  
+	Lethal Technique
+	
+	![Preview](https://raw.githubusercontent.com/TheDebbyCase/LCWildCardMod/main/Images/GojoGlassesPreview.png)
 	
 	</details>
 

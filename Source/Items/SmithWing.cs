@@ -1,40 +1,63 @@
-﻿using GameNetcodeStuff;
+﻿using LCWildCardMod.Utils;
+using UnityEngine;
 namespace LCWildCardMod.Items
 {
-    public class SmithWing : PhysicsProp
+    public class SmithWing : WildCardProp
     {
-        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        internal PlayerControllerB lastPlayer;
-        public float speedMultiplier = 1.5f;
-        public override void GrabItem()
+        [Space(3f)]
+        [Header("SmithWing")]
+        [Space(3f)]
+        [SerializeField]
+        private float speedMultiplier = 1.25f;
+        private float inverseSpeedMultiplier;
+        private bool doingSpeed = false;
+        private bool wasEnemy = false;
+        public override void OnNetworkDespawn()
         {
-            base.GrabItem();
-            lastPlayer = playerHeldBy;
-            lastPlayer.movementSpeed *= speedMultiplier;
-            Log.LogDebug($"Wing Set {lastPlayer.playerUsername} Movement Speed to {lastPlayer.movementSpeed}");
-        }
-        public override void EquipItem()
-        {
-            base.EquipItem();
-            if (lastPlayer == null)
+            base.OnNetworkDespawn();
+            if (!doingSpeed)
             {
                 return;
             }
-            lastPlayer.movementSpeed *= speedMultiplier;
-            Log.LogDebug($"Wing Set {lastPlayer.playerUsername} Movement Speed to {lastPlayer.movementSpeed}");
+            if (wasEnemy)
+            {
+                LastEnemyHeldBy.agent.speed *= inverseSpeedMultiplier;
+                return;
+            }
+            LastPlayerHeldBy.MultiplyPlayerSpeed(inverseSpeedMultiplier);
         }
-        public override void PocketItem()
+        public override void Update()
         {
-            base.PocketItem();
-            lastPlayer.movementSpeed /= speedMultiplier;
-            Log.LogDebug($"Wing Set {lastPlayer.playerUsername} Movement Speed to {lastPlayer.movementSpeed}");
-        }
-        public override void DiscardItem()
-        {
-            base.DiscardItem();
-            lastPlayer.movementSpeed /= speedMultiplier;
-            Log.LogDebug($"Wing Set {lastPlayer.playerUsername} Movement Speed to {lastPlayer.movementSpeed}");
-            lastPlayer = null;
+            base.Update();
+            if ((isHeld && !isPocketed) || isHeldByEnemy)
+            {
+                if (!doingSpeed)
+                {
+                    inverseSpeedMultiplier = 1f / speedMultiplier;
+                    doingSpeed = true;
+                    if (isHeld)
+                    {
+                        LastPlayerHeldBy.MultiplyPlayerSpeed(speedMultiplier);
+                        return;
+                    }
+                    wasEnemy = true;
+                    LastEnemyHeldBy.agent.speed *= speedMultiplier;
+                    return;
+                }
+                return;
+            }
+            if (!doingSpeed)
+            {
+                return;
+            }
+            doingSpeed = false;
+            if (!wasEnemy)
+            {
+                LastPlayerHeldBy.MultiplyPlayerSpeed(inverseSpeedMultiplier);
+                return;
+            }
+            wasEnemy = false;
+            LastEnemyHeldBy.agent.speed *= inverseSpeedMultiplier;
         }
     }
 }

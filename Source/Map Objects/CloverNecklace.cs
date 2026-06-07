@@ -1,23 +1,35 @@
 ﻿using LCWildCardMod.Utils;
 using System.Collections.Generic;
-using Unity.Netcode.Components;
-namespace LCWildCardMod.Items.Clover
+//using UnityEngine;
+namespace LCWildCardMod.Items
 {
-    public class CloverNecklace : PhysicsProp
+    public class CloverNecklace : WildCardProp
     {
-        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        public NetworkAnimator itemAnimator;
         internal static CloverNecklace oneNecklace;
         internal static List<CloverBee> beeList = new List<CloverBee>();
-        public override void OnNetworkSpawn()
+        //[Space(3f)]
+        //[Header("CloverNecklace")]
+        //[Space(3f)]
+        public override void Start()
         {
-            base.OnNetworkSpawn();
+            base.Start();
+            if (!EventsClass.RoundStarted)
+            {
+                return;
+            }
+            DoChecks();
+        }
+        internal override void OnEnable()
+        {
             EventsClass.OnRoundStart += DoChecks;
+        }
+        internal override void OnDisable()
+        {
+            EventsClass.OnRoundStart -= DoChecks;
         }
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            EventsClass.OnRoundStart -= DoChecks;
             if (oneNecklace != this)
             {
                 return;
@@ -27,11 +39,7 @@ namespace LCWildCardMod.Items.Clover
         public override void GrabItem()
         {
             base.GrabItem();
-            if (IsServer)
-            {
-                itemAnimator.Animator.SetBool("isHeld", true);
-            }
-            if (GameNetworkManager.Instance.localPlayerController != playerHeldBy)
+            if (!LastPlayerHeldBy.IsLocal())
             {
                 return;
             }
@@ -42,7 +50,7 @@ namespace LCWildCardMod.Items.Clover
         }
         public override void DiscardItem()
         {
-            if (GameNetworkManager.Instance.localPlayerController == playerHeldBy)
+            if (LastPlayerHeldBy.IsLocal())
             {
                 for (int i = 0; i < beeList.Count; i++)
                 {
@@ -50,19 +58,15 @@ namespace LCWildCardMod.Items.Clover
                 }
             }
             base.DiscardItem();
-            if (IsServer)
-            {
-                itemAnimator.Animator.SetBool("isHeld", false);
-            }
         }
-        internal void DoChecks()
+        private void DoChecks()
         {
             if (oneNecklace == null && beeList.Count > 0)
             {
                 oneNecklace = this;
                 return;
             }
-            Log.LogDebug($"{itemProperties.itemName} is Despawning");
+            Log.LogDebug($"{CurrentItem.itemName} is Despawning");
             if (!IsServer)
             {
                 return;

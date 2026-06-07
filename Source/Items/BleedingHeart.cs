@@ -1,147 +1,175 @@
 ﻿using GameNetcodeStuff;
+using LCWildCardMod.Utils;
 using System;
 using System.Collections;
 using Unity.Netcode;
-using Unity.Netcode.Components;
 using UnityEngine;
 namespace LCWildCardMod.Items
 {
-    public class BleedingHeart : PhysicsProp
+    public class BleedingHeart : WildCardProp
     {
-        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        public ScanNodeProperties scanNode;
-        public NetworkAnimator itemAnimator;
-        public AudioSource beatAudio;
-        public AnimationCurve weightCurve;
-        public ParticleSystem dripParticles;
-        public AudioClip smashClip;
-        internal int startingValue = 0;
-        internal float intensityValue;
-        internal float targetLiquidLevel;
-        internal float startWeight = -1;
-        internal float weightOverTime = 0f;
-        internal float playerMovementMag;
-        internal int playerSensitivity;
-        internal int levelLayerIndex;
-        internal int sloshLayerIndex;
-        internal bool exploding;
-        public override void OnNetworkSpawn()
+        [Space(3f)]
+        [Header("BleedingHeart")]
+        [Space(3f)]
+        [SerializeField]
+        private AnimationCurve weightCurve = default;
+        [SerializeField]
+        private int valueLoss = 5;
+        [SerializeField]
+        private float minSlosh = 0.01f;
+        [SerializeField]
+        private Vector2 burstMinMax = new Vector2(0.2f, 0.8f);
+        [SerializeField]
+        private int burstIndex = 0;
+        [SerializeField]
+        private float killRange = 5f;
+        [SerializeField]
+        private float damageRange = 10f;
+        [SerializeField]
+        private int playerDamage = 25;
+        [SerializeField]
+        private float forceMultiplier = 10f;
+        private int startingValue = 0;
+        private float inverseStartingValue = 0f;
+        private float intensityValue = default;
+        private float targetLiquidLevel = default;
+        private float startWeight = -1;
+        private float weightOverTime = 0f;
+        private float movementMag = default;
+        private int sensitivity = default;
+        private int levelLayerIndex = default;
+        private int sloshLayerIndex = default;
+        private bool exploding = default;
+        public override void Start()
         {
-            base.OnNetworkSpawn();
-            beatAudio.volume /= 3f;
-            levelLayerIndex = itemAnimator.Animator.GetLayerIndex("LiquidLevelLayer");
-            sloshLayerIndex = itemAnimator.Animator.GetLayerIndex("SloshingLayer");
-            StartCoroutine(StartingValueCoroutine());
+            base.Start();
+            levelLayerIndex = Animator.Original.GetLayerIndex("LiquidLevelLayer");
+            sloshLayerIndex = Animator.Original.GetLayerIndex("SloshingLayer");
+            SetStartingValue();
         }
-        internal IEnumerator StartingValueCoroutine()
+        internal override void OnEnable()
         {
-            if (startingValue != 0)
+            EventsClass.OnRoundStart += SetStartingValue;
+        }
+        internal override void OnDisable()
+        {
+            EventsClass.OnRoundStart -= SetStartingValue;
+        }
+        private void SetStartingValue()
+        {
+            if (startingValue == 0)
             {
-                yield break;
+                startingValue = ScrapValue;
             }
-            yield return new WaitUntil(() => scrapValue > 0);
-            startingValue = scrapValue;
+            inverseStartingValue = 1f / (float)Mathf.Max(1, startingValue);
         }
         public override void Update()
         {
             base.Update();
-            if (IsServer && currentUseCooldown <= 0f && startingValue > 0 && !StartOfRound.Instance.inShipPhase)
+            if (IsServer && currentUseCooldown <= 0f && !isHeld && !isHeldByEnemy && startingValue > 0 && !StartOfRound.Instance.inShipPhase)
             {
-                playerMovementMag = 0f;
+                movementMag = 0f;
                 if (scrapValue > 0)
                 {
-                    ScrapValueClientRpc(scrapValue - 1);
-                    intensityValue = ((float)startingValue - (float)scrapValue) / ((float)startingValue);
-                    SetIntensityClientRpc(intensityValue);
+                    ScrapValue -= valueLoss;
+                    SetIntensity(((float)startingValue - (float)ScrapValue) * inverseStartingValue);
                 }
-                currentUseCooldown = 3f;
+                currentUseCooldown = useCooldown;
             }
-            if (playerHeldBy != null)
+            if (isHeld)
             {
-                if (playerHeldBy == GameNetworkManager.Instance.localPlayerController)
+                if (LastPlayerHeldBy.IsLocal())
                 {
-                    SetMagnitudeServerRpc(Mathf.Clamp01(GameNetworkManager.Instance.localPlayerController.moveInputVector.magnitude));
-                    SetSensitivityServerRpc(IngamePlayerSettings.Instance.settings.lookSensitivity);
+                    SetSlosh(Mathf.Clamp01(LastPlayerHeldBy.moveInputVector.magnitude), IngamePlayerSettings.Instance.settings.lookSensitivity);
                 }
-                itemAnimator.Animator.SetLayerWeight(sloshLayerIndex, Mathf.Max(0.1f, Mathf.Min(1f, (playerMovementMag + 0.5f) * (Mathf.Max(0.1f, playerHeldBy.playerActions.Movement.Look.ReadValue<Vector2>().magnitude / 360f)) * Mathf.Max(1f, playerSensitivity))));
+                float sloshClamp = Mathf.Sqrt(minSlosh);
+                Animator.Original.SetLayerWeight(sloshLayerIndex, Mathf.Clamp((movementMag + 0.5f) * (Mathf.Max(sloshClamp, LastPlayerHeldBy.playerActions.Movement.Look.ReadValue<Vector2>().magnitude * 0.002777f)) * Mathf.Max(1f, (float)sensitivity), sloshClamp, 1f));
             }
-            float currentLiquidWeight = itemAnimator.Animator.GetLayerWeight(levelLayerIndex);
-            if (currentLiquidWeight < targetLiquidLevel - 0.01f || currentLiquidWeight > targetLiquidLevel + 0.01f)
+            else if (isHeldByEnemy)
             {
-                if (startWeight == -1f)
+                if (LastEnemyHeldBy.IsOwner)
                 {
-                    startWeight = currentLiquidWeight;
+                    SetSlosh(Mathf.Lerp(0f, 1f, LastEnemyHeldBy.agent.speed * 0.05f), 50);
                 }
-                weightOverTime += Time.deltaTime;
-                float lerpTarget = Mathf.Lerp(startWeight, targetLiquidLevel, weightCurve.Evaluate(weightOverTime));
-                itemAnimator.Animator.SetLayerWeight(levelLayerIndex, lerpTarget);
-                currentLiquidWeight = itemAnimator.Animator.GetLayerWeight(levelLayerIndex);
-                if (currentLiquidWeight > targetLiquidLevel - 0.01f && currentLiquidWeight < targetLiquidLevel + 0.01f)
-                {
-                    startWeight = -1f;
-                    weightOverTime = 0f;
-                }
+                float sloshClamp = Mathf.Sqrt(minSlosh);
+                Animator.Original.SetLayerWeight(sloshLayerIndex, Mathf.Clamp((movementMag + 0.5f) * 0.25f * Mathf.Max(1f, (float)sensitivity), sloshClamp, 1f));
             }
             if (scrapValue <= 0 && hasBeenHeld && !exploding)
             {
-                exploding = true;
                 StartCoroutine(ExplodeCoroutine());
             }
+            float currentLiquidWeight = Animator.Original.GetLayerWeight(levelLayerIndex);
+            if (Mathf.Approximately(currentLiquidWeight, targetLiquidLevel))
+            {
+                return;
+            }
+            if (Mathf.Approximately(startWeight, -1f))
+            {
+                startWeight = currentLiquidWeight;
+            }
+            weightOverTime += Time.deltaTime;
+            float lerpTarget = Mathf.Lerp(startWeight, targetLiquidLevel, weightCurve.Evaluate(weightOverTime));
+            Animator.Original.SetLayerWeight(levelLayerIndex, lerpTarget);
+            currentLiquidWeight = Animator.Original.GetLayerWeight(levelLayerIndex);
+            if (!Mathf.Approximately(currentLiquidWeight, targetLiquidLevel))
+            {
+                return;
+            }
+            startWeight = -1f;
+            weightOverTime = 0f;
         }
         public override void EquipItem()
         {
             base.EquipItem();
-            dripParticles.Play();
-            dripParticles.Emit(2);
-            if (!IsServer)
-            {
-                return;
-            }
-            itemAnimator.Animator.SetBool("isHeld", true);
+            SelectParticles particle = Particles["Drip"];
+            particle.PlayAll(networked: false);
+            particle.EmitAll(2, false);
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            dripParticles.Stop();
-            dripParticles.Clear();
+            Particles["Drip"].StopAll(true, false);
         }
         public override void DiscardItem()
         {
             base.DiscardItem();
-            dripParticles.Play();
-            dripParticles.Emit(2);
-            itemAnimator.Animator.SetLayerWeight(sloshLayerIndex, 0.1f);
-            if (!IsServer)
+            SelectParticles particle = Particles["Drip"];
+            if (!IsServer || particle.AnyAlive())
             {
                 return;
             }
-            itemAnimator.Animator.SetBool("isHeld", false);
+            particle.PlayAll();
+            particle.EmitAll(2);
+        }
+        internal override void GrabFromAny(bool fromPlayer = true, EnemyAI enemy = null)
+        {
+            base.GrabFromAny(fromPlayer, enemy);
+            Animations["Beat"].ResumeAll();
+        }
+        internal override void DiscardFromAny(bool fromPlayer = true, EnemyAI enemy = null)
+        {
+            base.DiscardFromAny(fromPlayer, enemy);
+            Animator.Original.SetLayerWeight(sloshLayerIndex, 0.1f);
+            SelectAnimationParameters anim = Animations["Beat"];
+            anim.ResetAllTimers();
+            anim.ResumeAll();
         }
         public void HeartBeat()
         {
-            if (scrapValue > 0)
-            {
-                beatAudio.Stop();
-                beatAudio.Play();
-                WalkieTalkie.TransmitOneShotAudio(beatAudio, beatAudio.clip);
-                if (StartOfRound.Instance.currentLevel.planetHasTime)
-                {
-                    RoundManager.Instance.PlayAudibleNoise(transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
-                }
-            }
-            if (!IsServer)
+            if (scrapValue <= 0)
             {
                 return;
             }
-            itemAnimator.Animator.SetBool("isHeld", false);
+            Audio["HeartBeat"].PlayRandomClip(networked: false);
         }
-        internal IEnumerator ExplodeCoroutine()
+        private IEnumerator ExplodeCoroutine()
         {
             Log.LogDebug("Bleeding Heart is exploding!");
-            if (playerHeldBy != null)
+            exploding = true;
+            if (isHeld)
             {
-                int playerOriginalSlot = playerHeldBy.currentItemSlot;
-                PlayerControllerB player = playerHeldBy;
+                PlayerControllerB player = LastPlayerHeldBy;
+                int playerOriginalSlot = player.currentItemSlot;
                 if (player.currentlyHeldObjectServer != this)
                 {
                     player.SwitchToItemSlot(Array.FindIndex(player.ItemSlots, x => x == this));
@@ -152,11 +180,18 @@ namespace LCWildCardMod.Items
                     player.SwitchToItemSlot(playerOriginalSlot);
                 }
             }
-            yield return new WaitForSeconds(0.1f);
+            else if (isHeldByEnemy)
+            {
+                EnemyForceDropItem();
+            }
+            yield return new WaitForEndOfFrame();
             EnableItemMeshes(false);
-            beatAudio.PlayOneShot(smashClip);
-            yield return new WaitForSeconds(0.1f);
-            Landmine.SpawnExplosion(transform.position + Vector3.up, true, 5f, 10f, 25, 10f);
+            if (IsServer)
+            {
+                Audio["Break"].PlayRandomOneshot();
+            }
+            yield return new WaitForEndOfFrame();
+            Landmine.SpawnExplosion(transform.position + Vector3.up, true, killRange, damageRange, playerDamage, forceMultiplier);
             yield return new WaitForSeconds(0.5f);
             if (!IsServer)
             {
@@ -171,40 +206,42 @@ namespace LCWildCardMod.Items
         public override void LoadItemSaveData(int saveData)
         {
             startingValue = saveData;
+            SetStartingValue();
         }
-        [ClientRpc]
-        public void ScrapValueClientRpc(int newValue)
-        {
-            SetScrapValue(newValue);
-        }
-        [ClientRpc]
-        public void SetIntensityClientRpc(float intensity)
+        private void SetIntensity(float intensity, bool networked = true)
         {
             intensityValue = intensity;
             targetLiquidLevel = intensityValue;
-            ParticleSystem.Burst burst = dripParticles.emission.GetBurst(0);
-            burst.probability = Mathf.Max(0.2f, Mathf.Min(0.8f, targetLiquidLevel));
-            dripParticles.emission.SetBurst(0, burst);
+            SelectParticles particle = Particles["Drip"];
+            BurstIntermediary burst = particle.bursts[burstIndex];
+            burst.probability = Mathf.Clamp(targetLiquidLevel, burstMinMax.x, burstMinMax.y);
+            particle.SetBurst(burstIndex, burst);
+            particle.AllApplyEmission();
+            if (!networked)
+            {
+                return;
+            }
+            SetIntensityRpc(intensity);
         }
-        [ServerRpc(RequireOwnership = false)]
-        public void SetMagnitudeServerRpc(float magnitude)
+        [Rpc(SendTo.NotMe)]
+        private void SetIntensityRpc(float intensity)
         {
-            SetMagnitudeClientRpc(magnitude);
+            SetIntensity(intensity, false);
         }
-        [ClientRpc]
-        public void SetMagnitudeClientRpc(float magnitude)
+        private void SetSlosh(float magnitude, int sensitivity, bool networked = true)
         {
-            playerMovementMag = magnitude;
+            movementMag = magnitude;
+            this.sensitivity = sensitivity;
+            if (!networked)
+            {
+                return;
+            }
+            SetSloshRpc(magnitude, sensitivity);
         }
-        [ServerRpc(RequireOwnership = false)]
-        public void SetSensitivityServerRpc(int sensitivity)
+        [Rpc(SendTo.NotMe)]
+        private void SetSloshRpc(float magnitude, int sensitivity)
         {
-            SetSensitivityClientRpc(sensitivity);
-        }
-        [ClientRpc]
-        public void SetSensitivityClientRpc(int sensitivity)
-        {
-            playerSensitivity = sensitivity;
+            SetSlosh(magnitude, sensitivity, false);
         }
     }
 }

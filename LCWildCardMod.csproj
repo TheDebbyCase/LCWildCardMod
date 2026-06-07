@@ -24,7 +24,7 @@
 	<ItemGroup>
 		<PackageReference Include="Evaisa.LethalLib" Version="1.2.0" Publicize="true" />
 		<PackageReference Include="Facepunch.Steamworks" Version="2.3.3" />
-		<PackageReference Include="LethalCompany.GameLibs.Steam" Version="81.0.0-ngd.0" />
+		<PackageReference Include="LethalCompany.GameLibs.Steam" Version="81.0.5-ngd.0" />
 		<PackageReference Include="Rune580.Mods.LethalCompany.InputUtils" Version="0.7.13" Publicize="true" />
 		<PackageReference Include="BepInEx.AssemblyPublicizer.MSBuild" Version="0.4.3">
 			<PrivateAssets>all</PrivateAssets>
@@ -35,6 +35,6 @@
 		<Exec Command="dotnet netcode-patch -uv 2022.3.62 -nv 1.12.2 &quot;$(TargetPath)&quot; @(ReferencePathWithRefAssemblies->'&quot;%(Identity)&quot;', ' ')" />
 	</Target>
 	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
-		<Exec Command="call MoveDLL.bat" WorkingDirectory="$(OutDir)"/>
+		<Exec Command="call MoveDLL.bat" WorkingDirectory="$(OutDir)" />
 	</Target>
 </Project>

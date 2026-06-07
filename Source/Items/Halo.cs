@@ -1,447 +1,256 @@
 ﻿using GameNetcodeStuff;
+using LCWildCardMod.Utils;
+using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using Unity.Netcode;
-using Unity.Netcode.Components;
 using UnityEngine;
-using UnityEngine.InputSystem;
 namespace LCWildCardMod.Items
 {
-    public class SmithHalo : PhysicsProp
+    public class SmithHalo : WildCardThrowable, ILifeSaver
     {
-        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        internal static List<SmithHalo> allSpawnedHalos = new List<SmithHalo>();
-        public ParticleSystem[] dripParticles;
-        public ParticleSystem spinParticle;
-        public AudioSource spawnMusic;
-        public AudioSource throwAudio;
-        public AudioClip[] throwClips;
-        public AudioClip breakSound;
-        public float minPitch;
-        public float maxPitch;
-        public NetworkAnimator itemAnimator;
-        public AnimationCurve throwCurve;
-        public Component parentComponent;
-        internal PlayerControllerB savedPlayer;
-        internal int isExhausted = 0;
-        internal bool exhausting = false;
-        internal bool isThrowing = false;
-        internal float throwTime = 0;
-        internal Vector3 handPosition;
-        internal Vector3 targetPosition;
-        internal Coroutine exhaustCoroutine;
-        internal List<IHittable> hitList = new List<IHittable>();
-        internal bool resetList = false;
-        System.Random random;
+        int ILifeSaver.Priority => 0;
+        [Space(3f)]
+        [Header("SmithHalo")]
+        [Space(3f)]
+        [SerializeField]
+        private int playerDamage = 10;
+        [SerializeField]
+        private int hitAmount = 1;
+        [SerializeField]
+        private float forceMultiplier = 2f;
+        [SerializeField]
+        private float saveForceMultiplier = 0.5f;
+        [SerializeField]
+        private float exhaustColourMultiplier = 0.1f;
+        [SerializeField]
+        private float uiRegenTime = 1f;
+        private PlayerControllerB savedPlayer = default;
+        private bool exhausted = false;
+        private bool exhausting = false;
+        private readonly HashSet<IHittable> hitList = new HashSet<IHittable>();
+        private bool resetList = false;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            allSpawnedHalos.Add(this);
-            random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-            WildCardMod.Instance.KeyBinds.WildCardButton.performed += ThrowButton;
-            spinParticle.gameObject.SetActive(false);
-            if (!IsServer)
+            ILifeSaver.Register(this);
+            Particles["Spin"].StopAll(true, false);
+            if (!exhausted && !exhausting)
             {
+                Particles["Drip"].PlayAll(networked: false);
                 return;
             }
-            BeginMusicClientRpc(isExhausted);
+            MeshRenderers["Main"].SetColours(exhaustColourMultiplier);
+            exhausted = true;
+            exhausting = false;
         }
         public override void OnNetworkDespawn()
         {
             base.OnNetworkDespawn();
-            allSpawnedHalos.Remove(this);
-            WildCardMod.Instance.KeyBinds.WildCardButton.performed -= ThrowButton;
-            if (exhausting && savedPlayer == GameNetworkManager.Instance.localPlayerController)
+            ILifeSaver.Unregister(this);
+            if (!exhausting || !savedPlayer.IsLocal())
             {
-                HUDManager.Instance.UpdateHealthUI(savedPlayer.health, false);
+                return;
             }
+            HUDManager.Instance.UpdateHealthUI(savedPlayer.health, false);
         }
-        internal void BeginMusic()
+        internal override void WildCardUse()
         {
-            if (isExhausted == 1 || exhausting)
+            if (exhausted || exhausting)
             {
-                GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
-                spinParticle.gameObject.SetActive(false);
-                StopDrip();
                 return;
             }
-            StartDrip();
-            if (!hasBeenHeld)
-            {
-                spawnMusic.Play();
-            }
+            base.WildCardUse();
         }
-        internal void ThrowButton(InputAction.CallbackContext throwContext)
+        internal override void ThrowUpdate()
         {
-            if (playerHeldBy == null)
+            base.ThrowUpdate();
+            if (!IsOwner || (!isHeld && !isHeldByEnemy))
             {
                 return;
             }
-            if (!IsOwner || playerHeldBy.currentlyHeldObjectServer != this || isExhausted == 1 || isThrowing || exhausting)
+            RaycastHit[] objectsHit = Physics.SphereCastAll(transformToThrow.position, 0.5f, Vector3.one, 0f, 1084754248, QueryTriggerInteraction.Collide);
+            Vector3 hitDirection = (targetPosition - transformToThrow.position).normalized;
+            if (throwTime >= 0.5f)
             {
-                return;
-            }
-            if (throwAudio != null && throwClips.Length > 0)
-            {
-                float pitch = (float)random.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
-                int selectedClip = random.Next(0, throwClips.Length);
-                ThrowAudioServerRpc(pitch, selectedClip);
-            }
-            ThrowServerRpc();
-        }
-        public override void Update()
-        {
-            base.Update();
-            if (!IsOwner)
-            {
-                return;
-            }
-            if (!isThrowing)
-            {
-                parentComponent.transform.localPosition = Vector3.zero;
-                return;
-            }
-            if (playerHeldBy == null)
-            {
-                ThrowCurveServerRpc(parentComponent.transform.position);
-                ThrowEndServerRpc();
-                return;
-            }
-            ThrowCurve();
-            if (throwTime >= 1)
-            {
-                ThrowCurveServerRpc(parentComponent.transform.position);
-                ThrowEndServerRpc();
-                return;
-            }
-            RaycastHit[] objectsHit = Physics.SphereCastAll(parentComponent.transform.position, 0.5f, playerHeldBy.gameplayCamera.transform.forward, 0f, 1084754248, QueryTriggerInteraction.Collide);
-            if (throwTime >= 0.5f && !resetList)
-            {
-                IEnumerable<IHittable> hittables = objectsHit.Select((x) => x.transform.GetComponent<IHittable>());
-                for (int i = 0; i < hitList.Count; i++)
+                hitDirection *= -1f;
+                if (!resetList)
                 {
-                    if (hittables.Contains(hitList[i]))
+                    hitList.Clear();
+                    if (isHeld)
                     {
-                        continue;
+                        hitList.Add(LastPlayerHeldBy);
                     }
-                    hitList.RemoveAt(i);
-                    i--;
+                    else
+                    {
+                        hitList.Add(LastEnemyHeldBy.GetComponentInChildren<EnemyAICollisionDetect>());
+                    }
+                    resetList = true;
                 }
-                resetList = true;
             }
             for (int i = 0; i < objectsHit.Length; i++)
             {
                 RaycastHit hit = objectsHit[i];
-                if (!hit.transform.TryGetComponent(out IHittable hitComponent))
+                if (!hit.transform.TryGetComponent(out IHittable hitComponent) || !hitList.Add(hitComponent))
                 {
                     continue;
                 }
-                if (hitList.Contains(hitComponent) || playerHeldBy.transform == hit.transform)
+                PlayerControllerB playerHitBy = null;
+                if (isHeld)
                 {
-                    continue;
+                    playerHitBy = LastPlayerHeldBy;
                 }
-                hitList.Add(hitComponent);
-                if (hit.transform.TryGetComponent(out PlayerControllerB player))
-                {
-                    player.DamagePlayerFromOtherClientServerRpc(10, playerHeldBy.gameplayCamera.transform.forward, (int)playerHeldBy.playerClientId);
-                    Log.LogDebug($"Halo Hit {player.playerUsername}");
-                }
-                else
-                {
-                    hitComponent.Hit(1, playerHeldBy.gameplayCamera.transform.forward, playerHeldBy, true, 1);
-                    EnemyAICollisionDetect enemy = hitComponent as EnemyAICollisionDetect;
-                    if (enemy != null)
-                    {
-                        Log.LogDebug($"Halo Hit {enemy.mainScript.enemyType.enemyName}");
-                    }
-                    else
-                    {
-                        Log.LogDebug($"Halo Hit {hitComponent.GetType()}");
-                    }
-                }
+                Base.HitOrDamage(hitComponent, playerDamage, hitAmount, hitDirection, playerHitBy, true, 1, CauseOfDeath.Bludgeoning, forceMultiplier);
             }
-        }
-        internal void ThrowCurve()
-        {
-            handPosition = transform.position;
-            parentComponent.transform.position = Vector3.Lerp(handPosition, targetPosition, throwCurve.Evaluate(throwTime));
-            throwTime += Mathf.Abs(Time.deltaTime * 0.75f);
-            ThrowCurveServerRpc(parentComponent.transform.position);
         }
         public override void EquipItem()
         {
             base.EquipItem();
-            parentComponent.transform.localPosition = Vector3.zero;
-            transform.localPosition = itemProperties.positionOffset;
-            StartDrip();
-            spawnMusic.Stop();
-            if (!IsServer)
+            if (exhausted || exhausting)
             {
                 return;
             }
-            itemAnimator.Animator.SetBool("BeingHeld", true);
+            Particles["Drip"].PlayAll(networked: false);
         }
-        internal void Throw()
+        internal override void Throw(Vector3 newPosition, bool byEnemy, bool networked = true)
         {
-            Log.LogDebug("Halo Throw Begun");
-            throwTime = 0;
-            isThrowing = true;
-            playerHeldBy.throwingObject = true;
-            if (IsServer)
-            {
-                itemAnimator.Animator.SetBool("BeingThrown", true);
-            }
-            if (!IsOwner)
-            {
-                return;
-            }
+            base.Throw(newPosition, byEnemy, networked);
             hitList.Clear();
-            Ray ray = new Ray(playerHeldBy.gameplayCamera.transform.position, playerHeldBy.gameplayCamera.transform.forward);
-            targetPosition = ray.GetPoint(10f);
-            if (Physics.Raycast(ray, out RaycastHit hit, 10f, StartOfRound.Instance.collidersAndRoomMaskAndDefault, QueryTriggerInteraction.Ignore))
+            if (isHeld)
             {
-                targetPosition = ray.GetPoint(hit.distance - 0.05f);
+                hitList.Add(LastPlayerHeldBy);
             }
-            SyncThrowDestinationServerRpc(targetPosition);
-            StopDripServerRpc();
+            else
+            {
+                hitList.Add(LastEnemyHeldBy.GetComponentInChildren<EnemyAICollisionDetect>());
+            }
+            Particles["Drip"].StopAll(true, false);
+            Particles["Spin"].PlayAll(networked: false);
         }
-        internal void ThrowEnd()
+        internal override void ThrowEnd(bool networked = true)
         {
-            if (IsServer)
-            {
-                itemAnimator.Animator.SetBool("BeingThrown", false);
-            }
-            parentComponent.transform.localPosition = Vector3.zero;
-            transform.localPosition = itemProperties.positionOffset;
-            if (playerHeldBy != null)
-            {
-                playerHeldBy.throwingObject = false;
-            }
-            StartCoroutine(NextFrameAllowThrowCoroutine());
+            base.ThrowEnd(networked);
             hitList.Clear();
             resetList = false;
-            throwAudio.Stop();
-            StartDrip();
-            Log.LogDebug("Halo Throw Ended");
-        }
-        internal IEnumerator NextFrameAllowThrowCoroutine()
-        {
-            yield return new WaitForFixedUpdate();
-            isThrowing = false;
-        }
-        public override void DiscardItem()
-        {
-            if (IsServer)
+            Particles["Spin"].StopAll(true, false);
+            if (exhausted || exhausting)
             {
-                itemAnimator.Animator.SetBool("BeingHeld", false);
+                return;
             }
-            if (IsOwner && (isThrowing || playerHeldBy.throwingObject))
-            {
-                ThrowCurveServerRpc(parentComponent.transform.position);
-                ThrowEndServerRpc();
-            }
-            base.DiscardItem();
+            Particles["Drip"].PlayAll(networked: false);
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            if (isExhausted == 1 || exhausting || !IsOwner)
+            if (exhausted || exhausting)
             {
                 return;
             }
-            StopDripServerRpc();
+            Particles["Drip"].StopAll(false, false);
         }
-        internal IEnumerator ExhaustCoroutine()
+        private IEnumerator ExhaustCoroutine()
         {
             exhausting = true;
-            AudioSource audio = GetComponent<AudioSource>();
-            audio.clip = breakSound;
-            audio.Play();
-            GetComponentInChildren<MeshRenderer>().material.color = new Color(0.1f, 0.1f, 0.1f);
-            if (savedPlayer == GameNetworkManager.Instance.localPlayerController)
+            MeshRenderers["Main"].SetColours(exhaustColourMultiplier);
+            ThrowEnd(false);
+            Particles["Drip"].StopAll(false, false);
+            if (!savedPlayer.IsLocal())
             {
-                ThrowEndServerRpc();
-                StopDripServerRpc();
+                yield break;
             }
+            Audio["Break"].PlayRandomClip();
             yield return null;
-            if (savedPlayer == GameNetworkManager.Instance.localPlayerController && !HUDManager.Instance.playerIsCriticallyInjured)
+            if (!HUDManager.Instance.playerIsCriticallyInjured)
             {
                 HUDManager.Instance.ShakeCamera(ScreenShakeType.Big);
                 HUDManager.Instance.UpdateHealthUI(1);
             }
-            yield return new WaitForSeconds(2f);
+            yield return new WaitForSeconds(uiRegenTime * 2f);
             Log.LogDebug("Halo Fully Exhausted");
-            if (savedPlayer == GameNetworkManager.Instance.localPlayerController)
+            float interval = uiRegenTime * 0.1f;
+            for (int i = 2; i <= 10; i++)
             {
-                for (int i = 2; i <= 10; i++)
+                if (!savedPlayer.isPlayerControlled || savedPlayer.health != 100)
                 {
-                    if (savedPlayer.isPlayerDead || savedPlayer.health < 100)
-                    {
-                        break;
-                    }
-                    yield return new WaitForSeconds(0.1f);
-                    HUDManager.Instance.UpdateHealthUI(i * 10, false);
+                    break;
                 }
-                EndExhaustServerRpc();
+                yield return new WaitForSeconds(interval);
+                HUDManager.Instance.UpdateHealthUI(i * 10, false);
             }
+            EndExhaust();
         }
-        internal void StartDrip()
+        public override int GetItemDataToSave()
         {
-            spinParticle.gameObject.SetActive(false);
-            if (isExhausted == 1 || exhausting)
+            return Convert.ToInt32(exhausted);
+        }
+        public override void LoadItemSaveData(int saveData)
+        {
+            exhausted = Convert.ToBoolean(saveData);
+        }
+        private void ExhaustHalo(int id, bool networked = true)
+        {
+            savedPlayer = StartOfRound.Instance.allPlayerScripts[id];
+            StartCoroutine(ExhaustCoroutine());
+            if (!networked)
             {
                 return;
             }
-            for (int i = 0; i < dripParticles.Length; i++)
-            {
-                ParticleSystem particle = dripParticles[i];
-                particle.gameObject.SetActive(true);
-                particle.Play();
-            }
+            ExhaustHaloRpc(id);
         }
-        internal void StopDrip()
+        [Rpc(SendTo.NotMe)]
+        private void ExhaustHaloRpc(int id)
         {
-            for (int i = 0; i < dripParticles.Length; i++)
-            {
-                dripParticles[i].gameObject.SetActive(false);
-            }
-            if (isExhausted == 1 || exhausting || !isThrowing)
+            ExhaustHalo(id, false);
+        }
+        private void EndExhaust(bool networked = true)
+        {
+            exhausted = true;
+            exhausting = false;
+            if (!networked)
             {
                 return;
             }
-            spinParticle.gameObject.SetActive(true);
-            spinParticle.Play();
+            EndExhaustRpc();
         }
-        internal void ExhaustLocal(PlayerControllerB player, Vector3 hitVelocity = default)
+        [Rpc(SendTo.NotMe)]
+        private void EndExhaustRpc()
         {
-            if (player != GameNetworkManager.Instance.localPlayerController)
+            EndExhaust(false);
+        }
+        bool ILifeSaver.UntargetableWhen(PlayerControllerB player)
+        {
+            return exhausting && savedPlayer == player;
+        }
+        bool ILifeSaver.TriggerWhen(PlayerControllerB player, CauseOfDeath cause)
+        {
+            return !exhausted && !exhausting && isHeld && !isPocketed && LastPlayerHeldBy == player;
+        }
+        bool ILifeSaver.CanSave(PlayerControllerB player, CauseOfDeath cause)
+        {
+            return (!exhausted && isHeld && !isPocketed && LastPlayerHeldBy == player) || (exhausting && savedPlayer == player);
+        }
+        void ILifeSaver.Save(PlayerControllerB player, CauseOfDeath cause, Vector3 hitVelocity, EnemyAI enemy)
+        {
+            if (!player.IsLocal())
             {
                 return;
             }
-            player.externalForceAutoFade += hitVelocity / 2f;
+            player.externalForceAutoFade += hitVelocity * saveForceMultiplier;
             if (exhausting)
             {
                 return;
             }
-            WildCardMod.Instance.Log.LogDebug("Halo exhausting...");
+            Log.LogDebug("Halo exhausting...");
             if (player.criticallyInjured)
             {
                 player.MakeCriticallyInjured(false);
             }
             player.health = 100;
-            ExhaustHaloServerRpc((int)player.playerClientId);
+            ExhaustHalo((int)player.playerClientId);
         }
-        public override int GetItemDataToSave()
+        bool ILifeSaver.GraceWhen(PlayerControllerB player, CauseOfDeath cause)
         {
-            return isExhausted;
-        }
-        public override void LoadItemSaveData(int saveData)
-        {
-            hasBeenHeld = true;
-            isExhausted = saveData;
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void BeginMusicServerRpc()
-        {
-            BeginMusicClientRpc(isExhausted);
-        }
-        [ClientRpc]
-        public void BeginMusicClientRpc(int id)
-        {
-            isExhausted = id;
-            BeginMusic();
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void ThrowAudioServerRpc(float pitch, int selectedClip)
-        {
-            ThrowAudioClientRpc(pitch, selectedClip);
-        }
-        [ClientRpc]
-        public void ThrowAudioClientRpc(float pitch, int selectedClip)
-        {
-            throwAudio.pitch = pitch;
-            throwAudio.clip = throwClips[selectedClip];
-            throwAudio.Play();
-            WalkieTalkie.TransmitOneShotAudio(throwAudio, throwAudio.clip);
-            RoundManager.Instance.PlayAudibleNoise(transform.position, 25f, 0.75f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
-            playerHeldBy.timeSinceMakingLoudNoise = 0f;
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void ThrowEndServerRpc()
-        {
-            ThrowEndClientRpc();
-        }
-        [ClientRpc]
-        public void ThrowEndClientRpc()
-        {
-            if (isThrowing || (playerHeldBy != null && playerHeldBy.throwingObject))
-            {
-                ThrowEnd();
-            }
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void ThrowCurveServerRpc(Vector3 position)
-        {
-            ThrowCurveClientRpc(position);
-        }
-        [ClientRpc]
-        public void ThrowCurveClientRpc(Vector3 position)
-        {
-            parentComponent.transform.position = position;
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void ThrowServerRpc()
-        {
-            ThrowClientRpc();
-        }
-        [ClientRpc]
-        public void ThrowClientRpc()
-        {
-            Throw();
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void SyncThrowDestinationServerRpc(Vector3 target)
-        {
-            SyncThrowDestinationClientRpc(target);
-        }
-        [ClientRpc]
-        public void SyncThrowDestinationClientRpc(Vector3 target)
-        {
-            targetPosition = target;
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void ExhaustHaloServerRpc(int id)
-        {
-            ExhaustHaloClientRpc(id);
-        }
-        [ClientRpc]
-        public void ExhaustHaloClientRpc(int id)
-        {
-            savedPlayer = StartOfRound.Instance.allPlayerScripts[id];
-            exhaustCoroutine = StartCoroutine(ExhaustCoroutine());
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void StopDripServerRpc()
-        {
-            StopDripClientRpc();
-        }
-        [ClientRpc]
-        public void StopDripClientRpc()
-        {
-            StopDrip();
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void EndExhaustServerRpc()
-        {
-            EndExhaustClientRpc();
-        }
-        [ClientRpc]
-        public void EndExhaustClientRpc()
-        {
-            isExhausted = 1;
-            exhausting = false;
-            exhaustCoroutine = null;
+            return exhausting && savedPlayer == player;
         }
     }
 }

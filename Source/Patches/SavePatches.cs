@@ -1,6 +1,6 @@
-﻿using GameNetcodeStuff;
+﻿using static LCWildCardMod.Utils.HarmonyHelper;
+using GameNetcodeStuff;
 using HarmonyLib;
-using LCWildCardMod.Items;
 using LCWildCardMod.Utils;
 using System;
 using System.Collections.Generic;
@@ -8,14 +8,12 @@ using System.Linq;
 using System.Reflection;
 using System.Reflection.Emit;
 using UnityEngine;
-using static LCWildCardMod.Utils.HarmonyHelper;
 namespace LCWildCardMod.Patches
 {
-    public static class EnemyAIFyrusOrHaloGraceSavePatch
+    internal static class EnemyAIGraceSavePatch
     {
-        static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyTargetMethods]
-        public static IEnumerable<MethodBase> GetEachEnemyPlayerCollision()
+        internal static IEnumerable<MethodBase> GetEachEnemyPlayerCollision()
         {
             Assembly assembly = Assembly.GetAssembly(typeof(EnemyAI));
             Type[] types = assembly.GetTypes();
@@ -26,14 +24,13 @@ namespace LCWildCardMod.Patches
         }
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> FyrusOrHaloGraceSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
+        internal static IEnumerable<CodeInstruction> GraceSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             bool foundDamage = false;
             int collisionIndex = -1;
             int damageParams = damagePlayer.GetParameters().Length;
             CodeInstruction loadPlayerLocal = null;
-            Log.LogDebug($"Patching {original.DeclaringType}.{original.Name}");
             for (int i = 0; i < codes.Count; i++)
             {
                 if (loadPlayerLocal == null && codes[i].Calls(collision) && codes[i + 1].IsStloc())
@@ -63,11 +60,16 @@ namespace LCWildCardMod.Patches
                 Label destination = generator.DefineLabel();
                 CodeInstruction newLoadPlayerLocal = new CodeInstruction(loadPlayerLocal);
                 codes[loadPlayer].MoveLabelsTo(newLoadPlayerLocal);
+                LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                 List<CodeInstruction> newCode = new List<CodeInstruction>
                 {
                     newLoadPlayerLocal,
+                    new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Unknown),
+                    new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                    new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                    new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
                     new CodeInstruction(OpCodes.Ldarg_S, 0),
-                    new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved),
+                    new CodeInstruction(OpCodes.Call, savePlayerGrace),
                     new CodeInstruction(OpCodes.Brtrue_S, destination)
                 };
                 codes[i + 1].labels.Add(destination);
@@ -118,10 +120,15 @@ namespace LCWildCardMod.Patches
             }
             if (!foundDamage)
             {
+                LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                 Label newLabel = generator.DefineLabel();
                 finalCode.Add(loadPlayerLocal);
+                finalCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Unknown));
+                finalCode.Add(new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex));
+                finalCode.Add(new CodeInstruction(OpCodes.Initobj, typeof(Vector3)));
+                finalCode.Add(new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex));
                 finalCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
-                finalCode.Add(new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved));
+                finalCode.Add(new CodeInstruction(OpCodes.Call, savePlayerGrace));
                 finalCode.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
                 finalCode.Add(new CodeInstruction(OpCodes.Ret));
                 if (inverseNullCheckIndex != -1 && finalCode.Count > 0)
@@ -135,13 +142,12 @@ namespace LCWildCardMod.Patches
             return codes;
         }
     }
-    public static class SavePatches
+    internal static class SavePatches
     {
-        static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         [HarmonyPatch(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.CurePlayer))]
         [HarmonyWrapSafe]
         [HarmonyPrefix]
-        public static bool CadaverGrowthAI_CureMore(CadaverGrowthAI __instance)
+        internal static bool CadaverGrowthAI_CureMore(CadaverGrowthAI __instance)
         {
             if (__instance.playerInfections[(int)GameNetworkManager.Instance.localPlayerController.playerClientId].infected)
             {
@@ -155,61 +161,43 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(DepositItemsDesk), nameof(DepositItemsDesk.CollisionDetect))]
         [HarmonyWrapSafe]
         [HarmonyPrefix]
-        public static bool DepositItemsDesk_Save()
+        internal static bool DepositItemsDesk_Save(DepositItemsDesk __instance)
         {
-            return !SaveHelper.SaveIfAny(GameNetworkManager.Instance.localPlayerController);
+            if (!__instance.attacking)
+            {
+                return true;
+            }
+            return !ILifeSaver.TrySave(GameNetworkManager.Instance.localPlayerController);
         }
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyWrapSafe]
         [HarmonyPrefix]
-        public static bool PlayerControllerB_FyrusSaveDamage(PlayerControllerB __instance, ref Vector3 force)
+        internal static bool PlayerControllerB_SaveDamage(PlayerControllerB __instance, ref CauseOfDeath causeOfDeath, ref Vector3 force)
         {
-            bool saved = SaveHelper.SaveIfFyrus(__instance);
-            if (saved)
-            {
-                __instance.externalForceAutoFade += force;
-            }
-            return !saved;
+            return !ILifeSaver.TrySaveGraceOnly(__instance, causeOfDeath, force);
         }
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.KillPlayer))]
         [HarmonyWrapSafe]
         [HarmonyPrefix]
-        public static bool PlayerControllerB_SaveKill(PlayerControllerB __instance, ref Vector3 bodyVelocity, ref bool spawnBody, ref CauseOfDeath causeOfDeath)
+        internal static bool PlayerControllerB_SaveKill(PlayerControllerB __instance, ref Vector3 bodyVelocity, ref bool spawnBody, ref CauseOfDeath causeOfDeath)
         {
-            if (!SaveHelper.IsSaveable(__instance, out bool starSave, out SmithHalo haloRef) || causeOfDeath == CauseOfDeath.Unknown || !spawnBody)
+            if (causeOfDeath == (int)CauseOfDeath.Unknown || !spawnBody || !ILifeSaver.TrySave(__instance, causeOfDeath, bodyVelocity))
             {
                 return true;
-            }
-            if (starSave)
-            {
-                __instance.externalForceAutoFade += bodyVelocity;
-            }
-            else
-            {
-                Log.LogDebug("Running Halo Exhaust from Kill");
-                haloRef.ExhaustLocal(__instance, bodyVelocity);
             }
             return false;
         }
         [HarmonyPatch(typeof(SandWormAI), nameof(SandWormAI.EatPlayer))]
         [HarmonyWrapSafe]
         [HarmonyPrefix]
-        public static bool SandWormAI_Save(SandWormAI __instance, ref PlayerControllerB playerScript)
+        internal static bool SandWormAI_Save(SandWormAI __instance, ref PlayerControllerB playerScript)
         {
-            try
-            {
-                return !SaveHelper.SaveIfAny(playerScript, __instance);
-            }
-            catch (Exception exception)
-            {
-                Log.LogError(exception);
-            }
-            return true;
+            return !ILifeSaver.TrySave(playerScript, hitVelocity: Vector3.up * 10f, enemy: __instance);
         }
         [HarmonyPatch(typeof(BushWolfEnemy), nameof(BushWolfEnemy.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> BushWolfEnemy_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> BushWolfEnemy_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -283,12 +271,17 @@ namespace LCWildCardMod.Patches
                         {
                             continue;
                         }
+                        LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                         Label notSavedLabel = generator.DefineLabel();
                         List<CodeInstruction> newCode = new List<CodeInstruction>
                         {
                             new CodeInstruction(OpCodes.Ldloc_S, playerLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Mauling),
+                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
-                            new CodeInstruction(OpCodes.Call, anySave),
+                            new CodeInstruction(OpCodes.Call, savePlayer),
                             new CodeInstruction(OpCodes.Brfalse_S, notSavedLabel),
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
                             new CodeInstruction(OpCodes.Call, foxCancelReel),
@@ -311,7 +304,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.BurstFromPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> CadaverGrowthAI_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> CadaverGrowthAI_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -326,13 +319,18 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     Label resumeBurstLabel = generator.DefineLabel();
                     Label skipBurstLabel = generator.DefineLabel();
                     List<CodeInstruction> newCode = new List<CodeInstruction>
                     {
                         new CodeInstruction(OpCodes.Ldarg_S, 1),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Suffocation),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
                         new CodeInstruction(OpCodes.Ldnull),
-                        new CodeInstruction(OpCodes.Call, anySave),
+                        new CodeInstruction(OpCodes.Call, savePlayer),
                         new CodeInstruction(OpCodes.Brfalse_S, resumeBurstLabel),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Ldarg_S, 1),
@@ -358,7 +356,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(CaveDwellerAI), nameof(CaveDwellerAI.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> CaveDwellerAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
+        internal static IEnumerable<CodeInstruction> CaveDwellerAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = codes.Count - 1; i >= 0; i--)
@@ -384,10 +382,16 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     List<CodeInstruction> newCode = new List<CodeInstruction>
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, 0),
-                        new CodeInstruction(OpCodes.Call, haloSave),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Mauling),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldarg_S, 0),
+                        new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Brtrue_S, newLabel.Value)
                     };
                     codes.InsertRange(i + 1, newCode);
@@ -400,7 +404,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(CentipedeAI), nameof(CentipedeAI.DamagePlayerOnIntervals))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> CentipedeAI_FyrusSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> CentipedeAI_GraceSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = codes.Count - 1; i >= 0; i--)
@@ -418,12 +422,17 @@ namespace LCWildCardMod.Patches
                     Label destination = generator.DefineLabel();
                     CodeInstruction first = new CodeInstruction(OpCodes.Ldarg_S, 0);
                     codes[j].MoveLabelsTo(first);
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     List<CodeInstruction> newCode = new List<CodeInstruction>
                     {
                         first,
                         new CodeInstruction(OpCodes.Ldfld, clingPlayer),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Suffocation),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved),
+                        new CodeInstruction(OpCodes.Call, savePlayerGrace),
                         new CodeInstruction(OpCodes.Brtrue_S, destination)
                     };
                     codes[i + 1].labels.Add(destination);
@@ -437,7 +446,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(DressGirlAI), nameof(DressGirlAI.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> DressGirlAI_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> DressGirlAI_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = codes.Count - 1; i >= 0; i--)
@@ -453,12 +462,17 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     newLabel = generator.DefineLabel();
                     List<CodeInstruction> preCode = new List<CodeInstruction>
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, 0),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Unknown),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
-                        new CodeInstruction(OpCodes.Call, anySave),
+                        new CodeInstruction(OpCodes.Call, savePlayer),
                         new CodeInstruction(OpCodes.Brtrue_S, newLabel.Value)
                     };
                     codes.InsertRange(j + 1, preCode);
@@ -491,7 +505,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(DressGirlAI), nameof(DressGirlAI.Update))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> DressGirlAI_Switch(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> DressGirlAI_Switch(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -524,12 +538,17 @@ namespace LCWildCardMod.Patches
                             break;
                         }
                         codes[k + 1].labels.Add(controlledLabel.Value);
+                        LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                         List<CodeInstruction> newCode = new List<CodeInstruction>
                         {
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
                             new CodeInstruction(OpCodes.Ldfld, hauntingPlayer),
+                            new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Unknown),
+                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
-                            new CodeInstruction(OpCodes.Call, wasFyrusOrHaloGraceSaved),
+                            new CodeInstruction(OpCodes.Call, savePlayerGrace),
                             new CodeInstruction(OpCodes.Brfalse_S, newLabel)
                         };
                         codes.InsertRange(k + 1, newCode);
@@ -544,7 +563,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(FlowermanAI), nameof(FlowermanAI.killAnimation), MethodType.Enumerator)]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> FlowermanAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
+        internal static IEnumerable<CodeInstruction> FlowermanAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = codes.Count - 1; i >= 0; i--)
@@ -569,11 +588,17 @@ namespace LCWildCardMod.Patches
                         codes[k].labels.Add(newLabel);
                         break;
                     }
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     List<CodeInstruction> newCode = new List<CodeInstruction>
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, 1),
                         new CodeInstruction(OpCodes.Ldfld, specialAnim),
-                        new CodeInstruction(OpCodes.Call, haloSave),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Strangulation),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, 1),
+                        new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Brtrue_S, newLabel)
                     };
                     codes.InsertRange(j + 1, newCode);
@@ -586,7 +611,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(ForestGiantAI), nameof(ForestGiantAI.EatPlayerAnimation), MethodType.Enumerator)]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> ForestGiantAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
+        internal static IEnumerable<CodeInstruction> ForestGiantAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             FieldInfo playerEaten = original.DeclaringType.GetField("playerBeingEaten");
@@ -602,12 +627,18 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     Label newLabel = generator.DefineLabel();
                     List<CodeInstruction> newCodes = new List<CodeInstruction>
                     {
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Ldfld, playerEaten),
-                        new CodeInstruction(OpCodes.Call, haloSave),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Crushing),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, 1),
+                        new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Brfalse_S, newLabel),
                         new CodeInstruction(OpCodes.Ldloc_S, 1),
                         new CodeInstruction(OpCodes.Call, giantStopKill),
@@ -636,7 +667,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(HauntedMaskItem), nameof(HauntedMaskItem.FinishAttaching))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> HauntedMaskItem_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> HauntedMaskItem_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -668,12 +699,17 @@ namespace LCWildCardMod.Patches
                     {
                         return codes;
                     }
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     List<CodeInstruction> newCodes = new List<CodeInstruction>
                     {
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Ldfld, maskHeldBy),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Suffocation),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
                         new CodeInstruction(OpCodes.Ldnull),
-                        new CodeInstruction(OpCodes.Call, anySave),
+                        new CodeInstruction(OpCodes.Call, savePlayer),
                         new CodeInstruction(OpCodes.Brfalse_S, newLabel.Value)
                     };
                     codes.InsertRange(j + 1, newCodes);
@@ -686,7 +722,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(JesterAI), nameof(JesterAI.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> JesterAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> JesterAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -701,11 +737,17 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     Label newLabel = generator.DefineLabel();
                     List<CodeInstruction> newCode = new List<CodeInstruction>
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, 0),
-                        new CodeInstruction(OpCodes.Call, haloSave),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Mauling),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldarg_S, 0),
+                        new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Brfalse_S, newLabel),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Ldc_I4_S, 0),
@@ -724,7 +766,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(MaskedPlayerEnemy), nameof(MaskedPlayerEnemy.killAnimation), MethodType.Enumerator)]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> MaskedPlayerEnemy_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> MaskedPlayerEnemy_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -750,11 +792,17 @@ namespace LCWildCardMod.Patches
                             continue;
                         }
                         Label newLabel = generator.DefineLabel();
+                        LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                         List<CodeInstruction> newCode = new List<CodeInstruction>
                         {
                             new CodeInstruction(OpCodes.Ldloc_S, 1),
                             new CodeInstruction(OpCodes.Ldfld, specialAnim),
-                            new CodeInstruction(OpCodes.Call, haloSave),
+                            new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Strangulation),
+                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloc_S, 1),
+                            new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                             new CodeInstruction(OpCodes.Brfalse_S, newLabel),
                             new CodeInstruction(OpCodes.Ldloc_S, 1),
                             new CodeInstruction(OpCodes.Callvirt, cancelSpecialAnim),
@@ -774,7 +822,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(MouthDogAI), nameof(MouthDogAI.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> MouthDogAI_HaloSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> MouthDogAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -795,11 +843,17 @@ namespace LCWildCardMod.Patches
                 {
                     return codes;
                 }
+                LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                 Label newLabel = generator.DefineLabel();
                 List<CodeInstruction> newCodes = new List<CodeInstruction>
                 {
                     new CodeInstruction(OpCodes.Ldloc_S, 0),
-                    new CodeInstruction(OpCodes.Call, haloSave),
+                    new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Mauling),
+                    new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                    new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                    new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                    new CodeInstruction(OpCodes.Ldarg_S, 0),
+                    new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                     new CodeInstruction(OpCodes.Brtrue_S, newLabel)
                 };
                 for (int j = i; j < codes.Count; j++)
@@ -818,7 +872,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> PlayerControllerB_HaloSaveDamage(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> PlayerControllerB_TriggerSaveDamage(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             LocalBuilder overkill = null;
@@ -834,7 +888,6 @@ namespace LCWildCardMod.Patches
                 }
                 if (codes[i].Calls(allowDeath))
                 {
-                    Log.LogDebug("Found PlayerControllerB.AllowPlayerDeath, replacing next branch with setting new locals");
                     for (int j = i; j < codes.Count; j++)
                     {
                         if (!codes[j - 1].Branches(out _) || !codes[j].opcode.Equals(OpCodes.Ret))
@@ -850,22 +903,21 @@ namespace LCWildCardMod.Patches
                             overkill = generator.DeclareLocal(typeof(bool));
                             healthOverriden = generator.DeclareLocal(typeof(bool));
                             codes[k] = new CodeInstruction(OpCodes.Cgt);
-                            List<CodeInstruction> setNewLocals = new List<CodeInstruction>();
-                            setNewLocals.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
-                            setNewLocals.Add(new CodeInstruction(OpCodes.Ceq));
-                            setNewLocals.Add(new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex));
-                            setNewLocals.AddRange(DebugLoadFromThis<int>("Starting health", OpCodes.Ldfld, playerHealth));
-                            setNewLocals.AddRange(DebugLoad<int>("Damage", OpCodes.Ldarg_S, 1));
-                            setNewLocals.AddRange(DebugLoad<bool>("Is Overkill?", OpCodes.Ldloc_S, overkill.LocalIndex));
-                            setNewLocals.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
-                            setNewLocals.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
+                            List<CodeInstruction> setNewLocals = new List<CodeInstruction>
+                            {
+                                new CodeInstruction(OpCodes.Ldc_I4_S, 0),
+                                new CodeInstruction(OpCodes.Ceq),
+                                new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex),
+                                new CodeInstruction(OpCodes.Ldc_I4_S, 0),
+                                new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex)
+                            };
                             codes.InsertRange(k + 1, setNewLocals);
                             i = k + setNewLocals.Count + 1;
                             break;
                         }
                         if (overkill == null || !oldLabel1.HasValue)
                         {
-                            Log.LogWarning("Unable to apply transpiler to PlayerControllerB.DamagePlayer! Halo save will not work properly!");
+                            WildCardMod.Instance.Log.LogWarning("Unable to apply transpiler to PlayerControllerB.DamagePlayer! Halo save will not work properly!");
                             return codes;
                         }
                         break;
@@ -881,7 +933,6 @@ namespace LCWildCardMod.Patches
                 }
                 else if (!oldLabel3.HasValue && codes[i].Branches(out oldLabel3))
                 {
-                    Log.LogDebug("Successfully set locals, adding overkill checks");
                     List<CodeInstruction> newBranch = new List<CodeInstruction>
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex),
@@ -889,7 +940,6 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Ldc_I4_S, 1),
                         new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex)
                     };
-                    newBranch.AddRange(DebugLoad<bool>("Vanilla critical injury, setting health override to", OpCodes.Ldloc_S, healthOverriden.LocalIndex));
                     codes.InsertRange(i + 1, newBranch);
                     i += newBranch.Count + 1;
                     Label newLabel = generator.DefineLabel();
@@ -906,26 +956,31 @@ namespace LCWildCardMod.Patches
                         {
                             continue;
                         }
-                        Log.LogDebug("Moving first if statement's branch destinations to the new else if statement");
                         codes[j].MoveLabelsTo(elseIfCode);
                         break;
                     }
-                    List<CodeInstruction> newCode = new List<CodeInstruction>();
-                    newCode.Add(elseIfCode);
-                    newCode.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Call, haloSave));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 0));
-                    newCode.Add(new CodeInstruction(OpCodes.Ceq));
-                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex));
-                    newCode.AddRange(DebugLoad<bool>("Checking for halo, setting Overkill to", OpCodes.Ldloc_S, overkill.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex));
-                    newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, noSaveJump));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, 1));
-                    newCode.Add(new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex));
-                    newCode.AddRange(DebugString("Saved player from death"));
-                    newCode.Add(new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex).WithLabels(newLabel, noSaveJump));
-                    newCode.Add(new CodeInstruction(OpCodes.Brtrue_S, overridenJump));
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
+                    List<CodeInstruction> newCode = new List<CodeInstruction>
+                    {
+                        elseIfCode,
+                        new CodeInstruction(OpCodes.Brfalse_S, newLabel),
+                        new CodeInstruction(OpCodes.Ldarg_S, 0),
+                        new CodeInstruction(OpCodes.Ldarg_S, 4),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldnull),
+                        new CodeInstruction(OpCodes.Call, savePlayerTrigger),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, 0),
+                        new CodeInstruction(OpCodes.Ceq),
+                        new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex),
+                        new CodeInstruction(OpCodes.Brtrue_S, noSaveJump),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, 1),
+                        new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex).WithLabels(newLabel, noSaveJump),
+                        new CodeInstruction(OpCodes.Brtrue_S, overridenJump)
+                    };
                     for (int j = i; j < codes.Count; j++)
                     {
                         if (!codes[j].Calls(mathfClamp3Int))
@@ -938,7 +993,6 @@ namespace LCWildCardMod.Patches
                             {
                                 continue;
                             }
-                            Log.LogDebug("Found health clamp, adding overriden branch after");
                             codes[k + 1].labels.Add(overridenJump);
                             break;
                         }
@@ -976,7 +1030,6 @@ namespace LCWildCardMod.Patches
                 }
                 else if (codes[i].Calls(killPlayer))
                 {
-                    Log.LogDebug("Found PlayerControllerB.KillPlayer, adding overkillJump jump after next branch");
                     for (int j = i; j < codes.Count; j++)
                     {
                         if (!codes[j].Branches(out _))
@@ -989,13 +1042,11 @@ namespace LCWildCardMod.Patches
                             new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex),
                             new CodeInstruction(OpCodes.Brfalse_S, overkillJump)
                         };
-                        newCode.AddRange(DebugString("Critically injuring player"));
                         codes[j + 1].MoveLabelsTo(newCode[0]);
                         for (int k = j; k < codes.Count; k++)
                         {
                             if (codes[k].Calls(makeInjured))
                             {
-                                Log.LogDebug("Found PlayerControllerB.MakeCriticallyInjured, adding overkillJump destination to next branch");
                                 for (int l = k; l < codes.Count; l++)
                                 {
                                     if (codes[l].Branches(out _))
@@ -1015,85 +1066,10 @@ namespace LCWildCardMod.Patches
             }
             return codes;
         }
-        [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.Update))]
-        [HarmonyWrapSafe]
-        [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> PlayerControllerB_HaloSaveSink(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
-        {
-            List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-            for (int i = 0; i < codes.Count; i++)
-            {
-                if (!codes[i].Calls(killPlayer))
-                {
-                    continue;
-                }
-                int preKillIndex = -1;
-                bool checkForPreSink = false;
-                for (int j = i; j > 0; j--)
-                {
-                    if (!codes[j].LoadsField(playerSinking))
-                    {
-                        continue;
-                    }
-                    checkForPreSink = true;
-                    for (int k = j; k < codes.Count; k++)
-                    {
-                        if (!codes[k].Branches(out _))
-                        {
-                            continue;
-                        }
-                        preKillIndex = k;
-                        break;
-                    }
-                    break;
-                }
-                Label? skipLabel = null;
-                Label? skipKillDestinationRef = null;
-                bool checkForPostSink = false;
-                for (int j = i; j < codes.Count; j++)
-                {
-                    if (!checkForPostSink && codes[j].LoadsField(playerSinking))
-                    {
-                        checkForPostSink = true;
-                        continue;
-                    }
-                    if (!skipKillDestinationRef.HasValue)
-                    {
-                        codes[j].Branches(out skipKillDestinationRef);
-                    }
-                    else if (checkForPreSink && checkForPostSink && codes[j].labels.Contains(skipKillDestinationRef.Value))
-                    {
-                        skipLabel = generator.DefineLabel();
-                        codes[j].labels.Add(skipLabel.Value);
-                        break;
-                    }
-                }
-                if (!checkForPreSink || !checkForPostSink)
-                {
-                    continue;
-                }
-                i = preKillIndex;
-                Label killLabel = generator.DefineLabel();
-                List<CodeInstruction> newCode = new List<CodeInstruction>
-                {
-                    new CodeInstruction(OpCodes.Ldarg_S, 0),
-                    new CodeInstruction(OpCodes.Call, haloSave),
-                    new CodeInstruction(OpCodes.Brfalse_S, killLabel),
-                    new CodeInstruction(OpCodes.Ldarg_S, 0),
-                    new CodeInstruction(OpCodes.Ldc_R4, 0f),
-                    new CodeInstruction(OpCodes.Stfld, playerSinking),
-                    new CodeInstruction(OpCodes.Br_S, skipLabel.Value)
-                };
-                codes[i + 1].labels.Add(killLabel);
-                codes.InsertRange(i + 1, newCode);
-                break;
-            }
-            return codes;
-        }
         [HarmonyPatch(typeof(RedLocustBees), nameof(RedLocustBees.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> RedLocustBees_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> RedLocustBees_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             Label? skipKill = null;
@@ -1109,42 +1085,35 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
-                    for (int k = j; k >= 0; k--)
+                    skipKill = generator.DefineLabel();
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
+                    List<CodeInstruction> newCode = new List<CodeInstruction>
                     {
-                        if (!codes[k].Branches(out _))
-                        {
-                            continue;
-                        }
-                        skipKill = generator.DefineLabel();
-                        List<CodeInstruction> newCode = new List<CodeInstruction>
-                        {
-                            new CodeInstruction(OpCodes.Ldloc_S, 0),
-                            new CodeInstruction(OpCodes.Ldarg_S, 0),
-                            new CodeInstruction(OpCodes.Call, anySave),
-                            new CodeInstruction(OpCodes.Brtrue_S, skipKill.Value)
-                        };
-                        codes[j + 1].MoveLabelsTo(newCode[0]);
-                        codes.InsertRange(j + 1, newCode);
-                        break;
-                    }
+                        new CodeInstruction(OpCodes.Ldloc_S, 0),
+                        new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Electrocution),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldarg_S, 0),
+                        new CodeInstruction(OpCodes.Call, savePlayer),
+                        new CodeInstruction(OpCodes.Brtrue_S, skipKill.Value)
+                    };
+                    codes[j + 1].MoveLabelsTo(newCode[0]);
+                    codes.InsertRange(j + 1, newCode);
                     break;
                 }
                 if (!skipKill.HasValue)
                 {
                     return codes;
                 }
-                Label? oldLabel = null;
                 for (int j = i; j < codes.Count; j++)
                 {
-                    if (!oldLabel.HasValue && !codes[j].Branches(out oldLabel))
+                    if (!codes[j].Branches(out Label? labelCheck) || labelCheck.Value == skipKill.Value)
                     {
                         continue;
                     }
-                    if (codes[j].labels.Contains(oldLabel.Value))
-                    {
-                        codes[j].labels.Add(skipKill.Value);
-                        break;
-                    }
+                    codes[j].labels.Add(skipKill.Value);
+                    break;
                 }
                 break;
             }
@@ -1153,7 +1122,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(VehicleController), nameof(VehicleController.DestroyCar))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        public static IEnumerable<CodeInstruction> VehicleController_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> VehicleController_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -1173,9 +1142,14 @@ namespace LCWildCardMod.Patches
                     }
                     preIndex = j + 1;
                     skipKill = generator.DefineLabel();
+                    LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     preCode.Add(new CodeInstruction(OpCodes.Ldloc_S, 0));
+                    preCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Blast));
+                    preCode.Add(new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex));
+                    preCode.Add(new CodeInstruction(OpCodes.Initobj, typeof(Vector3)));
+                    preCode.Add(new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex));
                     preCode.Add(new CodeInstruction(OpCodes.Ldnull));
-                    preCode.Add(new CodeInstruction(OpCodes.Call, anySave));
+                    preCode.Add(new CodeInstruction(OpCodes.Call, savePlayer));
                     preCode.Add(new CodeInstruction(OpCodes.Brtrue_S, skipKill.Value));
                     break;
                 }
@@ -1215,23 +1189,29 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(EnemyAI), nameof(EnemyAI.PlayerIsTargetable))]
         [HarmonyWrapSafe]
         [HarmonyPostfix]
-        public static void EnemyAI_HaloGraceUntargetable(ref PlayerControllerB playerScript, ref bool __result)
+        internal static void EnemyAI_Untargetable(EnemyAI __instance, ref PlayerControllerB playerScript, ref bool __result)
         {
-            if (__result)
+            if (!__result)
             {
-                __result = !SaveHelper.WasHaloSaved(playerScript, out _);
+                return;
             }
+            ILifeSaver lifeSaver = ILifeSaver.HasLifeSaver(playerScript);
+            if (lifeSaver == null)
+            {
+                return;
+            }
+            __result = !lifeSaver.UntargetableWhen(playerScript);
         }
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.CheckConditionsForSinkingInQuicksand))]
         [HarmonyWrapSafe]
         [HarmonyPostfix]
-        public static void PlayerControllerB_FyrusSaveQuicksand(PlayerControllerB __instance, ref bool __result)
+        internal static void PlayerControllerB_GraceSaveQuicksand(PlayerControllerB __instance, ref bool __result)
         {
             if (!__result || __instance.isUnderwater)
             {
                 return;
             }
-            __result = !SaveHelper.SaveIfFyrus(__instance);
+            __result = !(ILifeSaver.TrySaveGraceOnly(__instance, CauseOfDeath.Suffocation) || (__instance.sinkingValue >= 1f && ILifeSaver.TrySaveTriggerOnly(__instance, CauseOfDeath.Suffocation)));
         }
     }
 }

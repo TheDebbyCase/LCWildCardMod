@@ -1,100 +1,76 @@
-﻿using System.Collections;
+﻿using LCWildCardMod.Utils;
 using Unity.Netcode;
-using Unity.Netcode.Components;
 using UnityEngine;
 namespace LCWildCardMod.Items
 {
-    public class Valentine : PhysicsProp
+    public class Valentine : WildCardProp
     {
-        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        public ScanNodeProperties scanNode;
-        public MeshRenderer meshRenderer;
-        public NetworkAnimator itemAnimator;
-        public AudioSource beatAudio;
-        public Material materialRef;
-        public int startingValue = 0;
-        internal float intensityValue;
-        internal Vector3 lastUpdatePosition;
-        internal int standStillAmount = 0;
-        public override void OnNetworkSpawn()
+        [Space(3f)]
+        [Header("Valentine")]
+        [Space(3f)]
+        [SerializeField]
+        private int valueLoss = 5;
+        [SerializeField]
+        private int nearMax = 10;
+        [SerializeField]
+        private float valueMaxMultiplier = 30f;
+        [SerializeField]
+        private float maxEffectIntensity = 0.5f;
+        private int startingValue = 0;
+        private float inverseMaxValue = 0f;
+        public override void Start()
         {
-            base.OnNetworkSpawn();
-            StartCoroutine(StartingValueCoroutine());
-            materialRef = meshRenderer.material;
-            beatAudio.volume /= 2f;
+            base.Start();
+            SetStartingValue();
         }
-        internal IEnumerator StartingValueCoroutine()
+        internal override void OnEnable()
         {
-            if (startingValue != 0)
+            EventsClass.OnRoundStart += SetStartingValue;
+        }
+        internal override void OnDisable()
+        {
+            EventsClass.OnRoundStart -= SetStartingValue;
+        }
+        private void SetStartingValue()
+        {
+            if (startingValue == 0)
             {
-                yield break;
+                startingValue = ScrapValue;
             }
-            yield return new WaitUntil(() => scrapValue > 0);
-            startingValue = scrapValue;
+            inverseMaxValue = 1f / (float)Mathf.Max(1, startingValue * valueMaxMultiplier);
         }
         public override void Update()
         {
             base.Update();
-            if (IsOwner && playerHeldBy != null && !isPocketed && StartOfRound.Instance.currentLevel.planetHasTime && !StartOfRound.Instance.inShipPhase && currentUseCooldown <= 0f && standStillAmount < 11)
+            if (!IsOwner || (!isHeld && !isHeldByEnemy) || isPocketed || !StartOfRound.Instance.currentLevel.planetHasTime || StartOfRound.Instance.inShipPhase || Audio["HeartBeat"]?.TimesNearby >= nearMax || currentUseCooldown > 0f)
             {
-                ScrapValueServerRpc(scanNode.scrapValue + 1);
-                currentUseCooldown = 2.5f;
-                intensityValue = Mathf.Lerp(1f, 100f, ((float)scrapValue - (float)startingValue) / ((float)startingValue * 14f));
-                SetIntensityServerRpc(intensityValue);
+                return;
             }
-            if (materialRef.GetColor("_EmissionColor") != Color.white * intensityValue)
-            {
-                materialRef.SetColor("_EmissionColor", Color.white * intensityValue);
-            }
+            ScrapValue += valueLoss;
+            currentUseCooldown = useCooldown;
         }
         public override void EquipItem()
         {
             base.EquipItem();
-            currentUseCooldown = 2.5f;
-            lastUpdatePosition = transform.position;
-            standStillAmount = 0;
-            if (!IsServer)
+            if (!IsOwner)
             {
                 return;
             }
-            itemAnimator.Animator.SetBool("isHeld", true);
-        }
-        public override void PocketItem()
-        {
-            base.PocketItem();
-            standStillAmount = 0;
-            if (!IsServer)
-            {
-                return;
-            }
-            itemAnimator.Animator.SetBool("isHeld", false);
-        }
-        public override void DiscardItem()
-        {
-            base.DiscardItem();
-            standStillAmount = 0;
-            if (!IsServer)
-            {
-                return;
-            }
-            itemAnimator.Animator.SetBool("isHeld", false);
+            currentUseCooldown = useCooldown;
         }
         public void HeartBeat()
         {
-            beatAudio.Stop();
-            beatAudio.Play();
-            if (StartOfRound.Instance.currentLevel.planetHasTime)
+            if (!IsOwner)
             {
-                RoundManager.Instance.PlayAudibleNoise(transform.position, 25f, 0.25f, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
+                return;
             }
-            WalkieTalkie.TransmitOneShotAudio(beatAudio, beatAudio.clip);
-            playerHeldBy.timeSinceMakingLoudNoise = 0f;
-            standStillAmount++;
-            if ((transform.position - lastUpdatePosition).magnitude >= 3f)
+            Audio["HeartBeat"].PlayRandomClip();
+            float intensity = Mathf.Lerp(0.01f, 1f, ((float)ScrapValue - (float)startingValue) * inverseMaxValue);
+            if (intensity <= maxEffectIntensity)
             {
-                standStillAmount = 0;
+                return;
             }
-            lastUpdatePosition = transform.position;
+            SetIntensity(intensity);
         }
         public override int GetItemDataToSave()
         {
@@ -104,40 +80,24 @@ namespace LCWildCardMod.Items
         {
             startingValue = saveData;
         }
-        [ServerRpc(RequireOwnership = false)]
-        public void ScrapValueServerRpc(int newValue)
+        private void SetIntensity(float intensity, bool networked = true)
         {
-            ScrapValueClientRpc(newValue);
-        }
-        [ClientRpc]
-        public void ScrapValueClientRpc(int newValue)
-        {
-            SetScrapValue(newValue);
-            Log.LogDebug($"Valentine Stand Still Amount: {standStillAmount}, Value: {scrapValue}");
-        }
-        [ServerRpc(RequireOwnership = false)]
-        public void SetIntensityServerRpc(float intensity)
-        {
-            intensityValue = intensity;
-            if (intensityValue > 95f)
-            {
-                itemAnimator.Animator.SetFloat("beatSpeed", (intensityValue / 20f) - 3.75f);
-            }
-            else if (intensityValue > 7.5f)
-            {
-                itemAnimator.Animator.SetFloat("restSpeed", intensityValue / 7.5f);
-            }
-            SetIntensityClientRpc(intensity);
-        }
-        [ClientRpc]
-        public void SetIntensityClientRpc(float intensity)
-        {
-            intensityValue = intensity;
-            if (intensityValue <= 95f)
+            float value = (intensity * 2f) - 1f;
+            float lerped = Mathf.Lerp(1f, 3f, value);
+            Animator.SetFloat("BeatSpeed", lerped);
+            Animator.SetFloat("RestSpeed", Mathf.Lerp(1f, 16f, value));
+            Audio["HeartBeat"].SetPitch(value + 1f);
+            MeshRenderers["Main"].SetColours(new Color(lerped, lerped, lerped, 1f));
+            if (!networked)
             {
                 return;
             }
-            beatAudio.pitch = (intensityValue / 20f) - 3.75f;
+            SetIntensityRpc(intensity);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void SetIntensityRpc(float intensity)
+        {
+            SetIntensity(intensity, false);
         }
     }
 }

@@ -1,55 +1,41 @@
-﻿using Unity.Netcode;
-using UnityEngine;
+﻿using LCWildCardMod.Utils;
+using Unity.Netcode;
+//using UnityEngine;
 namespace LCWildCardMod.Items
 {
-    public class PixelJar : PhysicsProp
+    public class PixelJar : WildCardProp
     {
-        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        public Texture[] floaterVariants;
-        public ParticleSystem particle;
-        public ParticleSystemRenderer particleRenderer;
-        internal int floaterCurrent = -1;
-        System.Random randomIndex;
+        //[Space(3f)]
+        //[Header("PixelJar")]
+        //[Space(3f)]
+        private int floaterCurrent = -1;
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            particle = GetComponentInChildren<ParticleSystem>();
-            particleRenderer = GetComponentInChildren<ParticleSystemRenderer>();
-            randomIndex = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
             if (!IsServer)
             {
                 return;
             }
+            SelectParticles particle = Particles["Floater"];
             if (floaterCurrent < 0)
             {
-                floaterCurrent = randomIndex.Next(floaterVariants.Length);
+                floaterCurrent = particle.RandomTextureIndex();
             }
-            TextureUpdateClientRpc(floaterCurrent);
+            TextureUpdate(floaterCurrent);
+            particle.EmitAll(1);
+            particle.PlayAll();
         }
         public override void EquipItem()
         {
             base.EquipItem();
-            if (particle.isPlaying)
-            {
-                return;
-            }
-            particle.Emit(1);
-            particle.Play();
+            SelectParticles particle = Particles["Floater"];
+            particle.EmitAll(1, false);
+            particle.PlayAll(networked: false);
         }
         public override void PocketItem()
         {
             base.PocketItem();
-            if (!particle.isPlaying)
-            {
-                return;
-            }
-            particle.Stop();
-            particle.Clear();
-        }
-        internal void SetTexture(int index)
-        {
-            particleRenderer.material.mainTexture = floaterVariants[index];
-            Log.LogDebug($"Chosen Pixel Jar texture: \"{particleRenderer.material.mainTexture.name}\"");
+            Particles["Floater"].StopAll(true, false);
         }
         public override int GetItemDataToSave()
         {
@@ -59,10 +45,22 @@ namespace LCWildCardMod.Items
         {
             floaterCurrent = saveData;
         }
-        [ClientRpc]
-        private void TextureUpdateClientRpc(int index)
+        private void TextureUpdate(int index, bool networked = true)
         {
-            SetTexture(index);
+            floaterCurrent = index;
+            SelectParticles particle = Particles["Floater"];
+            particle.SetMaterialsTexture(0, floaterCurrent);
+            Log.LogDebug($"Chosen Pixel Jar texture: \"{particle.GetTexture(floaterCurrent).name}\"");
+            if (!networked)
+            {
+                return;
+            }
+            TextureUpdateRpc(index);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void TextureUpdateRpc(int index)
+        {
+            TextureUpdate(index, false);
         }
     }
 }

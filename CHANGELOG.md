@@ -1,3 +1,37 @@
+## 2.0.0
+- So, about that rewrite... It has been rewritten. Everything is much more unified under the hood which will make further development much easier
+- Added new sound effects to Alolan Vulpixie and made the animation a bit scrunglier
+- Gave The Worm a blinking animation and adjusted its floor animations to feel more alive, and added new sound effects
+- Changed the names of Clauvi Mouse and Clauvi Mask to reflect the VTuber's rebrand
+- Added animations to Clauvi Mouse for each state of agrivation, and improved the activation animation
+- Updated the Pixel Jar's 3D model and adjusted the lighting of the floaters
+- Gave the Halo a slight wiggle in its animation, and made the airtime shorter depending on how far it is thrown
+- Lowered the Clover Bee and stopped it from flying while held, slightly increased stinger radius
+- Improved Cojiro animations
+- Added sparkles to Fyrus Star and improved the effect trail
+- Made Smith Note able to select and kill enemies, also adjusted sound effects and increased aim margin of error and distance for adding new pages and fixed visual bug where pages would update incorrectly while flipping
+- Made Leek Pen play a custom hit sound effect and a lowered amount of damage to players compared to the shovel
+- Adjusted Bleeding Heart and Valentine volumes and intervals
+- Added model variants to Clauvi Mask and Smith Halo, Moo Moo Mask and Akuumel Halo, respectively
+- Made Worm Pit sucking force work better for non-host clients
+- Adjusted asset loading and patching to be more modular, responding to config changes (via code, changing the file whilst the game is running will do nothing)
+- Removed "bonus scrap" distinction as the old bonus scraps now have enough functionality
+- Ari can be interacted with and thrown (she flies, calm down)
+- Kidd Squirtle can be interacted with
+- King K. Rool Gem now loses value whenever it is dropped
+- Fyrus' Poppy now applies a cool visual effect when consumed
+- Void Crown has a new model and is now usable as a weapon, albeit a shoddy one
+- Mario Party Dice numbers adjusted in position and rotation to be more accurate and can now be thrown to roll it, 1 through 6 each having a different effect (usually)
+- Added Oniimely's Hellgato as a scrap item, which can be activated to deal damage in a radius, thrown as a grenade, or held to save you from death, after which it will explode
+- Added Gojo's Glasses as a scrap item, which can be activated to use Domain Expansion: Infinity that prevent enemies and players from approaching you safely and damaging you at all
+- Some custom audio effects now have far versions letting players hear them from far away with filter effects mimicking the vanilla behaviour that uses a different audio clip as the far version
+- Enemies (Hoarding Bugs and Baboon Hawks) that hold my items will now periodically activate them and use their special effects, resulting in some shenanigans to say the least
+- Probably numerous bug fixes and adjustments I haven't listed here
+- There is a lot to this update so if there are any issues, please let me know
+
+## 1.3.0
+- A full rewrite of every item + the worm pit! I have tried to keep all functionality the same, but expect some minor differences. If there are any issues, please let me know. This update should make future development much easier
+
 ## 1.2.11
 - Changed how the halo saves from Bracken kills to still play the neck snap animation
 

@@ -1,82 +1,75 @@
-﻿using GameNetcodeStuff;
-using Unity.Netcode.Components;
+﻿using Unity.Netcode;
 using UnityEngine;
 namespace LCWildCardMod.Items
 {
-    public class Cojiro : NoisemakerProp
+    public class Cojiro : WildCardProp
     {
-        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        public AudioSource flapSource;
-        public NetworkAnimator itemAnimator;
-        public bool isFloating;
-        public PlayerControllerB previousPlayer;
-        public override void GrabItem()
-        {
-            base.GrabItem();
-            if (previousPlayer != null)
-            {
-                return;
-            }
-            previousPlayer = playerHeldBy;
-        }
+        [Space(3f)]
+        [Header("Cojiro")]
+        [Space(3f)]
+        [SerializeField]
+        private float slowAmount = 0.1f;
+        [SerializeField]
+        private float pocketCooldown = 1f;
+        [SerializeField]
+        private float cooldownRecover = 2f;
+        internal bool isFloating;
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
-            int noiseIndex = noisemakerRandom.Next(0, noiseSFX.Length);
-            float volume = (float)noisemakerRandom.Next((int)(minLoudness * 100f), (int)(maxLoudness * 100f)) / 100f;
-            float pitch = (float)noisemakerRandom.Next((int)(minPitch * 100f), (int)(maxPitch * 100f)) / 100f;
-            noiseAudio.pitch = pitch;
-            noiseAudio.PlayOneShot(noiseSFX[noiseIndex], volume);
-            WalkieTalkie.TransmitOneShotAudio(noiseAudio, noiseSFX[noiseIndex], volume);
-            RoundManager.Instance.PlayAudibleNoise(transform.position, noiseRange, volume, 0, isInElevator && StartOfRound.Instance.hangarDoorsClosed);
-            playerHeldBy.timeSinceMakingLoudNoise = 0f;
-            if (!IsServer)
+            if (isFloating)
             {
                 return;
             }
-            itemAnimator.SetTrigger("playAnim");
+            base.ItemActivate(used, buttonDown);
         }
         public override void Update()
         {
             base.Update();
-            if (!isPocketed && playerHeldBy != null && (playerHeldBy.isFallingFromJump || playerHeldBy.isFallingNoJump))
+            if (!IsOwner)
+            {
+                return;
+            }
+            if (isHeld && !isPocketed && (LastPlayerHeldBy.isFallingFromJump || LastPlayerHeldBy.isFallingNoJump))
             {
                 if (!isFloating)
                 {
-                    isFloating = true;
-                    if (IsServer)
-                    {
-                        itemAnimator.Animator.SetBool("Floating", true);
-                    }
-                    Log.LogDebug($"Cojiro is slowing \"{playerHeldBy.playerUsername}\"'s fall!");
-                    flapSource.Play();
-                    WalkieTalkie.TransmitOneShotAudio(flapSource, flapSource.clip);
+                    ToggleFloating();
+                    Log.LogDebug($"Cojiro is slowing \"{LastPlayerHeldBy.playerUsername}\"'s fall!");
                 }
-                playerHeldBy.fallValue *= 0.9f;
+                LastPlayerHeldBy.fallValue *= 1f - slowAmount;
             }
             else if (isFloating)
             {
-                isFloating = false;
-                if (IsServer)
-                {
-                    itemAnimator.Animator.SetBool("Floating", false);
-                }
-                Log.LogDebug($"Cojiro stopped slowing \"{playerHeldBy.playerUsername}\"'s fall!");
-                flapSource.Stop();
+                ToggleFloating();
             }
-            currentUseCooldown = Mathf.Max(currentUseCooldown, 0f);
-            if (currentUseCooldown == 0f && playerHeldBy == null)
+            if (!isFloating || currentUseCooldown >= pocketCooldown)
             {
-                previousPlayer = null;
+                return;
             }
-            else if (currentUseCooldown == 0f && playerHeldBy != null)
+            currentUseCooldown += cooldownRecover * Time.deltaTime;
+        }
+        private void ToggleFloating(bool networked = true)
+        {
+            isFloating = !isFloating;
+            Animator.SetBool("Floating", isFloating);
+            if (!isFloating)
             {
-                previousPlayer = playerHeldBy;
+                Audio["Flap"].Stop(false);
             }
-            if (currentUseCooldown < 1f && isFloating)
+            else if (networked)
             {
-                currentUseCooldown += 2f * Time.deltaTime;
+                Audio["Flap"].PlayRandomClip();
             }
-            currentUseCooldown = Mathf.Min(currentUseCooldown, 1f);
+            if (!networked)
+            {
+                return;
+            }
+            SetFloatingRpc();
+        }
+        [Rpc(SendTo.NotMe)]
+        private void SetFloatingRpc()
+        {
+            ToggleFloating(false);
         }
     }
 }

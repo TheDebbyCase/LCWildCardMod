@@ -1,4 +1,6 @@
 ﻿using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Linq;
 using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -7,89 +9,107 @@ namespace LCWildCardMod.Config
 {
     public class WildCardConfig
     {
-        BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        internal readonly Dictionary<string, ConfigEntry<bool>> isScrapEnabled = new Dictionary<string, ConfigEntry<bool>>();
-        internal readonly Dictionary<string, ConfigEntry<string>> scrapSpawnWeights = new Dictionary<string, ConfigEntry<string>>();
-        internal readonly Dictionary<string, ConfigEntry<bool>> isSkinEnabled = new Dictionary<string, ConfigEntry<bool>>();
-        internal readonly Dictionary<string, ConfigEntry<int>> skinApplyChance = new Dictionary<string, ConfigEntry<int>>();
-        internal readonly Dictionary<string, ConfigEntry<bool>> isMapObjectEnabled = new Dictionary<string, ConfigEntry<bool>>();
-        internal readonly Dictionary<string, ConfigEntry<bool>> useDefaultMapObjectCurve = new Dictionary<string, ConfigEntry<bool>>();
-        internal readonly Dictionary<string, (ConfigEntry<int>, ConfigEntry<int>)> mapObjectMinMax = new Dictionary<string, (ConfigEntry<int>, ConfigEntry<int>)>();
-        internal ConfigEntry<bool> assortedScrap;
-        internal WildCardConfig(ConfigFile cfg, List<Item> scrapList, List<Skin> skinList, List<MapObject> mapObjectsList)
+        private static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
+        private static readonly PropertyInfo orphanedEntriesProp = AccessTools.Property(typeof(ConfigFile), "OrphanedEntries");
+        private readonly ConfigFile config;
+        private ReadOnlyDictionary<string, bool> publicScrapEnabled;
+        private ReadOnlyDictionary<string, string> publicScrapSpawnWeights;
+        private ReadOnlyDictionary<string, bool> publicSkinEnabled;
+        private ReadOnlyDictionary<string, int> publicSkinApplyChance;
+        private ReadOnlyDictionary<string, bool> publicMapObjectEnabled;
+        private ReadOnlyDictionary<string, bool> publicDefaultMapObjectCurve;
+        private ReadOnlyDictionary<string, (int, int)> publicMapObjectMinMax;
+        private readonly Dictionary<string, ConfigEntry<bool>> isScrapEnabled = new Dictionary<string, ConfigEntry<bool>>();
+        private readonly Dictionary<string, ConfigEntry<string>> scrapSpawnWeights = new Dictionary<string, ConfigEntry<string>>();
+        private readonly Dictionary<string, ConfigEntry<bool>> isSkinEnabled = new Dictionary<string, ConfigEntry<bool>>();
+        private readonly Dictionary<string, ConfigEntry<int>> skinApplyChance = new Dictionary<string, ConfigEntry<int>>();
+        private readonly Dictionary<string, ConfigEntry<bool>> isMapObjectEnabled = new Dictionary<string, ConfigEntry<bool>>();
+        private readonly Dictionary<string, ConfigEntry<bool>> useDefaultMapObjectCurve = new Dictionary<string, ConfigEntry<bool>>();
+        private readonly Dictionary<string, (ConfigEntry<int>, ConfigEntry<int>)> mapObjectMinMax = new Dictionary<string, (ConfigEntry<int>, ConfigEntry<int>)>();
+        private readonly ConfigEntry<bool> debugLogs;
+        public ReadOnlyDictionary<string, bool> ScrapEnabled => publicScrapEnabled;
+        public ReadOnlyDictionary<string, string> ScrapSpawnWeights => publicScrapSpawnWeights;
+        public ReadOnlyDictionary<string, bool> SkinEnabled => publicSkinEnabled;
+        public ReadOnlyDictionary<string, int> SkinApplyChance => publicSkinApplyChance;
+        public ReadOnlyDictionary<string, bool> MapObjectEnabled => publicMapObjectEnabled;
+        public ReadOnlyDictionary<string, bool> DefaultMapObjectCurve => publicDefaultMapObjectCurve;
+        public ReadOnlyDictionary<string, (int, int)> MapObjectMinMax => publicMapObjectMinMax;
+        public bool Debug => debugLogs.Value;
+        internal WildCardConfig(ConfigFile cfg, List<WildCardItem> scrapList, List<WildCardSkin> skinList, List<WildCardMapObject> mapObjectsList)
         {
-            cfg.SaveOnConfigSet = false;
-            ScrapConfigs(cfg, scrapList);
-            SkinConfigs(cfg, skinList);
-            MapObjectConfigs(cfg, mapObjectsList);
-            ClearOrphanedEntries(cfg);
-            cfg.Save();
-            cfg.SaveOnConfigSet = true;
+            config = cfg;
+            config.SaveOnConfigSet = false;
+            ScrapConfigs(scrapList);
+            SkinConfigs(skinList);
+            MapObjectConfigs(mapObjectsList);
+            ResetReadonlyDicts();
+            debugLogs = config.Bind("Miscellaneous", "Enable Extra Debug Logging?", false);
+            ClearOrphanedEntries(config);
+            config.Save();
+            config.SaveOnConfigSet = true;
+            config.SettingChanged += OnSettingChanged;
         }
-        void ScrapConfigs(ConfigFile cfg, List<Item> scrapList)
+        private void ScrapConfigs(List<WildCardItem> scrapList)
         {
-            string bonusString = "Affected items include";
             for (int i = 0; i < scrapList.Count; i++)
             {
-                Item scrap = scrapList[i];
-                AdditionalInfo additional = scrap.spawnPrefab.GetComponent<AdditionalInfo>();
-                bool defaultEnabled = additional.defaultEnabled;
-                string defaultRarities = additional.defaultRarities;
-                bool isBonus = additional.isBonus;
-                if (isBonus)
-                {
-                    bonusString = $"{bonusString}, {scrapList[i].itemName}";
-                }
-                isScrapEnabled.Add(scrap.itemName, cfg.Bind("Scrap", $"Enable {scrap.itemName}?", defaultEnabled, ""));
-                scrapSpawnWeights.Add(scrap.itemName, cfg.Bind("Scrap", $"Spawn Weights of {scrap.itemName}!", defaultRarities, "For example: All:20,Vanilla:20,Modded:20,Experimentation:20"));
-                Log.LogDebug($"Added config for {scrap.itemName}");
+                WildCardItem scrap = scrapList[i];
+                string itemName = scrap.itemName;
+                isScrapEnabled.TryAdd(itemName, config.Bind("Scrap", $"Enable {itemName}?", scrap.defaultEnabled, ""));
+                scrapSpawnWeights.TryAdd(itemName, config.Bind("Scrap", $"Spawn Weights of {itemName}!", scrap.defaultRarities, "For example: All:20,Vanilla:20,Modded:20,Experimentation:20"));
+                Log.LogDebug($"Added config for {itemName}");
             }
-            assortedScrap = cfg.Bind("Scrap", "Enable/Disable supplementary scrap overall", true, bonusString);
-            Log.LogDebug("Added config for Assorted Scrap items");
         }
-        void SkinConfigs(ConfigFile cfg, List<Skin> skinList)
+        private void SkinConfigs(List<WildCardSkin> skinList)
         {
             for (int i = 0; i < skinList.Count; i++)
             {
-                Skin skin = skinList[i];
+                WildCardSkin skin = skinList[i];
+                string skinName = skin.skinName;
                 bool defaultEnabled = skin.skinEnabled;
                 int defaultChance = skin.skinChance;
-                isSkinEnabled.Add(skin.skinName, cfg.Bind("Skins", $"Enable {skin.skinName}?", defaultEnabled, ""));
-                string skinTargetName = "";
-                if (skin.target is EnemyType)
-                {
-                    skinTargetName = (skin.target as EnemyType).enemyName;
-                }
-                else if (skin.target is Item)
-                {
-                    skinTargetName = (skin.target as Item).itemName;
-                }
-                skinApplyChance.Add(skin.skinName, cfg.Bind("Skins", $"Weighted chance that {skinTargetName} will spawn as {skin.skinName}", defaultChance, "Must be an integer greater than, or equal to, 0.\nThe chance that no skin will be applied is 100 subtracted by this weight"));
-                Log.LogDebug($"Added config for {skin.skinName}");
+                isSkinEnabled.TryAdd(skinName, config.Bind("Skins", $"Enable {skinName}?", defaultEnabled, ""));
+                skinApplyChance.TryAdd(skinName, config.Bind("Skins", $"Weighted chance that {skin.target} will spawn as {skinName}", defaultChance, "Must be an integer greater than, or equal to, 0.\nThe chance that no skin will be applied is 100 subtracted by this weight"));
+                Log.LogDebug($"Added config for {skinName}");
             }
         }
-        void MapObjectConfigs(ConfigFile cfg, List<MapObject> mapObjectsList)
+        private void MapObjectConfigs(List<WildCardMapObject> mapObjectsList)
         {
             for (int i = 0; i < mapObjectsList.Count; i++)
             {
-                MapObject mapObject = mapObjectsList[i];
+                WildCardMapObject mapObject = mapObjectsList[i];
                 if (mapObject.autoHandle)
                 {
                     continue;
                 }
-                isMapObjectEnabled.Add(mapObject.mapObjectName, cfg.Bind("Map Objects", $"Enable {mapObject.mapObjectName}?", true, ""));
-                useDefaultMapObjectCurve.Add(mapObject.mapObjectName, cfg.Bind("Map Objects", $"Use default min and max values for {mapObject.mapObjectName}?", true, ""));
-                ConfigEntry<int> mapObjectMin = cfg.Bind("Map Objects", $"Minimum number of {mapObject.mapObjectName} to spawn per level", 0, "This only matters if you set \"Use Default\" to false.\nMust be an integer of 0 or above");
-                ConfigEntry<int> mapObjectMax = cfg.Bind("Map Objects", $"Maximum number of {mapObject.mapObjectName} to spawn per level", 1, "This only matters if you set \"Use Default\" to false.\nMust be an integer of 0 or above");
-                mapObjectMinMax.Add(mapObject.mapObjectName, (mapObjectMin, mapObjectMax));
-                Log.LogDebug($"Added config for {mapObject.mapObjectName}");
+                string mapObjectName = mapObject.mapObjectName;
+                isMapObjectEnabled.TryAdd(mapObjectName, config.Bind("Map Objects", $"Enable {mapObjectName}?", true, ""));
+                useDefaultMapObjectCurve.TryAdd(mapObjectName, config.Bind("Map Objects", $"Use default min and max values for {mapObjectName}?", true, ""));
+                ConfigEntry<int> mapObjectMin = config.Bind("Map Objects", $"Minimum number of {mapObjectName} to spawn per level", 0, "This only matters if you set \"Use Default\" to false.\nMust be an integer of 0 or above");
+                ConfigEntry<int> mapObjectMax = config.Bind("Map Objects", $"Maximum number of {mapObjectName} to spawn per level", 1, "This only matters if you set \"Use Default\" to false.\nMust be an integer of 0 or above");
+                mapObjectMinMax.TryAdd(mapObjectName, (mapObjectMin, mapObjectMax));
+                Log.LogDebug($"Added config for {mapObjectName}");
             }
         }
-        static void ClearOrphanedEntries(ConfigFile cfg)
+        private static void ClearOrphanedEntries(ConfigFile config)
         {
-            PropertyInfo orphanedEntriesProp = AccessTools.Property(typeof(ConfigFile), "OrphanedEntries");
-            Dictionary<ConfigDefinition, string> orphanedEntries = orphanedEntriesProp.GetValue(cfg) as Dictionary<ConfigDefinition, string>;
-            orphanedEntries.Clear();
+            (orphanedEntriesProp.GetValue(config) as Dictionary<ConfigDefinition, string>).Clear();
+        }
+        private void OnSettingChanged(object sender, SettingChangedEventArgs args)
+        {
+            WildCardMod.Instance.InitializeAssets();
+            WildCardMod.Instance.HandleHarmony();
+            ResetReadonlyDicts();
+        }
+        private void ResetReadonlyDicts()
+        {
+            publicScrapEnabled = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool>(isScrapEnabled.Select((x) => new KeyValuePair<string, bool>(x.Key, x.Value.Value))));
+            publicScrapSpawnWeights = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(scrapSpawnWeights.Select((x) => new KeyValuePair<string, string>(x.Key, x.Value.Value))));
+            publicSkinEnabled = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool>(isSkinEnabled.Select((x) => new KeyValuePair<string, bool>(x.Key, x.Value.Value))));
+            publicSkinApplyChance = new ReadOnlyDictionary<string, int>(new Dictionary<string, int>(skinApplyChance.Select((x) => new KeyValuePair<string, int>(x.Key, x.Value.Value))));
+            publicMapObjectEnabled = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool>(isMapObjectEnabled.Select((x) => new KeyValuePair<string, bool>(x.Key, x.Value.Value))));
+            publicDefaultMapObjectCurve = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool>(useDefaultMapObjectCurve.Select((x) => new KeyValuePair<string, bool>(x.Key, x.Value.Value))));
+            publicMapObjectMinMax = new ReadOnlyDictionary<string, (int, int)>(new Dictionary<string, (int, int)>(mapObjectMinMax.Select((x) => new KeyValuePair<string, (int, int)>(x.Key, (x.Value.Item1.Value, x.Value.Item2.Value)))));
         }
     }
 }

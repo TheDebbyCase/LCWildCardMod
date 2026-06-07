@@ -1,277 +1,245 @@
 ﻿using GameNetcodeStuff;
+using LCWildCardMod.Utils;
 using System.Collections.Generic;
 using Unity.Netcode;
-using Unity.Netcode.Components;
 using UnityEngine;
 namespace LCWildCardMod.MapObjects
 {
-    public enum WormState
+    public class WormPit : WildCardMapObject, IHittable
     {
-        Peeping,
-        Hungry,
-        Consuming,
-        Sleeping
-    }
-    public class WormPit : NetworkBehaviour, IHittable
-    {
-        static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        public AudioSource pitSource;
-        public AudioSource miscSource;
-        public AudioClip[] squishClips;
-        public AudioClip biteClip;
-        public AudioClip growlClip;
-        internal WormState State = WormState.Peeping;
-        public Transform irisTransform;
-        public NetworkAnimator netAnim;
-        public float maxPullDistance = 5f;
-        public float maxPullForce = 3.5f;
-        public float peepCooldown;
-        public float peepWaitBetween = 5f;
-        public float peepWaitHold;
-        PlayerControllerB playerLookingAt;
-        readonly List<int> playerIDInRange = new List<int>();
-        bool peeping;
-        float lookLerp;
-        Quaternion initialRot;
-        Quaternion targetRot;
-        public float hunger;
-        public float patience = 5f;
-        public float sleepiness = 0;
-        bool consuming;
-        System.Random random;
+        [Space(3f)]
+        [Header("WormPit")]
+        [Space(3f)]
+        [SerializeField]
+        private Transform irisTransform = null;
+        [SerializeField]
+        private float damageRadius = 2f;
+        [SerializeField]
+        private Vector2 peepingFear = new Vector2(1f, 0.5f);
+        [SerializeField]
+        private Vector2 consumingFear = new Vector2(2f, 1f);
+        [SerializeField]
+        private Vector2 peepBetweenMinMax = new Vector2(2.5f, 7.5f);
+        [SerializeField]
+        private Vector2 peepHoldMinMax = new Vector2(4f, 7f);
+        [SerializeField]
+        private float lookSpeed = 135f;
+        [SerializeField]
+        private float peepCooldown = 0f;
+        private float peepWaitBetween = 5f;
+        private float peepWaitHold = 0f;
+        private bool peeping = false;
+        private float lookLerp = 0f;
+        private Quaternion initialRot = Quaternion.identity;
+        private float hunger = 0f;
+        private float patience = 5f;
+        private float sleepiness = 0f;
+        private bool consuming = false;
+        private float localForceTimer = 0f;
+        private Vector2 lookMinMax = new Vector2(225f, 315f);
+        private Vector2Int peepBetweenRound;
+        private Vector2Int peepHoldRound;
+        private Vector2 PeepBetweenMinMax
+        {
+            set
+            {
+                peepBetweenMinMax = value;
+                peepBetweenRound = new Vector2Int(Mathf.RoundToInt(peepBetweenMinMax.x * 10f), Mathf.RoundToInt(peepBetweenMinMax.y * 10f) + 1);
+            }
+        }
+        private Vector2 PeepHoldMinMax
+        {
+            set
+            {
+                peepHoldMinMax = value;
+                peepHoldRound = new Vector2Int(Mathf.RoundToInt(peepHoldMinMax.x * 10f), Mathf.RoundToInt(peepHoldMinMax.y * 10f) + 1);
+            }
+        }
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            Log.LogDebug("Worm Pit Spawned");
-            random = new System.Random(StartOfRound.Instance.randomMapSeed + 69);
-        }
-        void Update()
-        {
+            PeepBetweenMinMax = peepBetweenMinMax;
+            PeepHoldMinMax = peepHoldMinMax;
             if (!IsServer)
             {
                 return;
             }
-            playerLookingAt = GetClosestPlayer();
+            State = 0;
+        }
+        internal override void Update()
+        {
+            base.Update();
+            if (State == 0)
+            {
+                IrisLook(TargetPlayer);
+            }
+            else if (State == 2)
+            {
+                float forceMultiplier = 1f;
+                if (localForceTimer > 0f)
+                {
+                    forceMultiplier += localForceTimer;
+                    localForceTimer -= Time.deltaTime;
+                }
+                List<int> players = PlayersInRange;
+                if (players.Contains((int)GameNetworkManager.Instance.localPlayerController.playerClientId))
+                {
+                    PlayerFearLocal(true, consumingFear.x, consumingFear.y);
+                    PlayerForceLocal(forceMultiplier);
+                }
+            }
+            if (!IsServer)
+            {
+                return;
+            }
+            Vector3 halfUp = Vector3.up * 0.5f;
             switch (State)
             {
-                case WormState.Peeping:
+                case 0:
                     {
+                        PlayerControllerB target = TargetPlayer;
                         if (peeping)
                         {
-                            if (playerLookingAt != null)
+                            if (target != null)
                             {
-                                PlayerFearIncreaseClientRpc(true, 1f, 0.5f, playerLookingAt.playerClientId);
-                                IrisLookClientRpc(false, playerLookingAt.playerClientId);
+                                PlayerFear(target, true, peepingFear.x, peepingFear.y);
                             }
                             if (peepCooldown >= peepWaitHold)
                             {
-                                int id = random.Next(0, squishClips.Length);
-                                float pitch = (float)random.Next(9, 11) / 10f;
-                                PlaySquishClientRpc(id, pitch);
-                                netAnim.Animator.SetBool("HoldPeep", false);
+                                Audio["Squish"].PlayRandomOneshot();
+                                Animator.SetBool("HoldPeep", false);
                                 peeping = false;
                                 peepCooldown = 0f;
                             }
                         }
-                        else
+                        else if (peepCooldown >= peepWaitBetween)
                         {
-                            if (irisTransform.localRotation != Quaternion.identity)
-                            {
-                                lookLerp = 0f;
-                                IrisLookClientRpc(true);
-                            }
-                            if (peepCooldown >= peepWaitBetween)
-                            {
-                                int id = random.Next(0, squishClips.Length);
-                                float pitch = (float)random.Next(9, 11) / 10f;
-                                PlaySquishClientRpc(id, pitch);
-                                netAnim.SetTrigger("Peep");
-                                netAnim.Animator.SetBool("HoldPeep", true);
-                                peepWaitBetween = ((float)random.Next(25, 76) / 10f);
-                                peepWaitHold = ((float)random.Next(40, 71) / 10f);
-                                peeping = true;
-                                peepCooldown = 0f;
-                            }
+                            Audio["Squish"].PlayRandomOneshot();
+                            Animator.Trigger("Peep");
+                            Animator.SetBool("HoldPeep", true);
+                            peepWaitBetween = (float)Random.Next(peepBetweenRound.x, peepBetweenRound.y) / 10f;
+                            peepWaitHold = (float)Random.Next(peepHoldRound.x, peepHoldRound.y) / 10f;
+                            peeping = true;
+                            peepCooldown = 0f;
                         }
                         if (hunger >= 5f)
                         {
                             peeping = false;
                             peepCooldown = 0f;
-                            netAnim.Animator.SetBool("HoldPeep", false);
+                            Animator.SetBool("HoldPeep", false);
                             hunger = 0f;
-                            float pitch = (float)random.Next(9, 11) / 10f;
-                            PlayGrowlClientRpc(pitch);
-                            SetStateClientRpc(WormState.Hungry);
+                            Audio["Growl"].PlayRandomOneshot();
+                            State = 1;
                             break;
                         }
-                        if (playerLookingAt != null && peeping)
-                        {
-                            hunger += Time.deltaTime * 1.5f;
-                            if (Vector3.Distance(transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 3f)
-                            {
-                                hunger += Time.deltaTime * 2f;
-                            }
-                        }
                         peepCooldown += Time.deltaTime;
+                        if (!peeping || target == null)
+                        {
+                            break;
+                        }
+                        float multiplier = 1f;
+                        if (Vector3.Distance(transform.position + halfUp, target.transform.position) <= 3f)
+                        {
+                            multiplier = 2f;
+                        }
+                        hunger += Time.deltaTime * multiplier;
                         break;
                     }
-                case WormState.Hungry:
+                case 1:
                     {
-                        if ((playerLookingAt != null && Vector3.Distance(transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 5f) || patience <= 0f)
+                        PlayerControllerB target = TargetPlayer;
+                        if (target == null)
+                        {
+                            break;
+                        }
+                        float distance = Vector3.Distance(transform.position + halfUp, TargetPlayer.transform.position);
+                        if ((distance <= 5f) || patience <= 0f)
                         {
                             patience = 5f;
-                            SetStateClientRpc(WormState.Consuming);
+                            State = 2;
+                            break;
                         }
-                        else if (playerLookingAt != null && Vector3.Distance(transform.position + (Vector3.up / 2f), playerLookingAt.transform.position) <= 15f)
+                        if (distance > 15f)
                         {
-                            patience -= Time.deltaTime;
+                            break;
                         }
+                        patience -= Time.deltaTime;
                         break;
                     }
-                case WormState.Consuming:
+                case 2:
                     {
                         if (consuming)
                         {
-                            for (int i = 0; i < playerIDInRange.Count; i++)
-                            {
-                                ulong id = (ulong)playerIDInRange[i];
-                                PlayerFearIncreaseClientRpc(true, 2f, 1f, id);
-                                PlayerExternalForcesClientRpc(id);
-                            }
                             if (sleepiness >= 12.5f)
                             {
                                 consuming = false;
-                                netAnim.SetTrigger("Emerge");
-                                sleepiness = ((float)random.Next(50, 126) / 10f);
-                                float pitch = (float)random.Next(9, 11) / 10f;
-                                PlayGrowlClientRpc(pitch);
-                                PitMusicClientRpc(false);
-                                SetStateClientRpc(WormState.Sleeping);
+                                Animator.Trigger("Emerge");
+                                Audio["Growl"].PlayRandomOneshot();
+                                Audio["Music"].Stop();
+                                sleepiness = ((float)Random.Next(50, 126) / 10f);
+                                State = 3;
                                 break;
                             }
-                            else if (playerIDInRange.Count == 0 && sleepiness >= 7.5f)
+                            if (PlayersInRange.Count == 0 && sleepiness >= 7.5f)
                             {
                                 consuming = false;
-                                netAnim.SetTrigger("Emerge");
+                                Animator.Trigger("Emerge");
                                 sleepiness = 0f;
-                                PitMusicClientRpc(false);
-                                SetStateClientRpc(WormState.Peeping);
+                                Audio["Music"].Stop();
+                                State = 0;
                                 break;
                             }
+                            sleepiness += Time.deltaTime;
+                            break;
                         }
-                        else
+                        consuming = true;
+                        sleepiness = 0f;
+                        Animator.Trigger("Emerge");
+                        Audio["Music"].PlayRandomClip();
+                        for (int i = 0; i < PlayersInRange.Count; i++)
                         {
-                            consuming = true;
-                            sleepiness = 0f;
-                            netAnim.SetTrigger("Emerge");
-                            PitMusicClientRpc(true);
-                            for (int i = 0; i < playerIDInRange.Count; i++)
-                            {
-                                PlayerFearIncreaseClientRpc(false, 0.25f, 0, (ulong)playerIDInRange[i]);
-                            }
+                            PlayerFear(StartOfRound.Instance.allPlayerScripts[PlayersInRange[i]], false, 0.25f, 0);
                         }
-                        sleepiness += Time.deltaTime;
                         break;
                     }
-                case WormState.Sleeping:
+                case 3:
                     {
                         if (sleepiness > 0f)
                         {
                             sleepiness -= Time.deltaTime;
                             break;
                         }
-                        SetStateClientRpc(WormState.Peeping);
+                        State = 0;
                         break;
                     }
             }
         }
-        public void PitChomp()
+        internal override PlayerControllerB GetClosestPlayer()
         {
-            if (!IsServer || !consuming)
+            if (!peeping && State != 1)
+            {
+                return null;
+            }
+            return base.GetClosestPlayer();
+        }
+        internal override void OnStateChange(int newState)
+        {
+            base.OnStateChange(newState);
+            if (State != 2)
             {
                 return;
             }
-            RaycastHit[] objectsHit = Physics.SphereCastAll(transform.position, 2f, transform.up, 0f, 1074266120, QueryTriggerInteraction.Collide);
-            for (int i = 0; i < objectsHit.Length; i++)
-            {
-                RaycastHit hit = objectsHit[i];
-                if (hit.transform.TryGetComponent(out PlayerControllerB player))
-                {
-                    DamagePlayerCheckClientRpc(player.playerClientId);
-                }
-                else if (hit.transform.TryGetComponent(out EnemyAICollisionDetect enemyCol))
-                {
-                    enemyCol.mainScript.HitEnemyClientRpc(2, -1, true);
-                }
-            }
+            localForceTimer = 1f;
         }
-        [ClientRpc]
-        public void DamagePlayerCheckClientRpc(ulong id)
+        private void IrisLook(PlayerControllerB target)
         {
-            PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
-            if (player != StartOfRound.Instance.allPlayerScripts[(int)id])
-            {
-                return;
-            }
-            player.DamagePlayer(15, true, true, CauseOfDeath.Mauling, 0, false, transform.up * -10f);
-        }
-        public void PitAudioAnim()
-        {
-            if (State != WormState.Consuming)
-            {
-                return;
-            }
-            miscSource.pitch = (float)random.Next(9, 11) / 10f;
-            miscSource.PlayOneShot(biteClip);
-            WalkieTalkie.TransmitOneShotAudio(miscSource, biteClip);
-        }
-        PlayerControllerB GetClosestPlayer()
-        {
-            PlayerControllerB closest = null;
-            float distance = 20f;
-            playerIDInRange.Clear();
-            for (int i = 0; i < StartOfRound.Instance.allPlayerScripts.Length; i++)
-            {
-                PlayerControllerB player = StartOfRound.Instance.allPlayerScripts[i];
-                if (!player.isPlayerControlled || Physics.Linecast(transform.position + (Vector3.up / 2f), player.playerGlobalHead.position, 1107298560, QueryTriggerInteraction.Ignore))
-                {
-                    continue;
-                }
-                float newDistance = Vector3.Distance(player.playerGlobalHead.transform.position, transform.position + (Vector3.up / 2f));
-                if (newDistance <= 20f)
-                {
-                    playerIDInRange.Add(i);
-                }
-                if (newDistance > distance)
-                {
-                    continue;
-                }
-                closest = player;
-                distance = newDistance;
-            }
-            if (closest != playerLookingAt)
-            {
-                if (closest != null)
-                {
-                    Log.LogDebug($"Worm Pit peeping at {closest.playerUsername}");
-                }
-                else
-                {
-                    Log.LogDebug($"Worm Pit peeping at nobody");
-                }
-            }
-            return closest;
-        }
-        [ClientRpc]
-        public void IrisLookClientRpc(bool nullify, ulong id = 0)
-        {
-            if (lookLerp == 0f)
+            if (Mathf.Approximately(lookLerp, 0f))
             {
                 initialRot = irisTransform.rotation;
             }
             if (lookLerp < 360f)
             {
-                lookLerp += Time.deltaTime * 270f;
+                lookLerp += Time.deltaTime * lookSpeed;
             }
             else if (lookLerp > 360f)
             {
@@ -282,105 +250,69 @@ namespace LCWildCardMod.MapObjects
                 lookLerp = 0f;
                 return;
             }
-            Quaternion newRot;
-            if (nullify)
+            Quaternion newRot = Quaternion.LookRotation(transform.up);
+            if (target != null)
             {
-                newRot = Quaternion.LookRotation(transform.up);
+                if (target.IsLocal())
+                {
+                    newRot = Quaternion.LookRotation(target.gameplayCamera.transform.position - transform.position);
+                }
+                else
+                {
+                    newRot = Quaternion.LookRotation(target.playerGlobalHead.transform.position - transform.position);
+                }
             }
-            else if (GameNetworkManager.Instance.localPlayerController == StartOfRound.Instance.allPlayerScripts[id])
+            if (newRot.eulerAngles.x < lookMinMax.x)
             {
-                newRot = Quaternion.LookRotation(StartOfRound.Instance.allPlayerScripts[id].gameplayCamera.transform.position - transform.position);
+                newRot = Quaternion.Euler(lookMinMax.x, newRot.eulerAngles.y, newRot.eulerAngles.z);
             }
-            else
+            else if (newRot.eulerAngles.x > lookMinMax.y)
             {
-                newRot = Quaternion.LookRotation(StartOfRound.Instance.allPlayerScripts[id].playerGlobalHead.transform.position - transform.position);
+                newRot = Quaternion.Euler(lookMinMax.y, newRot.eulerAngles.y, newRot.eulerAngles.z);
             }
-            if (newRot.eulerAngles.x < 225f)
-            {
-                newRot = Quaternion.Euler(225f, newRot.eulerAngles.y, newRot.eulerAngles.z);
-            }
-            else if (newRot.eulerAngles.x > 315f)
-            {
-                newRot = Quaternion.Euler(315f, newRot.eulerAngles.y, newRot.eulerAngles.z);
-            }
-            targetRot = newRot;
-            irisTransform.rotation = Quaternion.RotateTowards(initialRot, targetRot, lookLerp);
+            irisTransform.rotation = Quaternion.RotateTowards(initialRot, newRot, lookLerp);
         }
-        [ClientRpc]
-        public void SetStateClientRpc(WormState newState)
+        public void PitChomp()
         {
-            State = newState;
-        }
-        [ClientRpc]
-        public void PlayerExternalForcesClientRpc(ulong id)
-        {
-            PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
-            if (player.playerClientId != id)
+            if (!IsServer || !consuming)
             {
                 return;
             }
-            Vector3 pitPlayerVector = transform.position - player.transform.position;
-            if (pitPlayerVector.magnitude > maxPullDistance)
+            HashSet<IHittable> hits = new HashSet<IHittable>();
+            RaycastHit[] objectsHit = Physics.SphereCastAll(transform.position, damageRadius, Vector3.one, 0f, 1084754248, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < objectsHit.Length; i++)
+            {
+                RaycastHit hit = objectsHit[i];
+                if (!hit.transform.TryGetComponent(out IHittable hitComponent) || !hits.Add(hitComponent))
+                {
+                    continue;
+                }
+                Base.HitOrDamage(hitComponent, basePlayerDamage, baseHitDamage, (hit.transform.position - transform.position).normalized, null, true, 1, CauseOfDeath.Mauling);
+            }
+        }
+        public void PitAudioAnim()
+        {
+            if (State != 2 || !IsServer)
             {
                 return;
             }
-            float multiplier = (maxPullForce - Mathf.Pow(pitPlayerVector.magnitude * (Mathf.Sqrt(maxPullForce) / maxPullDistance), 2f));
-            player.externalForces += pitPlayerVector.normalized * multiplier;
+            Audio["Bite"].PlayRandomOneshot();
         }
-        [ClientRpc]
-        public void PlayerFearIncreaseClientRpc(bool overTime, float amount, float cap, ulong id)
+        bool IHittable.Hit(int force, Vector3 hitDirection, PlayerControllerB playerWhoHit, bool playHitSFX, int hitID)
         {
-            PlayerControllerB player = GameNetworkManager.Instance.localPlayerController;
-            if (player.playerClientId != id)
-            {
-                return;
-            }
-            if (overTime)
-            {
-                player.IncreaseFearLevelOverTime(amount, cap);
-                return;
-            }
-            player.JumpToFearLevel(amount);
-        }
-        [ClientRpc]
-        public void PlaySquishClientRpc(int id, float pitch)
-        {
-            miscSource.pitch = pitch;
-            AudioClip clip = squishClips[id];
-            miscSource.PlayOneShot(clip, 0.5f);
-            WalkieTalkie.TransmitOneShotAudio(miscSource, clip, 0.5f);
-        }
-        [ClientRpc]
-        public void PlayGrowlClientRpc(float pitch)
-        {
-            miscSource.pitch = pitch;
-            miscSource.PlayOneShot(growlClip, 1.5f);
-            WalkieTalkie.TransmitOneShotAudio(miscSource, growlClip, 1.5f);
-        }
-        [ClientRpc]
-        public void PitMusicClientRpc(bool play)
-        {
-            pitSource.Stop();
-            if (play)
-            {
-                pitSource.Play();
-            }
-        }
-        public bool Hit(int force, Vector3 hitDirection, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1)
-        {
-            if (State != WormState.Peeping)
+            if (State != 0)
             {
                 return false;
             }
-            HitServerRpc();
+            HitRpc();
             return true;
         }
-        [ServerRpc]
-        public void HitServerRpc()
+        [Rpc(SendTo.Server)]
+        private void HitRpc()
         {
             hunger = 5f;
             patience = 1f;
-            SetStateClientRpc(WormState.Consuming);
+            State = 2;
         }
     }
 }
