@@ -18,7 +18,7 @@
 - Removed "bonus scrap" distinction as the old bonus scraps now have enough functionality
 - Ari can be interacted with and thrown (she flies, calm down)
 - Kidd Squirtle can be interacted with
-- King K. Rool Gem now loses value whenever it is dropped
+- King K. Rool Gem material transparency adjusted and now loses value whenever it is dropped
 - Fyrus' Poppy now applies a cool visual effect when consumed
 - Void Crown has a new model and is now usable as a weapon, albeit a shoddy one
 - Mario Party Dice numbers adjusted in position and rotation to be more accurate and can now be thrown to roll it, 1 through 6 each having a different effect (usually)
@@ -28,6 +28,7 @@
 - Enemies (Hoarding Bugs and Baboon Hawks) that hold my items will now periodically activate them and use their special effects, resulting in some shenanigans to say the least
 - Probably numerous bug fixes and adjustments I haven't listed here
 - There is a lot to this update so if there are any issues, please let me know
+- Updated README to reflect new and old items recategorised in the item previews list
 
 ## 1.3.0
 - A full rewrite of every item + the worm pit! I have tried to keep all functionality the same, but expect some minor differences. If there are any issues, please let me know. This update should make future development much easier
