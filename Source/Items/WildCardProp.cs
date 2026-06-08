@@ -72,7 +72,7 @@ namespace LCWildCardMod.Items
         {
             get
             {
-                return NetworkAnimations;
+                return networkAnimations;
             }
             set
             {

@@ -58,7 +58,7 @@ namespace LCWildCardMod.MapObjects
         {
             get
             {
-                return NetworkAnimations;
+                return networkAnimations;
             }
             set
             {

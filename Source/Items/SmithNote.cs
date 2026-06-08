@@ -303,17 +303,17 @@ namespace LCWildCardMod.Items
         private void StartFlipping()
         {
             isFlippable = false;
-            SmithNoteInfo info = AllPages[currentElement];
+            SmithNoteInfo info = AllPages[index: currentElement];
             rawImageList[1].texture = info.texture;
             rawImageList[1].color = info.colour;
             currentElement++;
-            if (AllPages.Count <= 1 || currentElement >= AllPages.Count)
+            if (currentElement >= AllPages.Count)
             {
                 currentElement = 0;
             }
             currentlyEnemy = currentElement >= playerPages.Count;
             Log.LogDebug($"Page index: {currentElement}");
-            textMeshList[1].text = AllPages[currentElement].targetName;
+            textMeshList[1].text = AllPages[index: currentElement].targetName;
             textMeshList[1].rectTransform.parent.gameObject.SetActive(true);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(true);
             rawImageList[0].rectTransform.parent.gameObject.SetActive(false);
@@ -333,14 +333,14 @@ namespace LCWildCardMod.Items
         }
         public void FinishFlipping()
         {
-            textMeshList[0].text = AllPages[currentElement].targetName;
+            textMeshList[0].text = AllPages[index: currentElement].targetName;
             textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
             isFlippable = true;
         }
         public void PfpFrameUpdate()
         {
-            SmithNoteInfo info = AllPages[currentElement];
+            SmithNoteInfo info = AllPages[index: currentElement];
             rawImageList[0].texture = info.texture;
             rawImageList[0].color = info.colour;
             rawImageList[0].rectTransform.parent.gameObject.SetActive(true);
@@ -349,8 +349,8 @@ namespace LCWildCardMod.Items
         {
             List<int> playerIDs = playerPages.Keys;
             int playerPageCount = playerIDs.Count;
-            List<int> allIDs = playerIDs.Concat(enemyPages.Keys).ToList();
-            for (int i = 0; i < allIDs.Count; i++)
+            int[] allIDs = playerIDs.Concat(enemyPages.Keys).ToArray();
+            for (int i = 0; i < allIDs.Length; i++)
             {
                 int id = allIDs[i];
                 bool doEnemy = i >= playerPageCount;

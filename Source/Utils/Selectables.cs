@@ -7,6 +7,7 @@ using UnityEngine.Audio;
 using UnityEngine.Rendering;
 using UnityEngine;
 using System.Collections.ObjectModel;
+using GameNetcodeStuff;
 namespace LCWildCardMod.Utils
 {
     [Serializable]
@@ -1282,7 +1283,7 @@ namespace LCWildCardMod.Utils
                 return looping;
             }
         }
-        public float Range
+        public float CloseRange
         {
             get
             {
@@ -1299,11 +1300,31 @@ namespace LCWildCardMod.Utils
                     return;
                 }
                 source.maxDistance = value;
-                if (doFar && farSource != null)
-                {
-                    farSource.maxDistance = value * 3f;
-                }
                 audibleRange = value;
+                if (!FarNoise)
+                {
+                    return;
+                }
+                FarRange = value * 3f;
+            }
+        }
+        public float FarRange
+        {
+            get
+            {
+                if (hudAudio)
+                {
+                    return 0f;
+                }
+                return farSource.maxDistance;
+            }
+            private set
+            {
+                if (hudAudio || farSource == null)
+                {
+                    return;
+                }
+                farSource.maxDistance = value;
             }
         }
         public bool IsPlaying
@@ -1381,6 +1402,30 @@ namespace LCWildCardMod.Utils
                 farSource.time = value * farSource.clip.length;
             }
         }
+        internal bool FarNoise
+        {
+            get
+            {
+                if (!doFar || farSource == null || !farSource.enabled)
+                {
+                    return false;
+                }
+                if (GameNetworkManager.Instance == null)
+                {
+                    return doFar;
+                }
+                PlayerControllerB localPlayer = GameNetworkManager.Instance.localPlayerController;
+                return localPlayer.isInsideFactory || localPlayer.spectatedPlayerScript?.isInsideFactory == true;
+            }
+            set
+            {
+                if (!doFar || farSource == null)
+                {
+                    return;
+                }
+                farSource.enabled = value;
+            }
+        }
         public override void Initialize(IWildCardBase wildCardBase)
         {
             loopCurrent = looping && !seamlessLoop;
@@ -1435,7 +1480,7 @@ namespace LCWildCardMod.Utils
                 reverbFilter.diffusion = 100f;
                 reverbFilter.density = 100f;
             }
-            Range = audibleRange;
+            CloseRange = audibleRange;
         }
         public void HUDOverride()
         {
@@ -1484,20 +1529,29 @@ namespace LCWildCardMod.Utils
             {
                 return;
             }
-            if (audibleLoop)
+            if (!FarNoise)
             {
-                if (audibleTime > 0f)
-                {
-                    audibleTime -= Time.deltaTime;
-                    return;
-                }
-                if (!IsPlaying)
-                {
-                    return;
-                }
-                audibleTime = Base.Random.Next(minMaxAudibleRound.x, minMaxAudibleRound.y) * 0.01f;
-                DogNoise(0.5f, 1f);
+                FarRange = 0f;
             }
+            else if (FarRange <= 0f)
+            {
+                FarRange = CloseRange * 3f;
+            }
+            if (!audibleLoop)
+            {
+                return;
+            }
+            if (audibleTime > 0f)
+            {
+                audibleTime -= Time.deltaTime;
+                return;
+            }
+            if (!IsPlaying)
+            {
+                return;
+            }
+            audibleTime = Base.Random.Next(minMaxAudibleRound.x, minMaxAudibleRound.y) * 0.01f;
+            DogNoise(0.5f, 1f);
         }
         public void SetLoop(bool loop, float? loopMin = null, float? loopMax = null)
         {
@@ -1517,7 +1571,7 @@ namespace LCWildCardMod.Utils
                 if (source != null)
                 {
                     source.loop = loop;
-                    if (doFar && farSource != null)
+                    if (FarNoise)
                     {
                         farSource.loop = loop;
                     }
@@ -1533,7 +1587,7 @@ namespace LCWildCardMod.Utils
                 if (source != null && IsPlaying)
                 {
                     source.volume *= multiplier.Value * inverseVolumeMultiplier;
-                    if (farSource != null)
+                    if (FarNoise)
                     {
                         farSource.volume *= multiplier.Value * inverseVolumeMultiplier;
                     }
@@ -1560,7 +1614,7 @@ namespace LCWildCardMod.Utils
                 if (source != null && IsPlaying)
                 {
                     source.pitch *= multiplier.Value * inversePitchMultiplier;
-                    if (farSource != null)
+                    if (FarNoise)
                     {
                         farSource.pitch *= multiplier.Value * inversePitchMultiplier;
                     }
@@ -1672,7 +1726,8 @@ namespace LCWildCardMod.Utils
             }
             source.pitch = pitch;
             source.loop = seamlessLoop;
-            if (doFar && farSource != null)
+            bool far = FarNoise;
+            if (far)
             {
                 farSource.pitch = pitch;
                 farSource.loop = seamlessLoop;
@@ -1684,7 +1739,7 @@ namespace LCWildCardMod.Utils
             if (oneShot)
             {
                 source.PlayOneShot(clip, volume);
-                if (doFar && farSource != null)
+                if (far)
                 {
                     farSource.PlayOneShot(clip, volume);
                 }
@@ -1694,7 +1749,7 @@ namespace LCWildCardMod.Utils
                 source.volume = volume;
                 source.clip = clip;
                 source.Play();
-                if (doFar && farSource != null)
+                if (far)
                 {
                     farSource.volume = volume;
                     farSource.clip = clip;
@@ -1726,7 +1781,7 @@ namespace LCWildCardMod.Utils
             {
                 WalkieTalkie.TransmitOneShotAudio(source, clip, volume);
             }
-            if (!doAudible || Range <= 0f)
+            if (!doAudible || CloseRange <= 0f)
             {
                 return true;
             }
@@ -1735,17 +1790,13 @@ namespace LCWildCardMod.Utils
         }
         public void DogNoise(float volume, float pitch, bool networked = true)
         {
-            WildCardProp prop = Base as WildCardProp;
-            if (prop == null)
-            {
-                return;
-            }
-            bool isInShip = prop.isInElevator && StartOfRound.Instance.hangarDoorsClosed;
-            RoundManager.Instance.PlayAudibleNoise(LastPosition, Range * Mathf.Max(0.5f, volume) * (1 + (Mathf.Abs(pitch - 1f) * 0.5f)), volume, TimesNearby, isInShip);
-            if (prop.isHeld && volume >= 0.3f)
+            bool isInShip = false;
+            if (Base is WildCardProp prop && prop.isHeld && volume >= 0.3f)
             {
                 prop.LastPlayerHeldBy.timeSinceMakingLoudNoise = 0f;
+                isInShip = prop.isInElevator && StartOfRound.Instance.hangarDoorsClosed;
             }
+            RoundManager.Instance.PlayAudibleNoise(LastPosition, CloseRange * Mathf.Max(0.5f, volume) * (1 + (Mathf.Abs(pitch - 1f) * 0.5f)), volume, TimesNearby, isInShip);
             if (!networked)
             {
                 return;

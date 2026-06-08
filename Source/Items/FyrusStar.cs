@@ -66,15 +66,13 @@ namespace LCWildCardMod.Items
         {
             base.ItemActivate(used, buttonDown);
             activated = true;
+            StartCoroutine(StarCoroutine(IsOwner, !isHeld));
             if (isHeld)
             {
                 LastPlayerHeldBy.DiscardHeldObject();
+                return;
             }
-            else
-            {
-                EnemyForceDropItem(true);
-            }
-            StartCoroutine(StarCoroutine(IsOwner, !isHeld));
+            EnemyForceDropItem(true);
         }
         public override void Update()
         {
@@ -102,24 +100,21 @@ namespace LCWildCardMod.Items
         {
             yield return new WaitForEndOfFrame();
             Particles["Sparkles"].StopAll(true, false);
-            if (isHeld)
-            {
-                EnableItemMeshes(false);
-                EnablePhysics(false);
-                grabbable = false;
-            }
+            EnableItemMeshes(false);
+            EnablePhysics(false);
+            grabbable = false;
             yield return new WaitForSeconds(1.2f);
             Transform musicParent;
-            if (!byEnemy)
+            if (byEnemy)
+            {
+                musicParent = LastEnemyHeldBy.transform;
+                LastEnemyHeldBy.agent.speed *= speedMultiplier;
+            }
+            else
             {
                 Log.LogDebug($"{LastPlayerHeldBy.playerUsername} has begun Fyrus Star invincibility");
                 LastPlayerHeldBy.MultiplyPlayerSpeed(speedMultiplier);
                 musicParent = LastPlayerHeldBy.transform;
-            }
-            else
-            {
-                musicParent = LastEnemyHeldBy.transform;
-                LastEnemyHeldBy.agent.speed *= speedMultiplier;
             }
             inverseSpeedMultiplier = 1f / speedMultiplier;
             musicTransform.SetParent(musicParent);
@@ -134,14 +129,14 @@ namespace LCWildCardMod.Items
             yield return new WaitUntil(() => audio.IsPlaying);
             trailRenderer.emitting = true;
             yield return new WaitUntil(() => !audio.IsPlaying);
-            if (!byEnemy)
+            if (byEnemy)
             {
-                LastPlayerHeldBy.MultiplyPlayerSpeed(inverseSpeedMultiplier);
-                Log.LogDebug($"{LastPlayerHeldBy.playerUsername}'s Fyrus Star invincibility has ended");
+                LastEnemyHeldBy.agent.speed *= inverseSpeedMultiplier;
             }
             else
             {
-                LastEnemyHeldBy.agent.speed *= inverseSpeedMultiplier;
+                LastPlayerHeldBy.MultiplyPlayerSpeed(inverseSpeedMultiplier);
+                Log.LogDebug($"{LastPlayerHeldBy.playerUsername}'s Fyrus Star invincibility has ended");
             }
             if (isLocal)
             {

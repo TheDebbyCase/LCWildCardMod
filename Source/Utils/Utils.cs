@@ -362,7 +362,6 @@ namespace LCWildCardMod.Utils
             if (instance.Animator != null)
             {
                 instance.Animator.Base = instance;
-                instance.Animator.SetNetworkEnabled(instance.NetworkAnimations);
             }
             for (int i = 0; i < instance.Audio.Count; i++)
             {
@@ -1147,7 +1146,7 @@ namespace LCWildCardMod.Utils
         }
         public bool SetParameter(int hash, float value)
         {
-            return SetParameter(hash, value);
+            return SetParameter(GetParameter(hash), value);
         }
         public bool Trigger(string parameter)
         {

@@ -2,6 +2,7 @@
 using LCWildCardMod.Utils;
 using Unity.Netcode;
 using UnityEngine;
+using UnityEngine.Rendering;
 namespace LCWildCardMod.Items
 {
     public class SmithGojoGlasses : WildCardProp, ILifeSaver
@@ -175,18 +176,40 @@ namespace LCWildCardMod.Items
     {
         [SerializeField]
         private SmithGojoGlasses glasses = null;
-        private void OnTriggerStay(Collider other)
+        [SerializeField]
+        private Volume gojoVolume = null;
+        [SerializeField]
+        private float volumeMaxDistance = 2.5f;
+        private float volumeMaxDistanceInverse = -1f;
+        private int layerMask;
+        private void OnEnable()
         {
-            if (other.CompareTag("Player") && other.gameObject.TryGetComponent(out PlayerControllerB player) && (glasses.isHeld && player == glasses.LastPlayerHeldBy))
+            layerMask = LayerMask.GetMask("Player", "Enemies");
+            volumeMaxDistanceInverse = 1f / volumeMaxDistance;
+        }
+        private void OnDisable()
+        {
+            gojoVolume.weight = 0f;
+        }
+        private void Update()
+        {
+            gojoVolume.weight = Mathf.Min(1f, Mathf.Lerp(2f, 0f, Vector3.Distance(transform.position, GameNetworkManager.Instance.localPlayerController.gameplayCamera.transform.position) * volumeMaxDistanceInverse));
+            RaycastHit[] hits = Physics.SphereCastAll(transform.position, volumeMaxDistance, transform.up, 0f, layerMask, QueryTriggerInteraction.Collide);
+            for (int i = 0; i < hits.Length; i++)
             {
-                player.externalForceAutoFade += (player.transform.position - transform.position).normalized * glasses.playerForce;
-                return;
+                RaycastHit hit = hits[i];
+                if (hit.transform.TryGetComponent(out EnemyAICollisionDetect enemyCollision) && (!glasses.isHeldByEnemy || (enemyCollision.mainScript != glasses.LastEnemyHeldBy)))
+                {
+                    glasses.EnemyOverlapped(enemyCollision.mainScript);
+                    continue;
+                }
+                if (!hit.transform.TryGetComponent(out PlayerControllerB player) || !glasses.isHeld || player == glasses.LastPlayerHeldBy)
+                {
+                    continue;
+                }
+                WildCardMod.Instance.Log.LogDebug($"GOJO TRYING TO PUSH \"{player.playerUsername}\" with force: {glasses.playerForce}");
+                player.externalForces += (player.transform.position - transform.position).normalized * glasses.playerForce;
             }
-            if (!glasses.IsOwner || !other.CompareTag("Enemy") || !other.gameObject.TryGetComponent(out EnemyAICollisionDetect enemy) || (glasses.isHeldByEnemy && enemy.mainScript != glasses.LastEnemyHeldBy))
-            {
-                return;
-            }
-            glasses.EnemyOverlapped(enemy.mainScript);
         }
     }
 }
