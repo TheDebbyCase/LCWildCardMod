@@ -11,7 +11,7 @@ namespace LCWildCardMod.Items
         private Transform meshTransform = null;
         [SerializeField]
         private float scaleMaxMultiplier = 3f;
-        private Vector3 meshScale;
+        private Vector3 meshScale = Vector3.one;
         public void RandomizeScale()
         {
             meshScale = meshTransform.localScale;

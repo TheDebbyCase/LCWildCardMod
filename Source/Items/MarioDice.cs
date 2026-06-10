@@ -11,7 +11,7 @@ namespace LCWildCardMod.Items
 {
     public class MarioDice : WildCardThrowable
     {
-        private static GameObject[] maskPrefabs;
+        private static GameObject[] maskPrefabs = null;
         [Space(3f)]
         [Header("MarioDice")]
         [Space(3f)]
@@ -33,15 +33,15 @@ namespace LCWildCardMod.Items
         private AudioClip teleportAudio = null;
         [SerializeField]
         private int coroutineLoopMax = 120;
-        private int currentSide;
+        private int currentSide = 1;
         private int startingValue = -1;
         private bool animFinished = false;
         private bool rollable = false;
         private bool spawnedBugs = false;
         private bool spawnedWorms = false;
-        private HoarderBugAI[] currentBugs;
-        private SandWormAI[] currentWorms;
-        private Coroutine effectCoroutine;
+        private HoarderBugAI[] currentBugs = null;
+        private SandWormAI[] currentWorms = null;
+        private Coroutine effectCoroutine = null;
         public override void Start()
         {
             base.Start();
@@ -80,11 +80,6 @@ namespace LCWildCardMod.Items
                 return;
             }
             SetSideRpc(side);
-        }
-        [Rpc(SendTo.NotMe)]
-        private void SetSideRpc(int side)
-        {
-            SetSide(side, false);
         }
         public override void OnHitGround()
         {
@@ -517,6 +512,20 @@ namespace LCWildCardMod.Items
             }
             ScrapValue += startingValue;
             EffectToggle(true);
+        }
+        public override int GetItemDataToSave()
+        {
+            return currentSide;
+        }
+        public override void LoadItemSaveData(int saveData)
+        {
+            base.LoadItemSaveData(saveData);
+            SetSide(saveData, false);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void SetSideRpc(int side)
+        {
+            SetSide(side, false);
         }
         [Rpc(SendTo.NotMe)]
         private void ToggleEffectRpc(bool enable)

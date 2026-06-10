@@ -18,9 +18,11 @@ namespace LCWildCardMod.Utils
         public bool syncEnemyButton = false;
         internal bool enabled = false;
     }
-    [CreateAssetMenu(menuName = "WildCard/Skin", order = 1)]
+    [CreateAssetMenu(menuName = "WildCard/Skin", order = 2)]
     public class WildCardSkin : ScriptableObject
     {
+        private static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
+        internal static bool AnyEnabled => WildCardMod.skinList.Any((x) => x.enabled);
         public SkinType type;
         public string skinName;
         public string target;
@@ -31,8 +33,6 @@ namespace LCWildCardMod.Utils
         public AudioClip[] newAudioClips;
         public RuntimeAnimatorController newAnimationController;
         internal bool enabled = false;
-        private static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
-        internal static bool AnyEnabled => WildCardMod.Instance.skinList.Any((x) => x.enabled);
         internal static void SetSkin(EnemyAI enemy)
         {
             WildCardSkin skinToApply = GetRandomSkin(enemy.enemyType.enemyName, SkinType.Enemy);
@@ -115,9 +115,9 @@ namespace LCWildCardMod.Utils
             int nothingWeight = 0;
             int skinsWeight = 0;
             List<WildCardSkin> potentialSkins = new List<WildCardSkin>();
-            for (int i = 0; i < WildCardMod.Instance.skinList.Count; i++)
+            for (int i = 0; i < WildCardMod.skinList.Count; i++)
             {
-                WildCardSkin skin = WildCardMod.Instance.skinList[i];
+                WildCardSkin skin = WildCardMod.skinList[i];
                 if (!skin.enabled || skin.type != type || skin.target != target)
                 {
                     continue;
@@ -132,7 +132,7 @@ namespace LCWildCardMod.Utils
             {
                 WildCardSkin skin = potentialSkins[i];
                 string skinName = skin.skinName;
-                int applyWeight = WildCardMod.Instance.ModConfig.SkinApplyChance[skinName];
+                int applyWeight = WildCardMod.ModConfig.SkinApplyChance[skinName];
                 if (applyWeight <= 0)
                 {
                     Log.LogDebug($"Skin \"{skinName}\" was disabled!");
@@ -162,7 +162,7 @@ namespace LCWildCardMod.Utils
                 WildCardSkin skin = potentialSkins[i];
                 string skinName = skin.skinName;
                 Log.LogDebug($"Rolling to see if \"{skinName}\" is selected!");
-                if (WildCardMod.Instance.ModConfig.SkinApplyChance[skinName] * inverseSkins >= applyChance)
+                if (WildCardMod.ModConfig.SkinApplyChance[skinName] * inverseSkins >= applyChance)
                 {
                     Log.LogDebug($"Skin \"{skinName}\" was selected!");
                     return skin;
@@ -171,11 +171,10 @@ namespace LCWildCardMod.Utils
             return null;
         }
     }
-    [CreateAssetMenu(menuName = "WildCard/MapObject", order = 1)]
-    public class WildCardMapObject : ScriptableObject
+    [CreateAssetMenu(menuName = "WildCard/MapObject", order = 3)]
+    public class WildCardMapObject : IndoorMapHazardType
     {
         public string mapObjectName;
-        public SpawnableMapObject spawnableMapObject;
         public List<SelectablePair<AnimationCurve>> levelCurves;
         public bool autoHandle;
         public string[] configBools;
@@ -183,7 +182,7 @@ namespace LCWildCardMod.Utils
         public Func<SelectableLevel, AnimationCurve> GetCurveFunc()
         {
             AnimationCurve curve = new AnimationCurve(new Keyframe(0f, 0f), new Keyframe(0.5f, 1f), new Keyframe(1f, 2f));
-            if (levelCurves != null && (autoHandle || WildCardMod.Instance.ModConfig.DefaultMapObjectCurve[mapObjectName]))
+            if (levelCurves != null && (autoHandle || WildCardMod.ModConfig.DefaultMapObjectCurve[mapObjectName]))
             {
                 return (x) =>
                 {
@@ -201,10 +200,10 @@ namespace LCWildCardMod.Utils
                     return curve;
                 };
             }
-            else if (WildCardMod.Instance.ModConfig.MapObjectMinMax.TryGetValue(mapObjectName, out (int, int) minMax))
+            else if (WildCardMod.ModConfig.MapObjectMinMax.TryGetValue(mapObjectName, out Vector2Int minMax))
             {
-                int min = minMax.Item1;
-                int max = minMax.Item2;
+                int min = minMax.x;
+                int max = minMax.y;
                 curve.keys[0].value = min;
                 curve.keys[1].value = (min + max) * 0.5f;
                 curve.keys[2].value = max;

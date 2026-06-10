@@ -13,9 +13,9 @@ namespace LCWildCardMod.Items
         [Header("CloverBee")]
         [Space(3f)]
         [SerializeField]
-        private Transform stinger = default;
+        private Transform stinger = null;
         [SerializeField]
-        private string[] noNecklaceTooltips = default;
+        private string[] noNecklaceTooltips = null;
         [SerializeField]
         private float stingerSpeed = 8f;
         [SerializeField]
@@ -26,18 +26,18 @@ namespace LCWildCardMod.Items
         private int stingerHit = 1;
         [SerializeField]
         private float stingerRange = 20f;
-        private Vector3 targetPosition = default;
-        private bool isShooting = default;
-        private float stingerTime = default;
-        private Vector3 startingPosition = default;
-        private Vector3 stingerStart = default;
+        private Vector3 targetPosition = Vector3.zero;
+        private bool isShooting = false;
+        private float stingerTime = 0f;
+        private Vector3 startingPosition = Vector3.zero;
+        private Vector3 stingerLocalPos = Vector3.zero;
         public override void Start()
         {
             base.Start();
             CloverNecklace.beeList.Add(this);
             Properties.Add("NoNecklace", OriginalItem.Clone());
             Properties["NoNecklace"].toolTips = noNecklaceTooltips;
-            stingerStart = stinger.localPosition;
+            stingerLocalPos = stinger.localPosition;
             insertedBattery.charge = 1f;
         }
         public override void OnNetworkSpawn()
@@ -49,10 +49,10 @@ namespace LCWildCardMod.Items
             }
             Audio["Buzz"].PlayRandomClip();
         }
-        public override void OnNetworkDespawn()
+        public override void OnDestroy()
         {
-            base.OnNetworkDespawn();
             CloverNecklace.beeList.Remove(this);
+            base.OnDestroy();
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
@@ -122,7 +122,7 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            Audio["Buzz"].SetLoop(true);
+            Audio["Buzz"].SetLoop(false);
         }
         public override void PocketItem()
         {
@@ -145,7 +145,7 @@ namespace LCWildCardMod.Items
         {
             SelectParticles particle = Particles["Sparks"];
             yield return new WaitUntil(() => !particle.AnyAlive());
-            stinger.localPosition = stingerStart;
+            stinger.localPosition = stingerLocalPos;
             stingerTime = 0;
             Log.LogDebug("Clover Bee Resetting Projectile");
             if (!IsServer)
@@ -179,11 +179,6 @@ namespace LCWildCardMod.Items
             }
             ShootRpc(target);
         }
-        [Rpc(SendTo.NotMe)]
-        private void ShootRpc(Vector3 target = default)
-        {
-           Shoot(target, false);
-        }
         private void EndShoot(bool networked = true)
         {
             Particles["Sparks"].PlayAll(networked: false);
@@ -194,6 +189,11 @@ namespace LCWildCardMod.Items
                 return;
             }
             EndShootRpc();
+        }
+        [Rpc(SendTo.NotMe)]
+        private void ShootRpc(Vector3 target = default)
+        {
+           Shoot(target, false);
         }
         [Rpc(SendTo.NotMe)]
         private void EndShootRpc()

@@ -18,6 +18,8 @@ using UnityEngine.Audio;
 using LethalCompanyInputUtils.BindingPathEnums;
 using BepInEx.Logging;
 using System.Collections.ObjectModel;
+using LethalLib.Modules;
+using static LethalLib.Modules.MapObjects;
 namespace LCWildCardMod.Utils
 {
     public static class HarmonyHelper
@@ -312,8 +314,8 @@ namespace LCWildCardMod.Utils
         }
         internal static (Harmony, Type[]) GetHarmony(string id, params Type[] toPatch)
         {
-            Dictionary<string, (Harmony, Type[])> harmonies = WildCardMod.Instance.Harmonies;
-            if (!WildCardMod.Instance.Harmonies.TryGetValue(id, out (Harmony, Type[]) newHarmony))
+            Dictionary<string, (Harmony, Type[])> harmonies = WildCardMod.Harmonies;
+            if (!WildCardMod.Harmonies.TryGetValue(id, out (Harmony, Type[]) newHarmony))
             {
                 newHarmony = (new Harmony(id), toPatch);
                 harmonies.Add(id, newHarmony);
@@ -335,7 +337,7 @@ namespace LCWildCardMod.Utils
                 for (int i = 0; i < types.Length; i++)
                 {
                     Type type = types[i];
-                    if (WildCardMod.Instance.ModConfig.Debug)
+                    if (WildCardMod.ModConfig.Debug)
                     {
                         WildCardMod.Instance.Log.LogDebug($"Patching methods of class \"{type}\" with Harmony ID \"{harmonyID}\"");
                     }
@@ -347,6 +349,10 @@ namespace LCWildCardMod.Utils
             {
                 return;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                WildCardMod.Instance.Log.LogDebug($"Unpatching methods with Harmony ID \"{harmonyID}\"");
+            }
             harmony.UnpatchSelf();
         }
         internal static void ILCodeCheck()
@@ -356,7 +362,8 @@ namespace LCWildCardMod.Utils
     }
     public interface IWildCardBase
     {
-        internal static void Awake(IWildCardBase instance)
+        internal static int totalBases = 0;
+        public static void Awake(IWildCardBase instance)
         {
             totalBases++;
             if (instance.Animator != null)
@@ -421,7 +428,7 @@ namespace LCWildCardMod.Utils
                 light.SetBase(instance);
             }
         }
-        internal static void OnNetworkPostSpawn(IWildCardBase instance, bool skipAudio = false)
+        public static void OnNetworkPostSpawn(IWildCardBase instance, bool skipAudio = false)
         {
             instance.Animator?.SetNetworkEnabled(instance.NetworkAnimations);
             for (int i = 0; i < instance.ModelVariants.Count; i++)
@@ -456,7 +463,7 @@ namespace LCWildCardMod.Utils
                 audioClips.PlayRandomClip();
             }
         }
-        internal static void Update(IWildCardBase instance)
+        public static void Update(IWildCardBase instance)
         {
             for (int i = 0; i < instance.Audio.Count; i++)
             {
@@ -472,7 +479,7 @@ namespace LCWildCardMod.Utils
                 instance.Animations[i].TickAll();
             }
         }
-        internal static void Initialize(IWildCardBase instance, ref List<SelectablePair<SelectAudioClips>> audioClips, ref List<SelectablePair<SelectAnimationParameters>> animations, ref List<SelectablePair<SelectParticles>> particles, ref List<SelectablePair<SelectRenderers>> meshRenderers, ref List<SelectablePair<SelectModelVariants>> modelVariants, ref List<SelectablePair<SelectLights>> lights, out ListDict<string, SelectAudioClips> audioDict, out ListDict<string, SelectAnimationParameters> animDict, out ListDict<string, SelectParticles> particleDict, out ListDict<string, SelectRenderers> renderDict, out ListDict<string, SelectModelVariants> variantDict, out ListDict<string, SelectLights> lightDict)
+        public static void Initialize(IWildCardBase instance, ref List<SelectablePair<SelectAudioClips>> audioClips, ref List<SelectablePair<SelectAnimationParameters>> animations, ref List<SelectablePair<SelectParticles>> particles, ref List<SelectablePair<SelectRenderers>> meshRenderers, ref List<SelectablePair<SelectModelVariants>> modelVariants, ref List<SelectablePair<SelectLights>> lights, out ListDict<string, SelectAudioClips> audioDict, out ListDict<string, SelectAnimationParameters> animDict, out ListDict<string, SelectParticles> particleDict, out ListDict<string, SelectRenderers> renderDict, out ListDict<string, SelectModelVariants> variantDict, out ListDict<string, SelectLights> lightDict)
         {
             instance.Animator = AnimationHandler.Create(instance.Transform.GetComponentInChildren<NetworkAnimator>());
             audioDict = new ListDict<string, SelectAudioClips>();
@@ -530,7 +537,7 @@ namespace LCWildCardMod.Utils
             }
             lights = null;
         }
-        internal static bool HitOrDamage(IWildCardBase instance, IHittable hittable, int playerDamage, int hitForce, Vector3 hitDirection, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1, CauseOfDeath playerDeathCause = CauseOfDeath.Unknown, float playerForceMultiplier = 1f)
+        public static bool HitOrDamage(IWildCardBase instance, IHittable hittable, int playerDamage, int hitForce, Vector3 hitDirection, PlayerControllerB playerWhoHit = null, bool playHitSFX = false, int hitID = -1, CauseOfDeath playerDeathCause = CauseOfDeath.Unknown, float playerForceMultiplier = 1f)
         {
             PlayerControllerB hittingPlayer = hittable as PlayerControllerB;
             if (hittingPlayer != null)
@@ -540,7 +547,6 @@ namespace LCWildCardMod.Utils
             }
             return hittable.Hit(hitForce, hitDirection, playerWhoHit, playHitSFX, hitID);
         }
-        internal static int totalBases = 0;
         public string Name { get; set; }
         public Transform Transform => null;
         public ListDict<string, SelectAudioClips> Audio => null;
@@ -575,6 +581,7 @@ namespace LCWildCardMod.Utils
     }
     internal interface ILifeSaver
     {
+        private static readonly Dictionary<string, List<ILifeSaver>> lifeSavers = new Dictionary<string, List<ILifeSaver>>();
         internal static Dictionary<string, List<ILifeSaver>> AllLifeSavers
         {
             get
@@ -582,7 +589,6 @@ namespace LCWildCardMod.Utils
                 return lifeSavers;
             }
         }
-        private static readonly Dictionary<string, List<ILifeSaver>> lifeSavers = new Dictionary<string, List<ILifeSaver>>();
         internal static bool AnyEnabled => AllLifeSavers.Count > 0;
         internal static bool TrySave(PlayerControllerB player, CauseOfDeath cause = CauseOfDeath.Unknown, Vector3 hitVelocity = default, EnemyAI enemy = null)
         {
@@ -656,30 +662,32 @@ namespace LCWildCardMod.Utils
             potentialLifeSavers.Sort((x, y) => x.Priority.CompareTo(y.Priority));
             return potentialLifeSavers.FirstOrDefault();
         }
-        internal static bool IsLifeSaver(GameObject gameObject, out string qualifiedName, out ILifeSaver lifeSaver)
+        internal static bool IsLifeSaver(GameObject gameObject, out ILifeSaver lifeSaver)
         {
-            return IsLifeSaver(gameObject.GetComponentInChildren<WildCardProp>(), out qualifiedName, out lifeSaver);
+            return IsLifeSaver(gameObject.GetComponentInChildren<WildCardProp>(), out lifeSaver);
         }
-        internal static bool IsLifeSaver(object instance, out string qualifiedName, out ILifeSaver lifeSaver)
+        internal static bool IsLifeSaver(object instance, out ILifeSaver lifeSaver)
         {
-            qualifiedName = null;
-            lifeSaver = null;
             if (instance == null)
             {
+                lifeSaver = null;
                 return false;
             }
-            Type type = instance.GetType();
-            if (!(instance is ILifeSaver))
-            {
-                return false;
-            }
-            qualifiedName = type.Name;
             lifeSaver = instance as ILifeSaver;
-            return true;
+            return lifeSaver != null;
         }
         internal static bool Register(object instance)
         {
-            if (!IsLifeSaver(instance, out string typeName, out ILifeSaver newLifeSaver) || !AllLifeSavers.TryGetValue(typeName, out List<ILifeSaver> lifeSavers))
+            if (!IsLifeSaver(instance, out ILifeSaver newLifeSaver))
+            {
+                return false;
+            }
+            return Register(newLifeSaver);
+        }
+        internal static bool Register(ILifeSaver newLifeSaver)
+        {
+            string typeName = newLifeSaver.GetType().Name;
+            if (!AllLifeSavers.TryGetValue(typeName, out List<ILifeSaver> lifeSavers))
             {
                 return false;
             }
@@ -688,11 +696,20 @@ namespace LCWildCardMod.Utils
         }
         internal static void Unregister(object instance)
         {
-            if (!IsLifeSaver(instance, out string typeName, out ILifeSaver newLifeSaver) || !AllLifeSavers.TryGetValue(typeName, out List<ILifeSaver> lifeSavers))
+            if (!IsLifeSaver(instance, out ILifeSaver oldLifeSaver))
             {
                 return;
             }
-            lifeSavers.Remove(newLifeSaver);
+            Unregister(oldLifeSaver);
+        }
+        internal static void Unregister(ILifeSaver oldLifeSaver)
+        {
+            string typeName = oldLifeSaver.GetType().Name;
+            if (!AllLifeSavers.TryGetValue(typeName, out List<ILifeSaver> lifeSavers))
+            {
+                return;
+            }
+            lifeSavers.Remove(oldLifeSaver);
         }
         internal int Priority => 0;
         internal bool UntargetableWhen(PlayerControllerB player);
@@ -729,9 +746,10 @@ namespace LCWildCardMod.Utils
     }
     public static class WildUtils
     {
-        public static ListDict<string, EnemyType> AllEnemies { get; private set; }
-        public static ReadOnlyDictionary<string, string> TrueEnemyNames { get; private set; }
         private static AudioMixerGroup diageticMaster = default;
+        public static readonly Dictionary<int, float> playerSpeedMultipliers = new Dictionary<int, float>();
+        public static ListDict<string, EnemyType> AllEnemies { get; internal set; }
+        public static ReadOnlyDictionary<string, string> TrueEnemyNames { get; internal set; }
         public static AudioMixerGroup DiageticMasterGroup
         {
             get
@@ -743,13 +761,16 @@ namespace LCWildCardMod.Utils
                 return diageticMaster;
             }
         }
-        public static readonly Dictionary<int, float> playerSpeedMultipliers = new Dictionary<int, float>();
         public static bool IsSubclassOfRawGeneric(this Type toCheck, Type generic)
         {
             while (toCheck != null && toCheck != typeof(object))
             {
-                Type cur = toCheck.IsGenericType ? toCheck.GetGenericTypeDefinition() : toCheck;
-                if (generic == cur)
+                Type current = toCheck;
+                if (toCheck.IsGenericType)
+                {
+                    current = toCheck.GetGenericTypeDefinition();
+                }
+                if (generic == current)
                 {
                     return true;
                 }
@@ -960,39 +981,55 @@ namespace LCWildCardMod.Utils
             mainModule.playOnAwake = false;
             return Particles.Create(system);
         }
-        internal static void GetEnemies()
+        public static void RegisterMapObject(IndoorMapHazard mapObject, Levels.LevelTypes levels, Func<SelectableLevel, AnimationCurve> spawnRateFunction = null)
         {
-            AllEnemies = new ListDict<string, EnemyType>();
-            for (int i = 0; i < StartOfRound.Instance.levels.Length; i++)
+            RegisterMapObject(mapObject.hazardType, levels, spawnRateFunction);
+        }
+        public static void RegisterMapObject(IndoorMapHazard mapObject, Levels.LevelTypes levels = Levels.LevelTypes.None, string[] levelOverrides = null, Func<SelectableLevel, AnimationCurve> spawnRateFunction = null)
+        {
+            RegisterMapObject(mapObject.hazardType, levels, levelOverrides, spawnRateFunction);
+        }
+        public static void RegisterMapObject(IndoorMapHazardType mapObject, Levels.LevelTypes levels, Func<SelectableLevel, AnimationCurve> spawnRateFunction = null)
+        {
+            RegisterMapObject(mapObject, levels, null, spawnRateFunction);
+        }
+        public static void RegisterMapObject(IndoorMapHazardType mapObject, Levels.LevelTypes levels = Levels.LevelTypes.None, string[] levelOverrides = null, Func<SelectableLevel, AnimationCurve> spawnRateFunction = null)
+        {
+            mapObjects.Add(new RegisteredMapObject
             {
-                SelectableLevel level = StartOfRound.Instance.levels[i];
-                List<SpawnableEnemyWithRarity> allEnemies = new List<SpawnableEnemyWithRarity>(RoundManager.Instance.WeedEnemies);
-                allEnemies.AddRange(level.Enemies);
-                allEnemies.AddRange(level.OutsideEnemies);
-                allEnemies.AddRange(level.DaytimeEnemies);
-                for (int j = 0; j < allEnemies.Count; j++)
-                {
-                    EnemyType type = allEnemies[j].enemyType;
-                    AllEnemies.Add(type.enemyName, type);
-                }
+                indoorMapHazardType = mapObject,
+                levels = levels,
+                spawnRateFunction = spawnRateFunction,
+                spawnLevelOverrides = levelOverrides
+            });
+        }
+        public static void RemoveMapObject(IndoorMapHazard mapObject, Levels.LevelTypes levelFlags, string[] levelOverrides = null)
+        {
+            RemoveMapObject(mapObject.hazardType, levelFlags, levelOverrides);
+        }
+        public static void RemoveMapObject(IndoorMapHazardType mapObject, Levels.LevelTypes levelFlags, string[] levelOverrides = null)
+        {
+            if (StartOfRound.Instance == null)
+            {
+                return;
             }
-            Dictionary<string, string> enemyNamesDict = new Dictionary<string, string>();
-            for (int i = 0; i < AllEnemies.Count; i++)
+            SelectableLevel[] levels = StartOfRound.Instance.levels;
+            for (int i = 0; i < levels.Length; i++)
             {
-                EnemyType type = AllEnemies[i];
-                if (enemyNamesDict.ContainsKey(type.enemyName))
+                SelectableLevel level = levels[i];
+                string name = level.name;
+                bool alwaysValid = (levelFlags.HasFlag(Levels.LevelTypes.All) || (levelOverrides?.Any((string item) => item.ToLowerInvariant() == name.ToLowerInvariant()) ?? false) || (levelFlags.HasFlag(Levels.LevelTypes.Modded) && !Enum.IsDefined(typeof(Levels.LevelTypes), name)));
+                if (!(Enum.IsDefined(typeof(Levels.LevelTypes), name) || alwaysValid))
                 {
                     continue;
                 }
-                string trueName = type.enemyName;
-                ScanNodeProperties scanNode = type.enemyPrefab.GetComponentInChildren<ScanNodeProperties>();
-                if (scanNode != null)
+                Levels.LevelTypes levelEnum = (alwaysValid ? Levels.LevelTypes.All : ((Levels.LevelTypes)Enum.Parse(typeof(Levels.LevelTypes), name)));
+                if (!alwaysValid && !levelFlags.HasFlag(levelEnum))
                 {
-                    trueName = scanNode.headerText;
+                    continue;
                 }
-                enemyNamesDict.Add(type.enemyName, trueName);
+                level.indoorMapHazards = level.indoorMapHazards.Where((IndoorMapHazard x) => x.hazardType.prefabToSpawn != mapObject.prefabToSpawn).ToArray();
             }
-            TrueEnemyNames = new ReadOnlyDictionary<string, string>(enemyNamesDict);
         }
     }
     [Serializable]
@@ -1050,6 +1087,7 @@ namespace LCWildCardMod.Utils
         private Animator animator = default;
         private Dictionary<string, (int, AnimatorControllerParameterType)> nameHashTypesDict;
         private Traverse updaterTraverse;
+        private IWildCardBase wildCardBase;
         public bool IsNetworked
         {
             get
@@ -1102,7 +1140,18 @@ namespace LCWildCardMod.Utils
                 wildCardBase = value;
             }
         }
-        private IWildCardBase wildCardBase;
+        public static AnimationHandler Create(NetworkAnimator animator)
+        {
+            if (animator == null)
+            {
+                return null;
+            }
+            if (animator.Animator == null)
+            {
+                return null;
+            }
+            return new AnimationHandler(animator);
+        }
         public bool SetParameter(string parameter, float value)
         {
             try
@@ -1152,7 +1201,7 @@ namespace LCWildCardMod.Utils
         {
             if (!Parameters.TryGetValue(parameter, out (int, AnimatorControllerParameterType) pair))
             {
-                if (WildCardMod.Instance.ModConfig.Debug)
+                if (WildCardMod.ModConfig.Debug)
                 {
                     Log.LogDebug($"{animator?.name} animator could not find a parameter of name \"{parameter}\"!");
                 }
@@ -1184,7 +1233,7 @@ namespace LCWildCardMod.Utils
         {
             if (!Parameters.TryGetValue(parameter, out (int, AnimatorControllerParameterType) pair))
             {
-                if (WildCardMod.Instance.ModConfig.Debug)
+                if (WildCardMod.ModConfig.Debug)
                 {
                     Log.LogDebug($"{animator?.name} animator could not find a parameter of name \"{parameter}\"!");
                 }
@@ -1216,7 +1265,7 @@ namespace LCWildCardMod.Utils
         {
             if (!Parameters.TryGetValue(parameter, out (int, AnimatorControllerParameterType) pair))
             {
-                if (WildCardMod.Instance.ModConfig.Debug)
+                if (WildCardMod.ModConfig.Debug)
                 {
                     Log.LogDebug($"{animator?.name} animator could not find a parameter of name \"{parameter}\"!");
                 }
@@ -1243,7 +1292,7 @@ namespace LCWildCardMod.Utils
         {
             if (!Parameters.TryGetValue(parameter, out (int, AnimatorControllerParameterType) pair))
             {
-                if (WildCardMod.Instance.ModConfig.Debug)
+                if (WildCardMod.ModConfig.Debug)
                 {
                     Log.LogDebug($"{animator?.name} animator could not find a parameter of name \"{parameter}\"!");
                 }
@@ -1270,7 +1319,7 @@ namespace LCWildCardMod.Utils
         {
             if (!Parameters.TryGetValue(parameter, out (int, AnimatorControllerParameterType) pair))
             {
-                if (WildCardMod.Instance.ModConfig.Debug)
+                if (WildCardMod.ModConfig.Debug)
                 {
                     Log.LogDebug($"{animator?.name} animator could not find a parameter of name \"{parameter}\"!");
                 }
@@ -1298,7 +1347,7 @@ namespace LCWildCardMod.Utils
             float value = 0f;
             if (!Parameters.TryGetValue(parameter, out (int, AnimatorControllerParameterType) pair))
             {
-                if (WildCardMod.Instance.ModConfig.Debug)
+                if (WildCardMod.ModConfig.Debug)
                 {
                     Log.LogDebug($"{animator?.name} animator could not find a parameter of name \"{parameter}\"!");
                 }
@@ -1326,7 +1375,7 @@ namespace LCWildCardMod.Utils
             bool value = false;
             if (!Parameters.TryGetValue(parameter, out (int, AnimatorControllerParameterType) pair))
             {
-                if (WildCardMod.Instance.ModConfig.Debug)
+                if (WildCardMod.ModConfig.Debug)
                 {
                     Log.LogDebug($"{animator?.name} animator could not find a parameter of name \"{parameter}\"!");
                 }
@@ -1354,7 +1403,7 @@ namespace LCWildCardMod.Utils
             int value = 0;
             if (!Parameters.TryGetValue(parameter, out (int, AnimatorControllerParameterType) pair))
             {
-                if (WildCardMod.Instance.ModConfig.Debug)
+                if (WildCardMod.ModConfig.Debug)
                 {
                     Log.LogDebug($"{animator?.name} animator could not find a parameter of name \"{parameter}\"!");
                 }
@@ -1436,18 +1485,6 @@ namespace LCWildCardMod.Utils
             }
             return pair.Item2;
         }
-        public static AnimationHandler Create(NetworkAnimator animator)
-        {
-            if (animator == null)
-            {
-                return null;
-            }
-            if (animator.Animator == null)
-            {
-                return null;
-            }
-            return new AnimationHandler(animator);
-        }
         private void ResetDictionary()
         {
             AnimatorControllerParameter[] parameters = animator.parameters;
@@ -1468,9 +1505,10 @@ namespace LCWildCardMod.Utils
             system = particleSystem;
             renderer = particleSystem.GetComponent<ParticleSystemRenderer>();
         }
-        public ParticleSystem System => system;
         [SerializeField]
         private ParticleSystem system = default;
+        private ParticleSystemRenderer renderer = default;
+        public ParticleSystem System => system;
         public ParticleSystemRenderer Renderer
         {
             get
@@ -1482,7 +1520,6 @@ namespace LCWildCardMod.Utils
                 return renderer;
             }
         }
-        private ParticleSystemRenderer renderer = default;
         public static Particles Create(ParticleSystem particleSystem)
         {
             if (particleSystem == null)
@@ -1561,7 +1598,6 @@ namespace LCWildCardMod.Utils
         }
         [SerializeField]
         private string parameter = default;
-        private AnimationHandler animator = default;
         [SerializeField]
         private RandomAnimationType randomType = default;
         [SerializeField]
@@ -1570,6 +1606,7 @@ namespace LCWildCardMod.Utils
         private bool manualNetwork = false;
         [SerializeField]
         private string syncToAudio = string.Empty;
+        private AnimationHandler animator = default;
         private bool flipFlop = false;
         public string ParameterName
         {
@@ -1880,7 +1917,6 @@ namespace LCWildCardMod.Utils
             SetTimer();
             ResetTimer();
         }
-
     }
     [Serializable]
     public class SelectablePair<T>
@@ -2010,21 +2046,6 @@ namespace LCWildCardMod.Utils
         {
             return new ListDict<TKey, TValue>(keys.Concat(other.keys), values.Concat(other.values));
         }
-        public List<TKey> Keys
-        {
-            get
-            {
-                return new List<TKey>(keys);
-            }
-        }
-        public List<TValue> Values
-        {
-            get
-            {
-                return new List<TValue>(values);
-            }
-        }
-        public int Count => keys.Count;
         public TValue this[TKey target]
         {
             get
@@ -2065,14 +2086,29 @@ namespace LCWildCardMod.Utils
                 values[index] = value;
             }
         }
+        public List<TKey> Keys
+        {
+            get
+            {
+                return new List<TKey>(keys);
+            }
+        }
+        public List<TValue> Values
+        {
+            get
+            {
+                return new List<TValue>(values);
+            }
+        }
+        public int Count => keys.Count;
     }
     [Serializable]
     public class WeightedOption<T>
     {
         [SerializeField]
         public string name;
-        [SerializeField]
         [Min(0f)]
+        [SerializeField]
         public int weight = 0;
         [SerializeField]
         public T option = default;
@@ -2089,5 +2125,15 @@ namespace LCWildCardMod.Utils
     {
         Item,
         Enemy
+    }
+    [Serializable]
+    [Flags]
+    public enum AssetType
+    {
+        None = 0,
+        Scrap = 1,
+        Skin = 2,
+        MapObject = 4,
+        All = 7
     }
 }

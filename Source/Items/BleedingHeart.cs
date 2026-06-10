@@ -12,7 +12,7 @@ namespace LCWildCardMod.Items
         [Header("BleedingHeart")]
         [Space(3f)]
         [SerializeField]
-        private AnimationCurve weightCurve = default;
+        private AnimationCurve weightCurve = null;
         [SerializeField]
         private int valueLoss = 5;
         [SerializeField]
@@ -31,15 +31,15 @@ namespace LCWildCardMod.Items
         private float forceMultiplier = 10f;
         private int startingValue = 0;
         private float inverseStartingValue = 0f;
-        private float intensityValue = default;
-        private float targetLiquidLevel = default;
+        private float intensityValue = 0f;
+        private float targetLiquidLevel = 0f;
         private float startWeight = -1;
         private float weightOverTime = 0f;
-        private float movementMag = default;
-        private int sensitivity = default;
-        private int levelLayerIndex = default;
-        private int sloshLayerIndex = default;
-        private bool exploding = default;
+        private float movementMag = 0f;
+        private int sensitivity = 0;
+        private int levelLayerIndex = 0;
+        private int sloshLayerIndex = 0;
+        private bool exploding = false;
         public override void Start()
         {
             base.Start();
@@ -223,11 +223,6 @@ namespace LCWildCardMod.Items
             }
             SetIntensityRpc(intensity);
         }
-        [Rpc(SendTo.NotMe)]
-        private void SetIntensityRpc(float intensity)
-        {
-            SetIntensity(intensity, false);
-        }
         private void SetSlosh(float magnitude, int sensitivity, bool networked = true)
         {
             movementMag = magnitude;
@@ -237,6 +232,11 @@ namespace LCWildCardMod.Items
                 return;
             }
             SetSloshRpc(magnitude, sensitivity);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void SetIntensityRpc(float intensity)
+        {
+            SetIntensity(intensity, false);
         }
         [Rpc(SendTo.NotMe)]
         private void SetSloshRpc(float magnitude, int sensitivity)

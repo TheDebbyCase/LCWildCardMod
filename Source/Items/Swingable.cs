@@ -23,7 +23,7 @@ namespace LCWildCardMod.Items
         internal float playerForceMultiplier = 1f;
         internal bool reeling = false;
         internal bool forceEndReel = false;
-        private Coroutine reelingCoroutine;
+        private Coroutine reelingCoroutine = null;
         public override void Start()
         {
             base.Start();

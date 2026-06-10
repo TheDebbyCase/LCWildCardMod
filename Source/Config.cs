@@ -5,20 +5,33 @@ using System.Reflection;
 using BepInEx.Configuration;
 using HarmonyLib;
 using LCWildCardMod.Utils;
+using UnityEngine;
 namespace LCWildCardMod.Config
 {
     public class WildCardConfig
     {
         private static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
         private static readonly PropertyInfo orphanedEntriesProp = AccessTools.Property(typeof(ConfigFile), "OrphanedEntries");
-        private readonly ConfigFile config;
+        internal WildCardConfig(ConfigFile cfg, List<WildCardItem> scrapList, List<WildCardSkin> skinList, List<WildCardMapObject> mapObjectsList)
+        {
+            config = cfg;
+            config.SaveOnConfigSet = false;
+            ScrapConfigs(scrapList);
+            SkinConfigs(skinList);
+            MapObjectConfigs(mapObjectsList);
+            debugLogs = config.Bind("Miscellaneous", "Enable Extra Debug Logging?", false);
+            ClearOrphanedEntries(config);
+            config.Save();
+            config.SaveOnConfigSet = true;
+            config.SettingChanged += OnSettingChanged;
+        }
         private ReadOnlyDictionary<string, bool> publicScrapEnabled;
         private ReadOnlyDictionary<string, string> publicScrapSpawnWeights;
         private ReadOnlyDictionary<string, bool> publicSkinEnabled;
         private ReadOnlyDictionary<string, int> publicSkinApplyChance;
         private ReadOnlyDictionary<string, bool> publicMapObjectEnabled;
         private ReadOnlyDictionary<string, bool> publicDefaultMapObjectCurve;
-        private ReadOnlyDictionary<string, (int, int)> publicMapObjectMinMax;
+        private ReadOnlyDictionary<string, Vector2Int> publicMapObjectMinMax;
         private readonly Dictionary<string, ConfigEntry<bool>> isScrapEnabled = new Dictionary<string, ConfigEntry<bool>>();
         private readonly Dictionary<string, ConfigEntry<string>> scrapSpawnWeights = new Dictionary<string, ConfigEntry<string>>();
         private readonly Dictionary<string, ConfigEntry<bool>> isSkinEnabled = new Dictionary<string, ConfigEntry<bool>>();
@@ -27,27 +40,18 @@ namespace LCWildCardMod.Config
         private readonly Dictionary<string, ConfigEntry<bool>> useDefaultMapObjectCurve = new Dictionary<string, ConfigEntry<bool>>();
         private readonly Dictionary<string, (ConfigEntry<int>, ConfigEntry<int>)> mapObjectMinMax = new Dictionary<string, (ConfigEntry<int>, ConfigEntry<int>)>();
         private readonly ConfigEntry<bool> debugLogs;
+        private readonly ConfigFile config;
         public ReadOnlyDictionary<string, bool> ScrapEnabled => publicScrapEnabled;
         public ReadOnlyDictionary<string, string> ScrapSpawnWeights => publicScrapSpawnWeights;
         public ReadOnlyDictionary<string, bool> SkinEnabled => publicSkinEnabled;
         public ReadOnlyDictionary<string, int> SkinApplyChance => publicSkinApplyChance;
         public ReadOnlyDictionary<string, bool> MapObjectEnabled => publicMapObjectEnabled;
         public ReadOnlyDictionary<string, bool> DefaultMapObjectCurve => publicDefaultMapObjectCurve;
-        public ReadOnlyDictionary<string, (int, int)> MapObjectMinMax => publicMapObjectMinMax;
+        public ReadOnlyDictionary<string, Vector2Int> MapObjectMinMax => publicMapObjectMinMax;
         public bool Debug => debugLogs.Value;
-        internal WildCardConfig(ConfigFile cfg, List<WildCardItem> scrapList, List<WildCardSkin> skinList, List<WildCardMapObject> mapObjectsList)
+        private static void ClearOrphanedEntries(ConfigFile config)
         {
-            config = cfg;
-            config.SaveOnConfigSet = false;
-            ScrapConfigs(scrapList);
-            SkinConfigs(skinList);
-            MapObjectConfigs(mapObjectsList);
-            ResetReadonlyDicts();
-            debugLogs = config.Bind("Miscellaneous", "Enable Extra Debug Logging?", false);
-            ClearOrphanedEntries(config);
-            config.Save();
-            config.SaveOnConfigSet = true;
-            config.SettingChanged += OnSettingChanged;
+            (orphanedEntriesProp.GetValue(config) as Dictionary<ConfigDefinition, string>).Clear();
         }
         private void ScrapConfigs(List<WildCardItem> scrapList)
         {
@@ -91,17 +95,7 @@ namespace LCWildCardMod.Config
                 Log.LogDebug($"Added config for {mapObjectName}");
             }
         }
-        private static void ClearOrphanedEntries(ConfigFile config)
-        {
-            (orphanedEntriesProp.GetValue(config) as Dictionary<ConfigDefinition, string>).Clear();
-        }
-        private void OnSettingChanged(object sender, SettingChangedEventArgs args)
-        {
-            WildCardMod.Instance.InitializeAssets();
-            WildCardMod.Instance.HandleHarmony();
-            ResetReadonlyDicts();
-        }
-        private void ResetReadonlyDicts()
+        internal void ResetReadonlyDicts()
         {
             publicScrapEnabled = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool>(isScrapEnabled.Select((x) => new KeyValuePair<string, bool>(x.Key, x.Value.Value))));
             publicScrapSpawnWeights = new ReadOnlyDictionary<string, string>(new Dictionary<string, string>(scrapSpawnWeights.Select((x) => new KeyValuePair<string, string>(x.Key, x.Value.Value))));
@@ -109,7 +103,35 @@ namespace LCWildCardMod.Config
             publicSkinApplyChance = new ReadOnlyDictionary<string, int>(new Dictionary<string, int>(skinApplyChance.Select((x) => new KeyValuePair<string, int>(x.Key, x.Value.Value))));
             publicMapObjectEnabled = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool>(isMapObjectEnabled.Select((x) => new KeyValuePair<string, bool>(x.Key, x.Value.Value))));
             publicDefaultMapObjectCurve = new ReadOnlyDictionary<string, bool>(new Dictionary<string, bool>(useDefaultMapObjectCurve.Select((x) => new KeyValuePair<string, bool>(x.Key, x.Value.Value))));
-            publicMapObjectMinMax = new ReadOnlyDictionary<string, (int, int)>(new Dictionary<string, (int, int)>(mapObjectMinMax.Select((x) => new KeyValuePair<string, (int, int)>(x.Key, (x.Value.Item1.Value, x.Value.Item2.Value)))));
+            publicMapObjectMinMax = new ReadOnlyDictionary<string, Vector2Int>(new Dictionary<string, Vector2Int>(mapObjectMinMax.Select((x) => new KeyValuePair<string, Vector2Int>(x.Key, new Vector2Int(x.Value.Item1.Value, x.Value.Item2.Value)))));
+        }
+        private void OnSettingChanged(object sender, SettingChangedEventArgs args)
+        {
+            AssetType selectedType;
+            switch (args.ChangedSetting.Definition.Section)
+            {
+                case "Scrap":
+                    {
+                        selectedType = AssetType.Scrap;
+                        break;
+                    }
+                case "Skins":
+                    {
+                        selectedType = AssetType.Skin;
+                        break;
+                    }
+                case "Map Objects":
+                    {
+                        selectedType = AssetType.MapObject;
+                        break;
+                    }
+                default:
+                    {
+                        selectedType = AssetType.None;
+                        break;
+                    }
+            }
+            WildCardMod.Instance.AssetUpdate(selectedType);
         }
     }
 }

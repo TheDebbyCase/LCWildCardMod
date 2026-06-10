@@ -24,15 +24,15 @@ namespace LCWildCardMod.Items
         [SerializeField]
         private float saveForceMultiplier = 0.5f;
         private bool exploding = false;
-        public override void OnNetworkSpawn()
+        public override void Start()
         {
-            base.OnNetworkSpawn();
+            base.Start();
             ILifeSaver.Register(this);
         }
-        public override void OnNetworkDespawn()
+        public override void OnDestroy()
         {
-            base.OnNetworkDespawn();
             ILifeSaver.Unregister(this);
+            base.OnDestroy();
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {

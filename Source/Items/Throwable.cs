@@ -10,13 +10,13 @@ namespace LCWildCardMod.Items
         [Header("WildCardThrowable")]
         [Space(3f)]
         [SerializeField]
-        internal AnimationCurve throwCurve = default;
+        internal AnimationCurve throwCurve = null;
         [SerializeField]
-        internal AnimationCurve throwVerticalCurve = default;
+        internal AnimationCurve throwVerticalCurve = null;
         [SerializeField]
-        internal AnimationCurve throwVerticalCurveNoBounce = default;
+        internal AnimationCurve throwVerticalCurveNoBounce = null;
         [SerializeField]
-        internal Transform transformToThrow = default;
+        internal Transform transformToThrow = null;
         [SerializeField]
         internal bool throwToFloor = true;
         [SerializeField]
@@ -30,14 +30,13 @@ namespace LCWildCardMod.Items
         internal Vector3 targetPosition;
         internal bool lastThrownByEnemy = false;
         private Vector3 startThrowLocalPos = Vector3.zero;
-        public override void OnNetworkDespawn()
+        public override void OnDestroy()
         {
-            base.OnNetworkDespawn();
-            if (!throwing || !isHeld)
+            if (throwing && isHeld)
             {
-                return;
+                LastPlayerHeldBy.throwingObject = false;
             }
-            LastPlayerHeldBy.throwingObject = false;
+            base.OnDestroy();
         }
         internal override void WildCardUse()
         {

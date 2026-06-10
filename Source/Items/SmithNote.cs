@@ -14,29 +14,38 @@ namespace LCWildCardMod.Items
     public class SmithNote : WildCardProp
     {
         internal static readonly Dictionary<string, Texture2D> enemyPageTextures = new Dictionary<string, Texture2D>();
-        private static Animator localHudAnim = default;
+        private static Animator localHudAnim = null;
         private static int noteCount = 0;
         [Space(3f)]
         [Header("SmithNote")]
         [Space(3f)]
         [SerializeField]
-        private Transform hudTextures = default;
+        private Transform hudTextures = null;
         [SerializeField]
-        private List<TextMeshProUGUI> textMeshList = default;
+        private List<TextMeshProUGUI> textMeshList = null;
         [SerializeField]
-        private List<RawImage> rawImageList = default;
+        private List<RawImage> rawImageList = null;
         [SerializeField]
-        private List<SelectablePair<Texture2D>> enemyTextures = default;
+        private List<SelectablePair<Texture2D>> enemyTextures = new List<SelectablePair<Texture2D>>();
         [SerializeField]
-        private Texture2D defaultPlayerTexture = default;
+        private Texture2D defaultPlayerTexture = null;
         [SerializeField]
-        private Texture2D defaultEnemyTexture = default;
+        private Texture2D defaultEnemyTexture = null;
         [SerializeField]
         private float addPageDistance = 10f;
         private readonly ListDict<int, SmithNoteInfo> playerPages = new ListDict<int, SmithNoteInfo>();
         private readonly ListDict<int, SmithNoteInfo> enemyPages = new ListDict<int, SmithNoteInfo>();
         private readonly Dictionary<int, EnemyAI> enemyIndices = new Dictionary<int, EnemyAI>();
         private ListDict<int, SmithNoteInfo> allPages = new ListDict<int, SmithNoteInfo>();
+        private int currentElement = 0;
+        private bool currentlyEnemy = false;
+        private float selectCooldown = 0;
+        private bool isFlippable = false;
+        private PlayerControllerB killingPlayer = null;
+        private EnemyAI killingEnemy = null;
+        private int lastLivingPlayers = 0;
+        private float lastEnemyPower = 0f;
+        private Coroutine killCoroutine = null;
         private ListDict<int, SmithNoteInfo> AllPages
         {
             get
@@ -48,27 +57,21 @@ namespace LCWildCardMod.Items
                 return allPages;
             }
         }
-        private int currentElement = 0;
-        private bool currentlyEnemy = false;
-        private float selectCooldown = 0;
-        private bool isFlippable = false;
-        private PlayerControllerB killingPlayer = default;
-        private EnemyAI killingEnemy = default;
-        private int lastLivingPlayers = 0;
-        private float lastEnemyPower = 0f;
-        private Coroutine killCoroutine = default;
+        private float TotalEnemyPower
+        {
+            get
+            {
+                RoundManager rm = RoundManager.Instance;
+                return rm.currentEnemyPower + rm.currentOutsideEnemyPower + rm.currentDaytimeEnemyPower + rm.currentWeedEnemyPower;
+            }
+        }
         public override void Start()
         {
             base.Start();
             noteCount++;
             textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
             lastLivingPlayers = StartOfRound.Instance.livingPlayers;
-            lastEnemyPower = GetTotalEnemyPower();
-        }
-        private float GetTotalEnemyPower()
-        {
-            RoundManager rm = RoundManager.Instance;
-            return rm.currentEnemyPower + rm.currentOutsideEnemyPower + rm.currentDaytimeEnemyPower + rm.currentWeedEnemyPower;
+            lastEnemyPower = TotalEnemyPower;
         }
         internal override void InitializePrefab()
         {
@@ -92,16 +95,15 @@ namespace LCWildCardMod.Items
             defaultPlayerTexture = null;
             defaultEnemyTexture = null;
         }
-        public override void OnNetworkDespawn()
+        public override void OnDestroy()
         {
-            base.OnNetworkDespawn();
             noteCount--;
-            if (noteCount > 0 || localHudAnim == null)
+            if (noteCount <= 0 && localHudAnim != null)
             {
-                return;
+                Destroy(localHudAnim.gameObject);
+                localHudAnim = null;
             }
-            Destroy(localHudAnim.gameObject);
-            localHudAnim = null;
+            base.OnDestroy();
         }
         public override void EquipItem()
         {
@@ -119,12 +121,16 @@ namespace LCWildCardMod.Items
         {
             base.GrabFromAny(fromPlayer, enemy);
             SetHUD();
-            if (!fromPlayer && IsOwner && !enemyPages.ContainsKey(enemy.thisEnemyIndex))
+            textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
+            StartOpening();
+        }
+        public override void GrabItemFromEnemy(EnemyAI enemy)
+        {
+            if (IsOwner && !enemyPages.ContainsKey(enemy.thisEnemyIndex))
             {
                 NewEnemy(enemy);
             }
-            textMeshList[2].rectTransform.parent.gameObject.SetActive(true);
-            StartOpening();
+            base.GrabItemFromEnemy(enemy);
         }
         public override void PocketItem()
         {
@@ -170,7 +176,7 @@ namespace LCWildCardMod.Items
                 return;
             }
             int currentLivingPlayers = StartOfRound.Instance.livingPlayers;
-            float currentEnemyPower = GetTotalEnemyPower();
+            float currentEnemyPower = TotalEnemyPower;
             if (lastLivingPlayers == currentLivingPlayers && Mathf.Approximately(lastEnemyPower, currentEnemyPower))
             {
                 return;
@@ -283,10 +289,6 @@ namespace LCWildCardMod.Items
             rawImageList[0].color = info.colour;
             textMeshList[0].rectTransform.parent.gameObject.SetActive(true);
             rawImageList[0].rectTransform.parent.gameObject.SetActive(true);
-            if (!IsServer)
-            {
-                return;
-            }
             Animator.Trigger("OpenBook");
         }
         private void StartClosing()
@@ -294,10 +296,6 @@ namespace LCWildCardMod.Items
             textMeshList[1].rectTransform.parent.gameObject.SetActive(false);
             rawImageList[1].rectTransform.parent.gameObject.SetActive(false);
             isFlippable = false;
-            if (!IsServer)
-            {
-                return;
-            }
             Animator.Trigger("CloseBook");
         }
         private void StartFlipping()
@@ -347,9 +345,8 @@ namespace LCWildCardMod.Items
         }
         private void CheckDead()
         {
-            List<int> playerIDs = playerPages.Keys;
-            int playerPageCount = playerIDs.Count;
-            int[] allIDs = playerIDs.Concat(enemyPages.Keys).ToArray();
+            int playerPageCount = playerPages.Count;
+            int[] allIDs = playerPages.Keys.Concat(enemyPages.Keys).ToArray();
             for (int i = 0; i < allIDs.Length; i++)
             {
                 int id = allIDs[i];
@@ -420,6 +417,19 @@ namespace LCWildCardMod.Items
             yield return new WaitForSeconds(4.5f);
             enemy.KillEnemy(!enemy.enemyType.canDie);
         }
+        private void SetHUD()
+        {
+            if (localHudAnim != null)
+            {
+                return;
+            }
+            hudTextures.SetParent(GameNetworkManager.Instance.localPlayerController.playerHudUIContainer);
+            hudTextures.localPosition = Vector3.zero;
+            hudTextures.localScale = Vector3.one * 0.75f;
+            hudTextures.localRotation = Quaternion.identity;
+            hudTextures.gameObject.SetActive(true);
+            localHudAnim = hudTextures.GetComponent<Animator>();
+        }
         private void NewPlayer(int id, bool networked = true)
         {
             PlayerControllerB selectingPlayer = StartOfRound.Instance.allPlayerScripts[id];
@@ -431,11 +441,6 @@ namespace LCWildCardMod.Items
             }
             Audio["Select"].PlayRandomOneshot(false);
             NewPlayerRpc(id);
-        }
-        [Rpc(SendTo.NotMe)]
-        private void NewPlayerRpc(int id)
-        {
-            NewPlayer(id, false);
         }
         private void NewEnemy(EnemyAI enemy, bool networked = true)
         {
@@ -454,16 +459,6 @@ namespace LCWildCardMod.Items
             Audio["Select"].PlayRandomOneshot(false);
             NewEnemyRpc(enemy.NetworkObject);
         }
-        [Rpc(SendTo.NotMe)]
-        private void NewEnemyRpc(NetworkObjectReference enemy)
-        {
-            if (!enemy.TryGet(out NetworkObject networkObject))
-            {
-                Log.LogError("Network Object of enemy could not be found while trying to add a page to Smith Note!");
-                return;
-            }
-            NewEnemy(networkObject.GetComponent<EnemyAI>(), false);
-        }
         private void KillEnemy(EnemyAI enemy, bool networked = true)
         {
             int id = enemy.thisEnemyIndex;
@@ -480,16 +475,6 @@ namespace LCWildCardMod.Items
             }
             Audio["Write"].PlayRandomClip();
             KillEnemyRpc(enemy.NetworkObject);
-        }
-        [Rpc(SendTo.NotMe)]
-        private void KillEnemyRpc(NetworkObjectReference enemy)
-        {
-            if (!enemy.TryGet(out NetworkObject networkObject))
-            {
-                Log.LogError("Network Object of enemy could not be found while trying to kill an enemy with the Smith Note!");
-                return;
-            }
-            KillEnemy(networkObject.GetComponent<EnemyAI>(), false);
         }
         private void KillPlayer(int id, bool networked = true)
         {
@@ -515,32 +500,44 @@ namespace LCWildCardMod.Items
             KillPlayerRpc(id);
         }
         [Rpc(SendTo.NotMe)]
+        private void NewPlayerRpc(int id)
+        {
+            NewPlayer(id, false);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void NewEnemyRpc(NetworkObjectReference enemy)
+        {
+            if (!enemy.TryGet(out NetworkObject networkObject))
+            {
+                Log.LogError("Network Object of enemy could not be found while trying to add a page to Smith Note!");
+                return;
+            }
+            NewEnemy(networkObject.GetComponent<EnemyAI>(), false);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void KillEnemyRpc(NetworkObjectReference enemy)
+        {
+            if (!enemy.TryGet(out NetworkObject networkObject))
+            {
+                Log.LogError("Network Object of enemy could not be found while trying to kill an enemy with the Smith Note!");
+                return;
+            }
+            KillEnemy(networkObject.GetComponent<EnemyAI>(), false);
+        }
+        [Rpc(SendTo.NotMe)]
         private void KillPlayerRpc(int id)
         {
             KillPlayer(id, false);
         }
-        private void SetHUD()
-        {
-            if (localHudAnim != null)
-            {
-                return;
-            }
-            hudTextures.SetParent(GameNetworkManager.Instance.localPlayerController.playerHudUIContainer);
-            hudTextures.localPosition = Vector3.zero;
-            hudTextures.localScale = Vector3.one * 0.75f;
-            hudTextures.localRotation = Quaternion.identity;
-            hudTextures.gameObject.SetActive(true);
-            localHudAnim = hudTextures.GetComponent<Animator>();
-        }
     }
     internal class SmithNoteInfo
     {
-        internal static Texture2D playerDefault;
-        internal static Texture2D enemyDefault;
+        internal static Texture2D playerDefault = null;
+        internal static Texture2D enemyDefault = null;
         internal bool initialized = false;
-        internal string targetName;
+        internal string targetName = string.Empty;
         internal Color colour = Color.white;
-        internal Texture2D texture;
+        internal Texture2D texture = null;
         internal bool isDead = false;
         internal SmithNoteInfo(PlayerControllerB player)
         {

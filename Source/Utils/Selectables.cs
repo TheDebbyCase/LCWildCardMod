@@ -96,6 +96,44 @@ namespace LCWildCardMod.Utils
         public ShadowCastingMode shadowMode = ShadowCastingMode.On;
         [SerializeField]
         public MotionVectorGenerationMode motionMode = MotionVectorGenerationMode.Camera;
+        public override void Initialize(IWildCardBase wildCardBase)
+        {
+            base.Initialize(wildCardBase);
+            for (int i = 0; i < Count; i++)
+            {
+                Renderer renderer = this[i];
+                if (renderer.motionVectorGenerationMode != MotionVectorGenerationMode.Object)
+                {
+                    continue;
+                }
+                renderer.motionVectorGenerationMode = motionMode;
+            }
+        }
+        public override void SetMaterialsTexture(int itemIndex, int textureIndex)
+        {
+            if (!InRange(itemIndex) || !InRangeTextures(textureIndex))
+            {
+                return;
+            }
+            int count = this[itemIndex].materials.Length;
+            for (int i = 0; i < count; i++)
+            {
+                SetMaterialTexture(itemIndex, i, textureIndex);
+            }
+        }
+        public override void SetMaterialTexture(int itemIndex, int materialIndex, int textureIndex)
+        {
+            if (!InRange(itemIndex) || !InRangeTextures(textureIndex))
+            {
+                return;
+            }
+            Material[] materials = this[itemIndex].materials;
+            if (materialIndex < 0 || materialIndex >= materials.Length)
+            {
+                return;
+            }
+            materials[materialIndex].mainTexture = GetTexture(textureIndex);
+        }
         public void AllApplyAll()
         {
             for (int i = 0; i < Count; i++)
@@ -219,44 +257,6 @@ namespace LCWildCardMod.Utils
         public int IndexOfMesh(Mesh mesh)
         {
             return meshes.IndexOf(mesh);
-        }
-        public override void Initialize(IWildCardBase wildCardBase)
-        {
-            base.Initialize(wildCardBase);
-            for (int i = 0; i < Count; i++)
-            {
-                Renderer renderer = this[i];
-                if (renderer.motionVectorGenerationMode != MotionVectorGenerationMode.Object)
-                {
-                    continue;
-                }
-                renderer.motionVectorGenerationMode = motionMode;
-            }
-        }
-        public override void SetMaterialsTexture(int itemIndex, int textureIndex)
-        {
-            if (!InRange(itemIndex) || !InRangeTextures(textureIndex))
-            {
-                return;
-            }
-            int count = this[itemIndex].materials.Length;
-            for (int i = 0; i < count; i++)
-            {
-                SetMaterialTexture(itemIndex, i, textureIndex);
-            }
-        }
-        public override void SetMaterialTexture(int itemIndex, int materialIndex, int textureIndex)
-        {
-            if (!InRange(itemIndex) || !InRangeTextures(textureIndex))
-            {
-                return;
-            }
-            Material[] materials = this[itemIndex].materials;
-            if (materialIndex < 0 || materialIndex >= materials.Length)
-            {
-                return;
-            }
-            materials[materialIndex].mainTexture = GetTexture(textureIndex);
         }
         public void SetColours(float multiplier)
         {
@@ -421,25 +421,6 @@ namespace LCWildCardMod.Utils
         public float maxDistanceRate = 0f;
         [SerializeField]
         public List<BurstIntermediary> bursts = new List<BurstIntermediary>();
-        public void AllApplyAll()
-        {
-            for (int i = 0; i < Count; i++)
-            {
-                ApplyAll(i);
-            }
-        }
-        public void ApplyAll(int index)
-        {
-            if (!InRange(index))
-            {
-                return;
-            }
-            ApplySize(index);
-            ApplyGravity(index);
-            ApplyLifetime(index);
-            ApplyRotation(index);
-            ApplyEmission(index);
-        }
         public override void SetMaterialsTexture(int itemIndex, int textureIndex)
         {
             if (!InRange(itemIndex) || !InRangeTextures(textureIndex))
@@ -464,6 +445,25 @@ namespace LCWildCardMod.Utils
                 return;
             }
             materials[materialIndex].mainTexture = GetTexture(textureIndex);
+        }
+        public void AllApplyAll()
+        {
+            for (int i = 0; i < Count; i++)
+            {
+                ApplyAll(i);
+            }
+        }
+        public void ApplyAll(int index)
+        {
+            if (!InRange(index))
+            {
+                return;
+            }
+            ApplySize(index);
+            ApplyGravity(index);
+            ApplyLifetime(index);
+            ApplyRotation(index);
+            ApplyEmission(index);
         }
         public void SetColours(float multiplier)
         {
@@ -1892,7 +1892,6 @@ namespace LCWildCardMod.Utils
     public class SelectModelVariants : SelectableWithWeights<GameObject>
     {
         public SelectModelVariants(int id, params WeightedOption<GameObject>[] arrayItems) : base(id, arrayItems) { }
-        private int currentVariant = -1;
         [SerializeField]
         private Transform targetTransform = null;
         [SerializeField]
@@ -1900,14 +1899,15 @@ namespace LCWildCardMod.Utils
         [SerializeField]
         private string baseName = string.Empty;
         [SerializeField]
-        [Min(0f)]
-        private int baseWeight = 0;
-        [SerializeField]
         private bool instantiateVariant = false;
         [SerializeField]
         public bool randomOnSpawn = false;
         [SerializeField]
         private bool perClient = false;
+        [Min(0f)]
+        [SerializeField]
+        private int baseWeight = 0;
+        private int currentVariant = -1;
         public int VariantIndex
         {
             get
@@ -2165,6 +2165,8 @@ namespace LCWildCardMod.Utils
                 return new ReadOnlyCollection<Texture>(textures);
             }
         }
+        public abstract void SetMaterialsTexture(int itemIndex, int textureIndex);
+        public abstract void SetMaterialTexture(int itemIndex, int materialIndex, int textureIndex);
         public void SetAllMaterialsTexture(int textureIndex)
         {
             for (int i = 0; i < Count; i++)
@@ -2180,12 +2182,10 @@ namespace LCWildCardMod.Utils
         {
             SetMaterialsTexture(itemIndex, RandomTextureIndex());
         }
-        public abstract void SetMaterialsTexture(int itemIndex, int textureIndex);
         public void SetMaterialRandomTexture(int itemIndex, int materialIndex)
         {
             SetMaterialTexture(itemIndex, materialIndex, RandomTextureIndex());
         }
-        public abstract void SetMaterialTexture(int itemIndex, int materialIndex, int textureIndex);
         public void AddTextures(params Texture[] newTextures)
         {
             for (int i = 0; i < newTextures.Length; i++)
@@ -2277,9 +2277,15 @@ namespace LCWildCardMod.Utils
             this.Id = id;
             Set(arrayItems);
         }
+        [SerializeField]
+        private List<T> items = new List<T>();
         [HideInInspector]
         [SerializeField]
         private int id = default;
+        [HideInInspector]
+        [SerializeField]
+        internal bool initialized = false;
+        private IWildCardBase wildCardBase = default;
         public int Id
         {
             get
@@ -2291,9 +2297,6 @@ namespace LCWildCardMod.Utils
                 id = value;
             }
         }
-        [SerializeField]
-        private List<T> items = new List<T>();
-        public ReadOnlyCollection<T> Items => new ReadOnlyCollection<T>(items);
         public IWildCardBase Base
         {
             get
@@ -2301,10 +2304,7 @@ namespace LCWildCardMod.Utils
                 return wildCardBase;
             }
         }
-        private IWildCardBase wildCardBase = default;
-        [HideInInspector]
-        [SerializeField]
-        internal bool initialized = false;
+        public ReadOnlyCollection<T> Items => new ReadOnlyCollection<T>(items);
         public int Count
         {
             get
@@ -2335,6 +2335,10 @@ namespace LCWildCardMod.Utils
                 items[index] = value;
             }
         }
+        public virtual void Initialize(IWildCardBase wildCardBase)
+        {
+
+        }
         public void SetBase(IWildCardBase wildCardBase)
         {
             this.wildCardBase = wildCardBase;
@@ -2344,10 +2348,6 @@ namespace LCWildCardMod.Utils
             }
             Initialize(wildCardBase);
             initialized = true;
-        }
-        public virtual void Initialize(IWildCardBase wildCardBase)
-        {
-
         }
         public T Random()
         {

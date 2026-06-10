@@ -27,15 +27,15 @@ namespace LCWildCardMod.Items
         [SerializeField]
         private float transitionTime = 5f;
         private bool active = false;
-        private bool vignetteWasActive;
-        private VolumeParameter[] origVignetteParameters;
-        private bool filmGrainWasActive;
-        private VolumeParameter[] origFilmGrainParameters;
-        private bool colourAdjustWasActive;
-        private VolumeParameter[] origColourAdjustParameters;
-        private Vignette vignette;
-        private FilmGrain filmGrain;
-        private ColorAdjustments colourAdjust;
+        private bool vignetteWasActive = false;
+        private VolumeParameter[] origVignetteParameters = null;
+        private bool filmGrainWasActive = false;
+        private VolumeParameter[] origFilmGrainParameters = null;
+        private bool colourAdjustWasActive = false;
+        private VolumeParameter[] origColourAdjustParameters = null;
+        private Vignette vignette = null;
+        private FilmGrain filmGrain = null;
+        private ColorAdjustments colourAdjust = null;
         public override void Start()
         {
             base.Start();
@@ -58,46 +58,45 @@ namespace LCWildCardMod.Items
         }
         public override void OnDestroy()
         {
+            if (active)
+            {
+                VolumeProfile volume = HUDManager.Instance.playerGraphicsVolume.sharedProfile;
+                if (volume.TryGet(out FilmGrain filmGrain))
+                {
+                    filmGrain.active = filmGrainWasActive;
+                    for (int i = 0; i < origFilmGrainParameters.Length; i++)
+                    {
+                        VolumeParameter parameter = filmGrain.parameters[i];
+                        VolumeParameter origParameter = origFilmGrainParameters[i];
+                        parameter.SetValue(origParameter);
+                        parameter.overrideState = origParameter.overrideState;
+                    }
+                }
+                if (volume.TryGet(out Vignette vignette))
+                {
+                    vignette.active = vignetteWasActive;
+                    for (int i = 0; i < origVignetteParameters.Length; i++)
+                    {
+                        VolumeParameter parameter = vignette.parameters[i];
+                        VolumeParameter origParameter = origVignetteParameters[i];
+                        parameter.SetValue(origParameter);
+                        parameter.overrideState = origParameter.overrideState;
+                    }
+                }
+                if (volume.TryGet(out ColorAdjustments colourAdjust))
+                {
+                    colourAdjust.active = colourAdjustWasActive;
+                    for (int i = 0; i < origColourAdjustParameters.Length; i++)
+                    {
+                        VolumeParameter parameter = colourAdjust.parameters[i];
+                        VolumeParameter origParameter = origColourAdjustParameters[i];
+                        parameter.SetValue(origParameter);
+                        parameter.overrideState = origParameter.overrideState;
+                    }
+                }
+                SoundManager.Instance.SetDiageticMixerSnapshot();
+            }
             base.OnDestroy();
-            if (!active)
-            {
-                return;
-            }
-            VolumeProfile volume = HUDManager.Instance.playerGraphicsVolume.sharedProfile;
-            if (volume.TryGet(out FilmGrain filmGrain))
-            {
-                filmGrain.active = filmGrainWasActive;
-                for (int i = 0; i < origFilmGrainParameters.Length; i++)
-                {
-                    VolumeParameter parameter = filmGrain.parameters[i];
-                    VolumeParameter origParameter = origFilmGrainParameters[i];
-                    parameter.SetValue(origParameter);
-                    parameter.overrideState = origParameter.overrideState;
-                }
-            }
-            if (volume.TryGet(out Vignette vignette))
-            {
-                vignette.active = vignetteWasActive;
-                for (int i = 0; i < origVignetteParameters.Length; i++)
-                {
-                    VolumeParameter parameter = vignette.parameters[i];
-                    VolumeParameter origParameter = origVignetteParameters[i];
-                    parameter.SetValue(origParameter);
-                    parameter.overrideState = origParameter.overrideState;
-                }
-            }
-            if (volume.TryGet(out ColorAdjustments colourAdjust))
-            {
-                colourAdjust.active = colourAdjustWasActive;
-                for (int i = 0; i < origColourAdjustParameters.Length; i++)
-                {
-                    VolumeParameter parameter = colourAdjust.parameters[i];
-                    VolumeParameter origParameter = origColourAdjustParameters[i];
-                    parameter.SetValue(origParameter);
-                    parameter.overrideState = origParameter.overrideState;
-                }
-            }
-            SoundManager.Instance.SetDiageticMixerSnapshot();
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
         {

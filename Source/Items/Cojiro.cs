@@ -13,7 +13,7 @@ namespace LCWildCardMod.Items
         private float pocketCooldown = 1f;
         [SerializeField]
         private float cooldownRecover = 2f;
-        internal bool isFloating;
+        internal bool isFloating = false;
         public override void ItemActivate(bool used, bool buttonDown = true)
         {
             if (isFloating)

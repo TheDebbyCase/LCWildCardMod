@@ -25,14 +25,14 @@ namespace LCWildCardMod.Items
         private float exhaustColourMultiplier = 0.1f;
         [SerializeField]
         private float uiRegenTime = 1f;
-        private PlayerControllerB savedPlayer = default;
+        private PlayerControllerB savedPlayer = null;
         private bool exhausted = false;
         private bool exhausting = false;
         private readonly HashSet<IHittable> hitList = new HashSet<IHittable>();
         private bool resetList = false;
-        public override void OnNetworkSpawn()
+        public override void Start()
         {
-            base.OnNetworkSpawn();
+            base.Start();
             ILifeSaver.Register(this);
             Particles["Spin"].StopAll(true, false);
             if (!exhausted && !exhausting)
@@ -44,15 +44,14 @@ namespace LCWildCardMod.Items
             exhausted = true;
             exhausting = false;
         }
-        public override void OnNetworkDespawn()
+        public override void OnDestroy()
         {
-            base.OnNetworkDespawn();
             ILifeSaver.Unregister(this);
-            if (!exhausting || !savedPlayer.IsLocal())
+            if (exhausting && savedPlayer.IsLocal())
             {
-                return;
+                HUDManager.Instance.UpdateHealthUI(savedPlayer.health, false);
             }
-            HUDManager.Instance.UpdateHealthUI(savedPlayer.health, false);
+            base.OnDestroy();
         }
         internal override void WildCardUse()
         {
@@ -197,11 +196,6 @@ namespace LCWildCardMod.Items
             }
             ExhaustHaloRpc(id);
         }
-        [Rpc(SendTo.NotMe)]
-        private void ExhaustHaloRpc(int id)
-        {
-            ExhaustHalo(id, false);
-        }
         private void EndExhaust(bool networked = true)
         {
             exhausted = true;
@@ -211,6 +205,11 @@ namespace LCWildCardMod.Items
                 return;
             }
             EndExhaustRpc();
+        }
+        [Rpc(SendTo.NotMe)]
+        private void ExhaustHaloRpc(int id)
+        {
+            ExhaustHalo(id, false);
         }
         [Rpc(SendTo.NotMe)]
         private void EndExhaustRpc()

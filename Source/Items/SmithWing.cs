@@ -9,22 +9,23 @@ namespace LCWildCardMod.Items
         [Space(3f)]
         [SerializeField]
         private float speedMultiplier = 1.25f;
-        private float inverseSpeedMultiplier;
+        private float inverseSpeedMultiplier = 0f;
         private bool doingSpeed = false;
         private bool wasEnemy = false;
-        public override void OnNetworkDespawn()
+        public override void OnDestroy()
         {
-            base.OnNetworkDespawn();
-            if (!doingSpeed)
+            if (doingSpeed)
             {
-                return;
+                if (wasEnemy)
+                {
+                    LastEnemyHeldBy.agent.speed *= inverseSpeedMultiplier;
+                }
+                else
+                {
+                    LastPlayerHeldBy.MultiplyPlayerSpeed(inverseSpeedMultiplier);
+                }
             }
-            if (wasEnemy)
-            {
-                LastEnemyHeldBy.agent.speed *= inverseSpeedMultiplier;
-                return;
-            }
-            LastPlayerHeldBy.MultiplyPlayerSpeed(inverseSpeedMultiplier);
+            base.OnDestroy();
         }
         public override void Update()
         {

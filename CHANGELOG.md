@@ -1,3 +1,10 @@
+## 2.0.1
+- Fixed midgame config changes not always working properly, in some cases breaking the relevant items
+- Fixed Smith Note page turning sometimes desyncing
+- Made Clauvi Mask and Gojo Glasses animation less rigid, allowing it to be cancelled mid animation, returning to its default state, rather than waiting until one animation is complete to start the next
+- Changed the public min/max curve for map object spawning config entries from a tuple to a vector
+- Moved some fields around for my own personal readability, shouldn't have any bearing on gameplay
+
 ## 2.0.0
 - So, about that rewrite... It has been rewritten. Everything is much more unified under the hood which will make further development much easier
 - Added new sound effects to Alolan Vulpixie and made the animation a bit scrunglier

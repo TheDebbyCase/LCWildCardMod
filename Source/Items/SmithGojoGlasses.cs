@@ -11,29 +11,25 @@ namespace LCWildCardMod.Items
         [Header("SmithGojoGlasses")]
         [Space(3f)]
         [SerializeField]
-        private Transform meshTransform = default;
+        private Transform meshTransform = null;
         [SerializeField]
         private float enemyTimer = 1f;
         [SerializeField]
-        private GameObject effectsGameObject = default;
+        private GameObject effectsGameObject = null;
         [SerializeField]
         private int hitAmount = 1;
         [SerializeField]
         internal float playerForce = 2.5f;
         private ListDict<int, RepeatingTimer> enemyCooldowns = new ListDict<int, RepeatingTimer>();
         private bool active = false;
-        public override void OnNetworkSpawn()
+        public override void Start()
         {
-            base.OnNetworkSpawn();
+            base.Start();
             ILifeSaver.Register(this);
-        }
-        public override void OnNetworkDespawn()
-        {
-            base.OnNetworkDespawn();
-            ILifeSaver.Unregister(this);
         }
         public override void OnDestroy()
         {
+            ILifeSaver.Unregister(this);
             meshTransform.SetParent(transform);
             base.OnDestroy();
         }
@@ -67,6 +63,18 @@ namespace LCWildCardMod.Items
             }
             Particles["Sparkles"].PlayAll(true);
             Audio["Technique"].PlayRandomClip();
+        }
+        public override void Update()
+        {
+            base.Update();
+            if (!IsOwner || !active)
+            {
+                return;
+            }
+            for (int i = 0; i < enemyCooldowns.Count; i++)
+            {
+                enemyCooldowns[index: i].Tick();
+            }
         }
         public override void GrabItemFromEnemy(EnemyAI enemy)
         {
@@ -139,25 +147,13 @@ namespace LCWildCardMod.Items
             enemy.StopSearch(enemy.currentSearch);
             enemy.SetDestinationToPosition(enemy.ChooseFarthestNodeFromPosition(transform.position).position);
         }
-        public override void Update()
-        {
-            base.Update();
-            if (!IsOwner || !active)
-            {
-                return;
-            }
-            for (int i = 0; i < enemyCooldowns.Count; i++)
-            {
-                enemyCooldowns[index: i].Tick();
-            }
-        }
         bool ILifeSaver.UntargetableWhen(PlayerControllerB player)
         {
             return active && isHeld && player == LastPlayerHeldBy;
         }
         bool ILifeSaver.GraceWhen(PlayerControllerB player, CauseOfDeath cause)
         {
-            return active && isHeld && LastPlayerHeldBy == player && (cause == CauseOfDeath.Gunshots || cause == CauseOfDeath.Blast);
+            return active && isHeld && player == LastPlayerHeldBy && (cause == CauseOfDeath.Gunshots || cause == CauseOfDeath.Blast);
         }
         bool ILifeSaver.TriggerWhen(PlayerControllerB player, CauseOfDeath cause)
         {
@@ -181,7 +177,7 @@ namespace LCWildCardMod.Items
         [SerializeField]
         private float volumeMaxDistance = 2.5f;
         private float volumeMaxDistanceInverse = -1f;
-        private int layerMask;
+        private int layerMask = 0;
         private void OnEnable()
         {
             layerMask = LayerMask.GetMask("Player", "Enemies");

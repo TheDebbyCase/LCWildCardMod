@@ -70,46 +70,19 @@ namespace LCWildCardMod.MapObjects
         [Header("WildCardMapObject")]
         [Space(3f)]
         [SerializeField]
-        private List<SelectablePair<SelectAudioClips>> audioClips;
+        private List<SelectablePair<SelectAudioClips>> audioClips = null;
         [SerializeField]
-        private List<SelectablePair<SelectAnimationParameters>> animations;
+        private List<SelectablePair<SelectAnimationParameters>> animations = null;
         [SerializeField]
-        private List<SelectablePair<SelectParticles>> particles;
+        private List<SelectablePair<SelectParticles>> particles = null;
         [SerializeField]
-        private List<SelectablePair<SelectRenderers>> meshRenderers;
+        private List<SelectablePair<SelectRenderers>> meshRenderers = null;
         [SerializeField]
-        private List<SelectablePair<SelectModelVariants>> modelVariants;
+        private List<SelectablePair<SelectModelVariants>> modelVariants = null;
         [SerializeField]
-        private List<SelectablePair<SelectLights>> lights;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectAudioClips> audioDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectAnimationParameters> animDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectParticles> particleDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectRenderers> renderDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectModelVariants> variantDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectLights> lightDict;
+        private List<SelectablePair<SelectLights>> lights = null;
         [SerializeField]
         private bool networkAnimations = false;
-        private int state = -1;
-        [HideInInspector]
-        [SerializeReference]
-        private AnimationHandler animator = null;
-        private PlayerControllerB targetPlayer;
-        private System.Random random;
-        [HideInInspector]
-        [SerializeReference]
-        private bool initialized = false;
         [SerializeField]
         internal int basePlayerDamage = 15;
         [SerializeField]
@@ -120,6 +93,33 @@ namespace LCWildCardMod.MapObjects
         internal float maxForceDistance = 5f;
         [SerializeField]
         internal float maxForce = 3.5f;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectAudioClips> audioDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectAnimationParameters> animDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectParticles> particleDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectRenderers> renderDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectModelVariants> variantDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectLights> lightDict = null;
+        [HideInInspector]
+        [SerializeReference]
+        private AnimationHandler animator = null;
+        [HideInInspector]
+        [SerializeReference]
+        private bool initialized = false;
+        private int state = -1;
+        private PlayerControllerB targetPlayer = null;
+        private System.Random random = null;
         internal IWildCardBase Base
         {
             get
@@ -272,13 +272,17 @@ namespace LCWildCardMod.MapObjects
                 return random;
             }
         }
+        internal virtual void InitializePrefab()
+        {
+
+        }
         internal virtual void Awake()
         {
             IWildCardBase.Awake(this);
         }
         internal virtual void Start()
         {
-            if (!WildCardMod.Instance.ModConfig.Debug)
+            if (!WildCardMod.ModConfig.Debug)
             {
                 return;
             }
@@ -524,10 +528,6 @@ namespace LCWildCardMod.MapObjects
                 return;
             }
             lights.Disable(index, false);
-        }
-        internal virtual void InitializePrefab()
-        {
-
         }
         void IWildCardBase.Initialize()
         {

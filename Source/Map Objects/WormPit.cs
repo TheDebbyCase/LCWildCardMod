@@ -37,8 +37,8 @@ namespace LCWildCardMod.MapObjects
         private bool consuming = false;
         private float localForceTimer = 0f;
         private Vector2 lookMinMax = new Vector2(225f, 315f);
-        private Vector2Int peepBetweenRound;
-        private Vector2Int peepHoldRound;
+        private Vector2Int peepBetweenRound = Vector2Int.zero;
+        private Vector2Int peepHoldRound = Vector2Int.zero;
         private Vector2 PeepBetweenMinMax
         {
             set
@@ -55,11 +55,14 @@ namespace LCWildCardMod.MapObjects
                 peepHoldRound = new Vector2Int(Mathf.RoundToInt(peepHoldMinMax.x * 10f), Mathf.RoundToInt(peepHoldMinMax.y * 10f) + 1);
             }
         }
+        internal override void Start()
+        {
+            PeepBetweenMinMax = peepBetweenMinMax;
+            PeepHoldMinMax = peepHoldMinMax;
+        }
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            PeepBetweenMinMax = peepBetweenMinMax;
-            PeepHoldMinMax = peepHoldMinMax;
             if (!IsServer)
             {
                 return;

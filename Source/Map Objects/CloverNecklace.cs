@@ -5,7 +5,7 @@ namespace LCWildCardMod.Items
 {
     public class CloverNecklace : WildCardProp
     {
-        internal static CloverNecklace oneNecklace;
+        internal static CloverNecklace oneNecklace = null;
         internal static List<CloverBee> beeList = new List<CloverBee>();
         //[Space(3f)]
         //[Header("CloverNecklace")]

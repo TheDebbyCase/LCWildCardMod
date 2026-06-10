@@ -17,10 +17,9 @@ namespace LCWildCardMod.Items
         private Vector2 agitateMinMax = new Vector2(4.5f, 9f);
         [SerializeField]
         private int maxCryTime = 20;
-        [SerializeField]
-        private (int, int) minMaxRound;
-        private Coroutine agitateCounter = default;
-        private int agitate = default;
+        private Vector2Int agitateMinMaxRound = Vector2Int.zero;
+        private Coroutine agitateCounter = null;
+        private int agitate = 0;
         private int Agitate
         {
             get
@@ -36,10 +35,18 @@ namespace LCWildCardMod.Items
                 agitate = value;
             }
         }
+        private Vector2 AgitateMinMax
+        {
+            set
+            {
+                agitateMinMax = value;
+                agitateMinMaxRound = new Vector2Int(Mathf.RoundToInt(agitateMinMax.x * 10f), Mathf.RoundToInt(agitateMinMax.y * 10f) + 1);
+            }
+        }
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            minMaxRound = (Mathf.RoundToInt(agitateMinMax.x * 10f), Mathf.RoundToInt(agitateMinMax.y * 10f) + 1);
+            AgitateMinMax = agitateMinMax;
             State = 0;
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
@@ -92,7 +99,7 @@ namespace LCWildCardMod.Items
         {
             while (Agitate < maxAgitate)
             {
-                yield return new WaitForSeconds((float)Random.Next(minMaxRound.Item1, minMaxRound.Item2) * 0.1f);
+                yield return new WaitForSeconds((float)Random.Next(agitateMinMaxRound.x, agitateMinMaxRound.y) * 0.1f);
                 Agitate++;
             }
             yield return new WaitUntil(() => !StartOfRound.Instance.inShipPhase && StartOfRound.Instance.currentLevel.planetHasTime);

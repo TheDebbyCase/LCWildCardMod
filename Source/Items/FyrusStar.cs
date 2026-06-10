@@ -11,41 +11,36 @@ namespace LCWildCardMod.Items
         [Header("FyrusStar")]
         [Space(3f)]
         [SerializeField]
-        private Transform musicTransform = default;
-        private TrailRenderer trailRenderer = default;
+        private Transform musicTransform = null;
         [SerializeField]
         private float speedMultiplier = 1.25f;
-        private float inverseSpeedMultiplier;
         [SerializeField]
         private float hitCooldownMax = 0.5f;
-        private float hitCooldown = default;
         [SerializeField]
         private int hitAmount = 1;
         [SerializeField]
         private float forceMultiplier = 0.5f;
+        private TrailRenderer trailRenderer = null;
+        private float inverseSpeedMultiplier = 0f;
+        private float hitCooldown = 0f;
         private bool active = false;
         private bool activated = false;
         public override void Start()
         {
             base.Start();
+            ILifeSaver.Register(this);
             trailRenderer = musicTransform.GetComponent<TrailRenderer>();
             hitCooldown = hitCooldownMax;
         }
-        public override void OnNetworkSpawn()
+        public override void OnDestroy()
         {
-            base.OnNetworkSpawn();
-            ILifeSaver.Register(this);
-        }
-        public override void OnNetworkDespawn()
-        {
-            base.OnNetworkDespawn();
             ILifeSaver.Unregister(this);
-            if (!active)
+            if (active)
             {
-                return;
+                musicTransform.SetParent(transform);
+                LastPlayerHeldBy.MultiplyPlayerSpeed(inverseSpeedMultiplier);
             }
-            musicTransform.SetParent(transform);
-            LastPlayerHeldBy.MultiplyPlayerSpeed(inverseSpeedMultiplier);
+            base.OnDestroy();
         }
         public override void PocketItem()
         {

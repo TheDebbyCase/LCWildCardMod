@@ -10,9 +10,9 @@ namespace LCWildCardMod.Items
         [Header("ClauviMask")]
         [Space(3f)]
         [SerializeField]
-        private Transform meshTransform = default;
-        private Coroutine peekCoroutine = default;
+        private Transform meshTransform = null;
         private bool isLifted = false;
+        private Coroutine peekCoroutine = null;
         public override void OnDestroy()
         {
             EndPeek(true, false);
@@ -60,7 +60,7 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            peekCoroutine = StartCoroutine(Peek(useContext.action));
+            peekCoroutine = StartCoroutine(PlayerPeek(useContext.action));
         }
         internal override void WildCardUse()
         {
@@ -69,9 +69,9 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            peekCoroutine = StartCoroutine(Peek());
+            peekCoroutine = StartCoroutine(EnemyPeek());
         }
-        private IEnumerator Peek(InputAction action)
+        private IEnumerator PlayerPeek(InputAction action)
         {
             BeginPeek();
             while (action.IsPressed() && isHeld && !isPocketed)
@@ -85,21 +85,18 @@ namespace LCWildCardMod.Items
             }
             EndPeek();
         }
-        private IEnumerator Peek()
+        private IEnumerator EnemyPeek()
         {
-            BeginPeek();
+            if (IsOwner)
+            {
+                BeginPeek();
+            }
             yield return new WaitForSeconds(Random.Next(10, 51) * 0.1f);
+            if (!IsOwner)
+            {
+                yield break;
+            }
             EndPeek();
-        }
-        [Rpc(SendTo.NotMe)]
-        private void BeginPeekRpc()
-        {
-            BeginPeek(false);
-        }
-        [Rpc(SendTo.NotMe)]
-        private void EndPeekRpc(bool force)
-        {
-            EndPeek(force, false);
         }
         private void BeginPeek(bool networked = true)
         {
@@ -114,11 +111,11 @@ namespace LCWildCardMod.Items
         }
         private void EndPeek(bool force = false, bool networked = true)
         {
+            Log.LogDebug($"\"{CurrentItem.itemName}\" Ending Peek");
             if (force)
             {
                 meshTransform.SetParent(transform);
             }
-            Log.LogDebug($"\"{CurrentItem.itemName}\" Ending Peek");
             if (peekCoroutine != null)
             {
                 StopCoroutine(peekCoroutine);
@@ -131,6 +128,16 @@ namespace LCWildCardMod.Items
                 return;
             }
             EndPeekRpc(force);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void BeginPeekRpc()
+        {
+            BeginPeek(false);
+        }
+        [Rpc(SendTo.NotMe)]
+        private void EndPeekRpc(bool force)
+        {
+            EndPeek(force, false);
         }
     }
 }

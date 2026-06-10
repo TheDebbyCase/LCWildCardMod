@@ -1,4 +1,6 @@
 ﻿using static BepInEx.BepInDependency;
+using static LethalLib.Modules.Items;
+using static LethalLib.Modules.MapObjects;
 using BepInEx;
 using LethalLib.Modules;
 using System.IO;
@@ -17,28 +19,29 @@ using System.Linq;
 using System.Diagnostics.CodeAnalysis;
 namespace LCWildCardMod
 {
-    [BepInPlugin(modGUID, modName, modVersion)]
+    [BepInPlugin(ModGUID, ModName, ModVersion)]
     [BepInDependency(LethalLib.Plugin.ModGUID, DependencyFlags.HardDependency)]
     [BepInDependency(LethalCompanyInputUtils.MyPluginInfo.PLUGIN_GUID, DependencyFlags.HardDependency)]
     public class WildCardMod : BaseUnityPlugin
     {
-        public const string modGUID = "deB.WildCard";
-        public const string modName = "WILDCARD Stuff";
-        public const string modVersion = "2.0.0";
-        private ReadOnlyDictionary<string, Type[]> publicHarmonies;
-        private readonly Dictionary<string, (Harmony, Type[])> harmonies = new Dictionary<string, (Harmony, Type[])>();
-        private ReadOnlyCollection<WildCardItem> publicScrapList;
-        internal List<WildCardItem> scrapList = new List<WildCardItem>();
-        private ReadOnlyCollection<WildCardSkin> publicSkinList;
-        internal List<WildCardSkin> skinList = new List<WildCardSkin>();
-        private ReadOnlyCollection<WildCardMapObject> publicMapObjectList;
-        internal List<WildCardMapObject> mapObjectList = new List<WildCardMapObject>();
+        public const string ModGUID = "deB.WildCard";
+        public const string ModName = "WILDCARD Stuff";
+        public const string ModVersion = "2.0.1";
+        private static ReadOnlyDictionary<string, Type[]> publicHarmonies = null;
+        private static ReadOnlyCollection<WildCardItem> publicScrapList = null;
+        private static ReadOnlyCollection<WildCardSkin> publicSkinList = null;
+        private static ReadOnlyCollection<WildCardMapObject> publicMapObjectList = null;
+        private static readonly Dictionary<string, (Harmony, Type[])> harmonies = new Dictionary<string, (Harmony, Type[])>();
+        internal static readonly List<WildCardItem> scrapList = new List<WildCardItem>();
+        internal static readonly List<WildCardSkin> skinList = new List<WildCardSkin>();
+        internal static readonly List<WildCardMapObject> mapObjectList = new List<WildCardMapObject>();
+        private bool initialized = false;
         internal ManualLogSource Log => Logger;
-        internal Dictionary<string, (Harmony, Type[])> Harmonies => harmonies;
-        public KeyBinds KeyBinds { get; private set; }
+        internal static Dictionary<string, (Harmony, Type[])> Harmonies => harmonies;
+        public static KeyBinds KeyBinds { get; private set; }
         public static WildCardMod Instance { get; private set; }
-        public WildCardConfig ModConfig { get; private set; }
-        public ReadOnlyDictionary<string, Type[]> HarmonyTypes
+        public static WildCardConfig ModConfig { get; private set; }
+        public static ReadOnlyDictionary<string, Type[]> HarmonyTypes
         {
             get
             {
@@ -46,7 +49,7 @@ namespace LCWildCardMod
                 return publicHarmonies;
             }
         }
-        public ReadOnlyCollection<WildCardItem> ScrapList
+        public static ReadOnlyCollection<WildCardItem> ScrapList
         {
             get
             {
@@ -54,7 +57,7 @@ namespace LCWildCardMod
                 return publicScrapList;
             }
         }
-        public ReadOnlyCollection<WildCardSkin> SkinList
+        public static ReadOnlyCollection<WildCardSkin> SkinList
         {
             get
             {
@@ -62,7 +65,7 @@ namespace LCWildCardMod
                 return publicSkinList;
             }
         }
-        public ReadOnlyCollection<WildCardMapObject> MapObjectList
+        public static ReadOnlyCollection<WildCardMapObject> MapObjectList
         {
             get
             {
@@ -76,11 +79,46 @@ namespace LCWildCardMod
             Instance = this;
             KeyBinds = new KeyBinds();
             InitializeMethods();
-            LoadFromBundle();
-            InitializeAssets();
-            HandleHarmony();
-            HandleEvents();
-            Log.LogInfo($"{modName} Successfully Loaded");
+            try
+            {
+                LoadFromBundle();
+            }
+            catch (Exception exception)
+            {
+                Log.LogError($"{ModName} Failed to Load!");
+                Log.LogError(exception);
+                return;
+            }
+            if (!AssetUpdate())
+            {
+                return;
+            }
+            Log.LogInfo($"{ModName} Successfully Loaded");
+            initialized = true;
+        }
+        internal bool AssetUpdate(AssetType toUpdate = AssetType.All)
+        {
+            bool success = true;
+            try
+            {
+                InitializeAssets(toUpdate);
+                HandleHarmony(toUpdate);
+            }
+            catch (Exception exception)
+            {
+                if (initialized)
+                {
+                    Log.LogWarning($"{ModName} Failed to Update Assets!");
+                    Log.LogWarning(exception);
+                }
+                else
+                {
+                    Log.LogError($"{ModName} Failed to Load!");
+                    Log.LogError(exception);
+                }
+                success = false;
+            }
+            return success;
         }
         private void InitializeMethods()
         {
@@ -135,12 +173,26 @@ namespace LCWildCardMod
             toModify.GetComponentInChildren<IWildCardBase>()?.Initialize();
             NetworkPrefabs.RegisterNetworkPrefab(toModify);
         }
-        internal void InitializeAssets()
+        private void InitializeAssets(AssetType toUpdate)
         {
-            ModConfig ??= new WildCardConfig(Config, scrapList, skinList, mapObjectList);
-            InitializeScraps();
-            InitializeSkins();
-            InitializeMapObjects();
+            if (!initialized)
+            {
+                ModConfig = new WildCardConfig(Config, scrapList, skinList, mapObjectList);
+            }
+            ModConfig.ResetReadonlyDicts();
+            bool doAll = (int)toUpdate == 7;
+            if (doAll || toUpdate.HasFlag(AssetType.Scrap))
+            {
+                InitializeScraps();
+            }
+            if (doAll || toUpdate.HasFlag(AssetType.Skin))
+            {
+                InitializeSkins();
+            }
+            if (doAll || toUpdate.HasFlag(AssetType.MapObject))
+            {
+                InitializeMapObjects();
+            }
         }
         private void InitializeScraps()
         {
@@ -155,11 +207,12 @@ namespace LCWildCardMod
                 {
                     if (enabledBefore)
                     {
-                        if (ILifeSaver.IsLifeSaver(item.spawnPrefab, out string disabledLifeSaverName, out _))
+                        if (ILifeSaver.IsLifeSaver(item.spawnPrefab, out ILifeSaver disabledLifeSaver))
                         {
-                            ILifeSaver.AllLifeSavers.Remove(disabledLifeSaverName);
+                            ILifeSaver.AllLifeSavers.Remove(disabledLifeSaver.GetType().Name);
                         }
-                        LethalLib.Modules.Items.RemoveScrapFromLevels(item, Levels.LevelTypes.All);
+                        RemoveScrapFromLevels(item, Levels.LevelTypes.All);
+                        scrapItems.Remove(scrapItems.FirstOrDefault((x) => x.origItem == item));
                         Log.LogInfo($"\"{scrapName}\" scrap was disabled!");
                     }
                     continue;
@@ -168,9 +221,9 @@ namespace LCWildCardMod
                 {
                     continue;
                 }
-                if (ILifeSaver.IsLifeSaver(item.spawnPrefab, out string enabledLifeSaverName, out _))
+                if (ILifeSaver.IsLifeSaver(item.spawnPrefab, out ILifeSaver enabledLifeSaver))
                 {
-                    ILifeSaver.AllLifeSavers.Add(enabledLifeSaverName, new List<ILifeSaver>());
+                    ILifeSaver.AllLifeSavers.Add(enabledLifeSaver.GetType().Name, new List<ILifeSaver>());
                 }
                 Dictionary<Levels.LevelTypes, int> scrapLevelWeights = new Dictionary<Levels.LevelTypes, int>();
                 Dictionary<string, int> scrapModdedWeights = new Dictionary<string, int>();
@@ -195,7 +248,7 @@ namespace LCWildCardMod
                     scrapModdedWeights.Add(levelName, weight);
                 }
                 ModifyPrefab(item.spawnPrefab);
-                LethalLib.Modules.Items.RegisterScrap(item, scrapLevelWeights, scrapModdedWeights);
+                RegisterScrap(item, scrapLevelWeights, scrapModdedWeights);
                 Log.LogDebug($"\"{scrapName}\" scrap was enabled!");
             }
         }
@@ -238,17 +291,7 @@ namespace LCWildCardMod
                     {
                         for (int j = 0; j < mapObject.configBools.Length; j++)
                         {
-                            if (ModConfig.ScrapEnabled.TryGetValue(mapObject.configBools[j], out bool isEnabled) && !isEnabled)
-                            {
-                                configEnabled = false;
-                                break;
-                            }
-                            if (ModConfig.SkinEnabled.TryGetValue(mapObject.configBools[j], out isEnabled) && !isEnabled)
-                            {
-                                configEnabled = false;
-                                break;
-                            }
-                            if (ModConfig.MapObjectEnabled.TryGetValue(mapObject.configBools[j], out isEnabled) && !isEnabled)
+                            if ((ModConfig.ScrapEnabled.TryGetValue(mapObject.configBools[j], out bool isEnabled) || ModConfig.SkinEnabled.TryGetValue(mapObject.configBools[j], out isEnabled) || ModConfig.MapObjectEnabled.TryGetValue(mapObject.configBools[j], out isEnabled)) && !isEnabled)
                             {
                                 configEnabled = false;
                                 break;
@@ -265,7 +308,12 @@ namespace LCWildCardMod
                 {
                     if (enabledBefore)
                     {
-                        LethalLib.Modules.MapObjects.RemoveMapObject(mapObject.spawnableMapObject, Levels.LevelTypes.All);
+                        WildUtils.RemoveMapObject(mapObject, Levels.LevelTypes.All);
+                        mapObjects.Remove(mapObjects.FirstOrDefault((x) => x.indoorMapHazardType == mapObject));
+                        if (mapObject.prefabToSpawn.TryGetComponent(out WildCardProp oldMapObjectScrap))
+                        {
+                            plainItems.Remove(plainItems.FirstOrDefault((x) => x.item == oldMapObjectScrap.itemProperties));
+                        }
                         Log.LogInfo($"\"{mapObjectName}\" map object was disabled!");
                     }
                     continue;
@@ -274,28 +322,38 @@ namespace LCWildCardMod
                 {
                     continue;
                 }
-                ModifyPrefab(mapObject.spawnableMapObject.prefabToSpawn);
-                if (mapObject.spawnableMapObject.prefabToSpawn.TryGetComponent(out WildCardProp mapObjectScrap) && LethalLib.Modules.Items.plainItems.Find((x) => x.item == mapObjectScrap.itemProperties) == null)
+                ModifyPrefab(mapObject.prefabToSpawn);
+                if (mapObject.prefabToSpawn.TryGetComponent(out WildCardProp mapObjectScrap) && plainItems.Find((x) => x.item == mapObjectScrap.itemProperties) == null)
                 {
                     ModifyPrefab(mapObjectScrap.itemProperties.spawnPrefab);
-                    LethalLib.Modules.Items.RegisterItem(mapObjectScrap.itemProperties);
+                    RegisterItem(mapObjectScrap.itemProperties);
                 }
-                LethalLib.Modules.MapObjects.RegisterMapObject(mapObject.spawnableMapObject, Levels.LevelTypes.All, mapObject.GetCurveFunc());
+                WildUtils.RegisterMapObject(mapObject, Levels.LevelTypes.All, mapObject.GetCurveFunc());
                 Log.LogDebug($"\"{mapObjectName}\" map object was enabled!");
             }
         }
-        internal void HandleHarmony()
+        private void HandleHarmony(AssetType toUpdate)
         {
             publicHarmonies = null;
-            HarmonyHelper.TogglePatches(modGUID, true, typeof(NecessaryPatches));
-            HarmonyHelper.TogglePatches($"{modGUID}.debug", ModConfig.Debug, typeof(DebugPatches));
-            HarmonyHelper.TogglePatches($"{modGUID}.skins", WildCardSkin.AnyEnabled, typeof(SkinsPatches));
-            HarmonyHelper.TogglePatches($"{modGUID}.cojiro", ModConfig.ScrapEnabled.TryGetValue("Cojiro", out bool cojiroEnabled) && cojiroEnabled, typeof(CojiroPatches));
-            HarmonyHelper.TogglePatches($"{modGUID}.save", ILifeSaver.AnyEnabled, typeof(EnemyAIGraceSavePatch), typeof(SavePatches));
-        }
-        private void HandleEvents()
-        {
-            
+            bool doAll = (int)toUpdate == 7;
+            if (doAll)
+            {
+                HarmonyHelper.TogglePatches(ModGUID, true, typeof(NecessaryPatches));
+            }
+            if (doAll || toUpdate.HasFlag(AssetType.Scrap))
+            {
+                HarmonyHelper.TogglePatches($"{ModGUID}.cojiro", ModConfig.ScrapEnabled.TryGetValue("Cojiro", out bool cojiroEnabled) && cojiroEnabled, typeof(CojiroPatches));
+                HarmonyHelper.TogglePatches($"{ModGUID}.save", ILifeSaver.AnyEnabled, typeof(EnemyAIGraceSavePatch), typeof(SavePatches));
+            }
+            if (doAll || toUpdate.HasFlag(AssetType.Skin))
+            {
+                HarmonyHelper.TogglePatches($"{ModGUID}.skins", WildCardSkin.AnyEnabled, typeof(SkinsPatches));
+            }
+            //if (doAll || toUpdate.HasFlag(AssetType.MapObject))
+            //{
+
+            //}
+            HarmonyHelper.TogglePatches($"{ModGUID}.debug", ModConfig.Debug, typeof(DebugPatches));
         }
     }
 }

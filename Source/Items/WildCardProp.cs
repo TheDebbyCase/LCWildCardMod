@@ -84,56 +84,56 @@ namespace LCWildCardMod.Items
         [Header("WildCardProp")]
         [Space(3f)]
         [SerializeField]
-        private List<SelectablePair<SelectAudioClips>> audioClips;
+        private List<SelectablePair<SelectAudioClips>> audioClips = null;
         [SerializeField]
-        private List<SelectablePair<SelectAnimationParameters>> animations;
+        private List<SelectablePair<SelectAnimationParameters>> animations = null;
         [SerializeField]
-        private List<SelectablePair<SelectParticles>> particles;
+        private List<SelectablePair<SelectParticles>> particles = null;
         [SerializeField]
-        private List<SelectablePair<SelectRenderers>> meshRenderers;
+        private List<SelectablePair<SelectRenderers>> meshRenderers = null;
         [SerializeField]
-        private List<SelectablePair<SelectModelVariants>> modelVariants;
+        private List<SelectablePair<SelectModelVariants>> modelVariants = null;
         [SerializeField]
-        private List<SelectablePair<SelectLights>> lights;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectAudioClips> audioDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectAnimationParameters> animDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectParticles> particleDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectRenderers> renderDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectModelVariants> variantDict;
-        [HideInInspector]
-        [SerializeField]
-        private ListDict<string, SelectLights> lightDict;
+        private List<SelectablePair<SelectLights>> lights = null;
         [SerializeField]
         private bool networkAnimations = false;
-        private WildCardItem item;
-        private Dictionary<string, Item> properties;
-        private int state = -1;
-        private PlayerControllerB lastPlayer;
-        private ScanNodeProperties scanNode;
-        private bool buttonDown = false;
         [SerializeField]
         private RepeatingAction enemyUse = null;
         [SerializeField]
         private RepeatingAction enemyActivate = null;
         [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectAudioClips> audioDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectAnimationParameters> animDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectParticles> particleDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectRenderers> renderDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectModelVariants> variantDict = null;
+        [HideInInspector]
+        [SerializeField]
+        private ListDict<string, SelectLights> lightDict = null;
+        [HideInInspector]
         [SerializeReference]
         private AnimationHandler animator = null;
-        private System.Random random;
         [HideInInspector]
         [SerializeReference]
         private bool initialized = false;
-        internal EnemyAI heldByEnemy;
-        private EnemyAI lastEnemy;
+        private WildCardItem item = null;
+        private Dictionary<string, Item> properties = null;
+        private int state = -1;
+        private PlayerControllerB lastPlayer = null;
+        private ScanNodeProperties scanNode = null;
+        private bool buttonDown = false;
+        private System.Random random = null;
+        internal EnemyAI heldByEnemy = null;
+        private EnemyAI lastEnemy = null;
         internal IWildCardBase Base
         {
             get
@@ -339,6 +339,14 @@ namespace LCWildCardMod.Items
             }
         }
         internal bool ButtonDown => buttonDown;
+        internal virtual void InitializePrefab()
+        {
+            AudioSource baseAudio = gameObject.AddComponent<AudioSource>();
+            baseAudio.spatialBlend = 1f;
+            baseAudio.maxDistance = 25f;
+            baseAudio.rolloffMode = AudioRolloffMode.Custom;
+            baseAudio.SetCustomCurve(AudioSourceCurveType.CustomRolloff, new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(1f, 0f)));
+        }
         internal virtual void Awake()
         {
             GetComponent<AudioSource>().outputAudioMixerGroup = WildUtils.DiageticMasterGroup;
@@ -352,7 +360,7 @@ namespace LCWildCardMod.Items
         public override void Start()
         {
             base.Start();
-            if (!WildCardMod.Instance.ModConfig.Debug)
+            if (!WildCardMod.ModConfig.Debug)
             {
                 return;
             }
@@ -365,7 +373,7 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            if (WildCardMod.Instance.ModConfig.Debug)
+            if (WildCardMod.ModConfig.Debug)
             {
                 SetValueRpc(ScrapValue);
             }
@@ -381,11 +389,11 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            WildCardMod.Instance.KeyBinds.WildCardButton.performed += WildCardUse;
+            WildCardMod.KeyBinds.WildCardButton.performed += WildCardUse;
         }
         internal virtual void OnDisable()
         {
-            WildCardMod.Instance.KeyBinds.WildCardButton.performed -= WildCardUse;
+            WildCardMod.KeyBinds.WildCardButton.performed -= WildCardUse;
         }
         internal virtual void WildCardUse(InputAction.CallbackContext useContext)
         {
@@ -730,14 +738,6 @@ namespace LCWildCardMod.Items
                 return;
             }
             lights.Disable(index, false);
-        }
-        internal virtual void InitializePrefab()
-        {
-            AudioSource baseAudio = gameObject.AddComponent<AudioSource>();
-            baseAudio.spatialBlend = 1f;
-            baseAudio.maxDistance = 25f;
-            baseAudio.rolloffMode = AudioRolloffMode.Custom;
-            baseAudio.SetCustomCurve(AudioSourceCurveType.CustomRolloff, new AnimationCurve(new Keyframe(0f, 1f), new Keyframe(1f, 0f)));
         }
         void IWildCardBase.Initialize()
         {

@@ -49,11 +49,6 @@ namespace LCWildCardMod.Items
         {
             FinishAnimRpc();
         }
-        [Rpc(SendTo.Server)]
-        private void FinishAnimRpc()
-        {
-            playersFinishedLast++;
-        }
         public void RandomizeEye()
         {
             if (!IsOwner)
@@ -63,6 +58,11 @@ namespace LCWildCardMod.Items
             Vector2 offset = UnityEngine.Random.insideUnitCircle * eyeOffsetMultiplier;
             MeshRenderers["Eye"].SetOffsets(offset);
             RandomizeEyeRpc(offset);
+        }
+        [Rpc(SendTo.Server)]
+        private void FinishAnimRpc()
+        {
+            playersFinishedLast++;
         }
         [Rpc(SendTo.NotMe)]
         private void RandomizeEyeRpc(Vector2 offset)
