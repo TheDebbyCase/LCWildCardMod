@@ -10,8 +10,22 @@ namespace LCWildCardMod.Items
         [SerializeField]
         private Transform meshTransform = null;
         [SerializeField]
-        private float scaleMaxMultiplier = 3f;
+        private Vector2 scaleMinMax = new Vector2(0.5f, 1.5f);
+        private Vector2Int scaleMinMaxRound = Vector2Int.zero;
         private Vector3 meshScale = Vector3.one;
+        private Vector2 ScaleMinMax
+        {
+            set
+            {
+                scaleMinMax = value;
+                scaleMinMaxRound = new Vector2Int(Mathf.RoundToInt(value.x * 10f), Mathf.RoundToInt(value.y * 10f) + 1);
+            }
+        }
+        public override void Start()
+        {
+            base.Start();
+            ScaleMinMax = scaleMinMax;
+        }
         public void RandomizeScale()
         {
             meshScale = meshTransform.localScale;
@@ -19,7 +33,7 @@ namespace LCWildCardMod.Items
             {
                 return;
             }
-            SetScale(Vector3.Scale(meshScale, (UnityEngine.Random.insideUnitSphere * (scaleMaxMultiplier * 0.5f)) + Vector3.one));
+            SetScale(Vector3.Scale(meshScale, new Vector3(Random.Next(scaleMinMaxRound.x, scaleMinMaxRound.y) , Random.Next(scaleMinMaxRound.x, scaleMinMaxRound.y), Random.Next(scaleMinMaxRound.x, scaleMinMaxRound.y)) * 0.1f));
         }
         public void ResetScale()
         {

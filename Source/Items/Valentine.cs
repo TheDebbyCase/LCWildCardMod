@@ -85,7 +85,7 @@ namespace LCWildCardMod.Items
             float value = (intensity * 2f) - 1f;
             float lerped = Mathf.Lerp(1f, 3f, value);
             Animator.SetFloat("BeatSpeed", lerped);
-            Animator.SetFloat("RestSpeed", Mathf.Lerp(1f, 16f, value));
+            Animator.SetFloat("RestSpeed", Mathf.Lerp(1f, 32f, value));
             Audio["HeartBeat"].SetPitch(value + 1f);
             MeshRenderers["Main"].SetColours(new Color(lerped, lerped, lerped, 1f));
             if (!networked)

@@ -46,19 +46,20 @@ namespace LCWildCardMod.Items
                 return;
             }
             targetPosition = GetThrowDestination();
+            bool isEnemy = isHeldByEnemy;
             if (discardOnThrow)
             {
-                if (isHeld)
-                {
-                    LastPlayerHeldBy.DiscardHeldObject(placeObject: true, null, targetPosition);
-                }
-                else
+                if (isEnemy)
                 {
                     EnemyForceDropItem();
                 }
+                else
+                {
+                    LastPlayerHeldBy.DiscardHeldObject(placeObject: true, null, targetPosition);
+                }
             }
             Audio["Throw"]?.PlayRandomClip();
-            Throw(targetPosition, true);
+            Throw(targetPosition, isEnemy);
         }
         internal virtual void Throw(Vector3 newPosition, bool byEnemy, bool networked = true)
         {

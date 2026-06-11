@@ -43,10 +43,19 @@ namespace LCWildCardMod.Items
                 agitateMinMaxRound = new Vector2Int(Mathf.RoundToInt(agitateMinMax.x * 10f), Mathf.RoundToInt(agitateMinMax.y * 10f) + 1);
             }
         }
+        public override void Start()
+        {
+            base.Start();
+            Particles["Sleep"].PlayAll(networked: false);
+            AgitateMinMax = agitateMinMax;
+        }
         public override void OnNetworkSpawn()
         {
             base.OnNetworkSpawn();
-            AgitateMinMax = agitateMinMax;
+            if (!IsServer)
+            {
+                return;
+            }
             State = 0;
         }
         public override void ItemActivate(bool used, bool buttonDown = true)
@@ -85,10 +94,7 @@ namespace LCWildCardMod.Items
         public override void EquipItem()
         {
             base.EquipItem();
-            if (State == 0)
-            {
-                Particles["Sleep"].PlayAll(networked: false);
-            }
+            Particles["Sleep"].PlayAll(networked: false);
         }
         public override void DiscardItem()
         {

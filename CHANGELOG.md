@@ -4,6 +4,12 @@
 - Made Clauvi Mask and Gojo Glasses animation less rigid, allowing it to be cancelled mid animation, returning to its default state, rather than waiting until one animation is complete to start the next
 - Changed the public min/max curve for map object spawning config entries from a tuple to a vector
 - Moved some fields around for my own personal readability, shouldn't have any bearing on gameplay
+- Fixed Mario Party Dice bug spawning effect spawning random enemies instead of just bugs, and it registering as always having been thrown by an enemy, causing certain effects to never be played, and made bug behaviour a bit nicer, ie they wont chase you around anymore while just carrying the dice
+- Made Cojiro interact animation flap its wings wider
+- Adjusted Vulpixie's random scaling
+- Fixed Clauvi Mouse sleep particles not playing before being picked up
+- Fixed Bleeding Heart beat animation still playing while held
+- Adjusted speed of Valentine beating at high values
 
 ## 2.0.0
 - So, about that rewrite... It has been rewritten. Everything is much more unified under the hood which will make further development much easier

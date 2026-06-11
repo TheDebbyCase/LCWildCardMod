@@ -45,6 +45,10 @@ namespace LCWildCardMod.Items
         public override void Start()
         {
             base.Start();
+            if (startingValue < 0)
+            {
+                startingValue = ScrapValue;
+            }
             if (maskPrefabs != null)
             {
                 return;
@@ -64,7 +68,7 @@ namespace LCWildCardMod.Items
         {
             if (IsOwner)
             {
-                SetSide(Random.Next(0, 6) + 1);
+                SetSide(Random.Next(1, 7));
                 Audio["Roll"].PlayRandomClip();
             }
             rollable = true;
@@ -72,7 +76,7 @@ namespace LCWildCardMod.Items
         }
         private void SetSide(int side, bool networked = true)
         {
-            animFinished = side == currentSide;
+            animFinished = false;
             currentSide = side;
             Animator.SetInt("Side", currentSide);
             if (!networked)
@@ -101,6 +105,7 @@ namespace LCWildCardMod.Items
         }
         private IEnumerator DiceEffectCoroutine(int side)
         {
+            Log.LogDebug($"Running dice roll {side}");
             yield return new WaitUntil(() => animFinished);
             EffectToggle(false);
             SelectAudioClips audio = Audio["Negative"];
@@ -183,6 +188,7 @@ namespace LCWildCardMod.Items
         {
             EnablePhysics(enable);
             grabbable = enable;
+            grabbableToEnemies = enable;
             if (!enable)
             {
                 rollable = false;
@@ -276,7 +282,7 @@ namespace LCWildCardMod.Items
                 }
                 Transform node = vents[index].floorNode;
                 node ??= transform;
-                refs[i] = RoundManager.Instance.SpawnEnemyGameObject(node.position, node.eulerAngles.y, -1, WildUtils.AllEnemies["Hoarding Bug"]);
+                refs[i] = RoundManager.Instance.SpawnEnemyGameObject(node.position, node.eulerAngles.y, -1, WildUtils.AllEnemies["Hoarding bug"]);
             }
             spawnedBugs = true;
             StartCoroutine(BugModeCoroutine(refs));
@@ -316,34 +322,25 @@ namespace LCWildCardMod.Items
                         continue;
                     }
                     bug.removedPowerLevel = true;
-                    if (!bug.SetDestinationToPosition(transform.position, checkForPath: true))
+                    if (!isHeld && !isHeldByEnemy && !bug.SetDestinationToPosition(transform.position, checkForPath: true))
                     {
-                        bug.KillEnemy(true);
+                        bug.KillEnemy();
+                        bug.NetworkObject.Despawn();
                         bugsAlive--;
                         continue;
                     }
                     if (!bugNestChange[i])
                     {
-                        Log.LogDebug($"Bug {i} setting new nest");
                         bugNestChange[i] = true;
                         bug.choseNestPosition = true;
                         bug.nestPosition = bug.ChooseClosestNodeToPosition(transform.position).position;
                         bug.SyncNestPositionClientRpc(bug.nestPosition);
                     }
-                    if (bug.isAngry)
+                    if (bug.isAngry || bug.heldItem?.itemGrabbableObject == this || !HoarderBugAI.grabbableObjectsInMap.Contains(gameObject) || Vector3.Distance(transform.position, bug.nestPosition) < 0.75f)
                     {
                         continue;
                     }
-                    if (bug.targetItem != this)
-                    {
-                        Log.LogDebug($"Bug {i} setting target item");
-                        bug.targetItem = this;
-                    }
-                    if (HoarderBugAI.grabbableObjectsInMap.Contains(gameObject))
-                    {
-                        continue;
-                    }
-                    HoarderBugAI.grabbableObjectsInMap.Add(gameObject);
+                    bug.targetItem = this;
                 }
                 yield return null;
             }
@@ -362,7 +359,7 @@ namespace LCWildCardMod.Items
                     index -= nodes.Count;
                 }
                 Transform node = nodes[index].transform;
-                refs[i] = RoundManager.Instance.SpawnEnemyGameObject(RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(node.position, 35f, default, Random) + Vector3.up, 0f, -1, WildUtils.AllEnemies["Earth Leviathan"]);
+                refs[i] = RoundManager.Instance.SpawnEnemyGameObject(RoundManager.Instance.GetRandomNavMeshPositionInBoxPredictable(node.position, 50f, default, Random) + Vector3.up, 0f, -1, WildUtils.AllEnemies["Earth Leviathan"]);
             }
             spawnedWorms = true;
             StartCoroutine(WormModeCoroutine(refs));
@@ -388,6 +385,7 @@ namespace LCWildCardMod.Items
                 loopTimes++;
             }
             EffectToggle(true);
+            yield return new WaitForSeconds(Random.Next(2, 6));
             for (int i = 0; i < currentWorms.Length; i++)
             {
                 SandWormAI worm = currentWorms[i];
@@ -506,21 +504,27 @@ namespace LCWildCardMod.Items
         }
         private void ValueIncrease()
         {
-            if (startingValue < 0)
-            {
-                startingValue = ScrapValue;
-            }
             ScrapValue += startingValue;
             EffectToggle(true);
         }
+        private IEnumerator DespawnCoroutine()
+        {
+            SelectParticles particles = Particles["Effects"];
+            yield return new WaitUntil(() => particles == null || !particles.AnyAlive());
+            yield return null;
+            NetworkObject.Despawn();
+        }
         public override int GetItemDataToSave()
         {
-            return currentSide;
+            string intBuild = $"{currentSide}0{startingValue}";
+            return int.Parse(intBuild);
         }
         public override void LoadItemSaveData(int saveData)
         {
             base.LoadItemSaveData(saveData);
-            SetSide(saveData, false);
+            ReadOnlySpan<char> stringBuild = saveData.ToString();
+            SetSide(int.Parse(stringBuild[..1]), false);
+            startingValue = int.Parse(stringBuild[2..]);
         }
         [Rpc(SendTo.NotMe)]
         private void SetSideRpc(int side)
@@ -551,6 +555,11 @@ namespace LCWildCardMod.Items
             }
             EnableItemMeshes(false);
             EffectToggle(false, false);
+            if (!IsServer)
+            {
+                return;
+            }
+            StartCoroutine(DespawnCoroutine());
         }
         [Rpc(SendTo.SpecifiedInParams)]
         private void MaskRpc(NetworkObjectReference mask, RpcParams rpcParams = default)
