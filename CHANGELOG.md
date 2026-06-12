@@ -1,3 +1,6 @@
+## 2.0.3
+- Forgot to build some of the last update's changes
+
 ## 2.0.2
 - Fixed Hoarding bugs repeatedly picking up items after discarding one of my items
 - Fixed Smith Note not being able to add enemies to book, and fixed names not being crossed off at the right times
