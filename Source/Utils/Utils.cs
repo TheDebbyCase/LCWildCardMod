@@ -476,7 +476,12 @@ namespace LCWildCardMod.Utils
             }
             for (int i = 0; i < instance.Animations.Count; i++)
             {
-                instance.Animations[i].TickAll();
+                SelectAnimationParameters anim = instance.Animations[i];
+                if (!anim.clientsTick && !instance.IsServer)
+                {
+                    continue;
+                }
+                anim.TickAll();
             }
         }
         public static void Initialize(IWildCardBase instance, ref List<SelectablePair<SelectAudioClips>> audioClips, ref List<SelectablePair<SelectAnimationParameters>> animations, ref List<SelectablePair<SelectParticles>> particles, ref List<SelectablePair<SelectRenderers>> meshRenderers, ref List<SelectablePair<SelectModelVariants>> modelVariants, ref List<SelectablePair<SelectLights>> lights, out ListDict<string, SelectAudioClips> audioDict, out ListDict<string, SelectAnimationParameters> animDict, out ListDict<string, SelectParticles> particleDict, out ListDict<string, SelectRenderers> renderDict, out ListDict<string, SelectModelVariants> variantDict, out ListDict<string, SelectLights> lightDict)
@@ -548,6 +553,8 @@ namespace LCWildCardMod.Utils
             return hittable.Hit(hitForce, hitDirection, playerWhoHit, playHitSFX, hitID);
         }
         public string Name { get; set; }
+        public bool IsServer => false;
+        public bool IsOwner => false;
         public Transform Transform => null;
         public ListDict<string, SelectAudioClips> Audio => null;
         public ListDict<string, SelectAnimationParameters> Animations => null;
@@ -1611,16 +1618,16 @@ namespace LCWildCardMod.Utils
             SetAnimator(animationHandler);
         }
         [SerializeField]
-        private string parameter = default;
+        private string parameter = string.Empty;
         [SerializeField]
-        private RandomAnimationType randomType = default;
+        private RandomAnimationType randomType = RandomAnimationType.None;
         [SerializeField]
-        private float[] randomValues = default;
+        private float[] randomValues = null;
         [SerializeField]
         private bool manualNetwork = false;
         [SerializeField]
         private string syncToAudio = string.Empty;
-        private AnimationHandler animator = default;
+        private AnimationHandler animator = null;
         private bool flipFlop = false;
         public string ParameterName
         {
@@ -1773,7 +1780,7 @@ namespace LCWildCardMod.Utils
         private void SetParameter(float value)
         {
             animator.SetParameter(ParameterName, value);
-            if (!manualNetwork)
+            if (animator.IsNetworked || !manualNetwork)
             {
                 return;
             }

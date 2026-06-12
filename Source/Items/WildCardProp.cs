@@ -40,6 +40,8 @@ namespace LCWildCardMod.Items
                 itemProperties = newProperties;
             }
         }
+        bool IWildCardBase.IsServer => IsServer;
+        bool IWildCardBase.IsOwner => IsOwner;
         Transform IWildCardBase.Transform => transform;
         ListDict<string, SelectAudioClips> IWildCardBase.Audio => Audio;
         ListDict<string, SelectAnimationParameters> IWildCardBase.Animations => Animations;
@@ -411,10 +413,6 @@ namespace LCWildCardMod.Items
         public override void Update()
         {
             base.Update();
-            if (!IsServer)
-            {
-                return;
-            }
             IWildCardBase.Update(this);
             if (!isHeldByEnemy)
             {

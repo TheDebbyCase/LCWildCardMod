@@ -25,6 +25,8 @@ namespace LCWildCardMod.MapObjects
                 gameObject.name = value;
             }
         }
+        bool IWildCardBase.IsServer => IsServer;
+        bool IWildCardBase.IsOwner => IsOwner;
         Transform IWildCardBase.Transform => transform;
         ListDict<string, SelectAudioClips> IWildCardBase.Audio => Audio;
         ListDict<string, SelectAnimationParameters> IWildCardBase.Animations => Animations;
@@ -295,10 +297,6 @@ namespace LCWildCardMod.MapObjects
         }
         internal virtual void Update()
         {
-            if (!IsServer)
-            {
-                return;
-            }
             IWildCardBase.Update(this);
         }
         internal virtual void OnStateChange(int newState)

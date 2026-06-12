@@ -1,3 +1,6 @@
+## 2.0.4
+- Fixed Clauvi Mouse animation not working on clients
+
 ## 2.0.3
 - Forgot to build some of the last update's changes
 

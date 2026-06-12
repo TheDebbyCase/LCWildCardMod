@@ -46,6 +46,7 @@ namespace LCWildCardMod.Items
         public override void Start()
         {
             base.Start();
+            Animations["Sleep Sync"].clientsTick = true;
             Particles["Sleep"].PlayAll(networked: false);
             AgitateMinMax = agitateMinMax;
         }

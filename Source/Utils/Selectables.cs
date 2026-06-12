@@ -1032,6 +1032,8 @@ namespace LCWildCardMod.Utils
         }
         [SerializeField]
         public bool playOnSpawn = false;
+        [SerializeField]
+        public bool clientsTick = false;
         public void TickAll()
         {
             for (int i = 0; i < Count; i++)
@@ -1187,6 +1189,8 @@ namespace LCWildCardMod.Utils
         [SerializeField]
         private bool looping = false;
         [SerializeField]
+        private bool clientsLoop = false;
+        [SerializeField]
         private bool seamlessLoop = false;
         [Min(0f)]
         [SerializeField]
@@ -1280,7 +1284,7 @@ namespace LCWildCardMod.Utils
         {
             get
             {
-                return looping;
+                return looping && (clientsLoop || Base.IsServer);
             }
         }
         public float CloseRange
@@ -1312,7 +1316,7 @@ namespace LCWildCardMod.Utils
         {
             get
             {
-                if (hudAudio)
+                if (hudAudio || farSource == null)
                 {
                     return 0f;
                 }
@@ -1517,11 +1521,11 @@ namespace LCWildCardMod.Utils
                     loopTime = newTime;
                     if (Count == 1)
                     {
-                        RepeatClip();
+                        RepeatClip(networked: !clientsLoop);
                     }
                     else
                     {
-                        PlayRandomClip();
+                        PlayRandomClip(networked: !clientsLoop);
                     }
                 }
             }
@@ -1551,7 +1555,7 @@ namespace LCWildCardMod.Utils
                 return;
             }
             audibleTime = Base.Random.Next(minMaxAudibleRound.x, minMaxAudibleRound.y) * 0.01f;
-            DogNoise(0.5f, 1f);
+            DogNoise(0.5f, 1f, !clientsLoop);
         }
         public void SetLoop(bool loop, float? loopMin = null, float? loopMax = null)
         {

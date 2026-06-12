@@ -137,7 +137,9 @@ namespace LCWildCardMod.Items
         {
             if (IsServer)
             {
-                Audio["Buzz"].SetLoop(true);
+                SelectAudioClips audio = Audio["Buzz"];
+                audio.SetLoop(true);
+                audio.PlayRandomClip();
             }
             base.DiscardItem();
         }

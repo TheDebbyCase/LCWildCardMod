@@ -62,7 +62,9 @@ namespace LCWildCardMod.Items
         public override void EquipItem()
         {
             base.EquipItem();
-            Audio["Crackle"].SetLoop(true);
+            SelectAudioClips audio = Audio["Crackle"];
+            audio.SetLoop(true);
+            audio.PlayRandomClip(networked: false);
             Particles["Flame"].PlayAll(networked: false);
             Animations["Idle"].ResumeAll();
         }
