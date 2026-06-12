@@ -16,6 +16,7 @@ namespace LCWildCardMod.Items
         internal static readonly Dictionary<string, Texture2D> enemyPageTextures = new Dictionary<string, Texture2D>();
         private static Animator localHudAnim = null;
         private static int noteCount = 0;
+        private static int pageMask = 0;
         [Space(3f)]
         [Header("SmithNote")]
         [Space(3f)]
@@ -76,6 +77,7 @@ namespace LCWildCardMod.Items
         internal override void InitializePrefab()
         {
             base.InitializePrefab();
+            pageMask = LayerMask.GetMask("Player", "Enemies");
             if (enemyTextures != null)
             {
                 enemyPageTextures.Clear();
@@ -218,7 +220,7 @@ namespace LCWildCardMod.Items
                 rayStart = LastEnemyHeldBy.eye;
             }
             float hitDistance = addPageDistance;
-            RaycastHit[] hits = Physics.SphereCastAll(new Ray(rayStart.position, rayStart.forward), 0.5f, hitDistance, WildCardSwingable.HitMask, QueryTriggerInteraction.Ignore);
+            RaycastHit[] hits = Physics.SphereCastAll(new Ray(rayStart.position, rayStart.forward), 0.5f, hitDistance, pageMask, QueryTriggerInteraction.Collide);
             if (hits.Length == 0)
             {
                 return;
@@ -263,8 +265,10 @@ namespace LCWildCardMod.Items
                 NewPlayer(targetID);
                 return;
             }
+            Log.LogDebug("No valid player, checking enemies");
             if (targetEnemy == null)
             {
+                Log.LogDebug("No valid enemy, no new page added");
                 return;
             }
             targetID = targetEnemy.thisEnemyIndex;
@@ -416,6 +420,7 @@ namespace LCWildCardMod.Items
         {
             yield return new WaitForSeconds(4.5f);
             enemy.KillEnemy(!enemy.enemyType.canDie);
+            CheckDead();
         }
         private void SetHUD()
         {
@@ -469,6 +474,7 @@ namespace LCWildCardMod.Items
                 killCoroutine = StartCoroutine(KillEnemyCoroutine(killingEnemy));
                 Log.LogDebug($"Smith Note Killing {killingEnemy.enemyType.enemyName} {killingEnemy.thisEnemyIndex}!");
             }
+            CheckDead();
             if (!networked)
             {
                 return;
@@ -492,6 +498,7 @@ namespace LCWildCardMod.Items
                 }
                 Log.LogDebug($"Smith Note Killing {killingPlayer.playerUsername}!");
             }
+            CheckDead();
             if (!networked)
             {
                 return;

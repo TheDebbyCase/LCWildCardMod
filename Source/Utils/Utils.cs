@@ -1031,6 +1031,20 @@ namespace LCWildCardMod.Utils
                 level.indoorMapHazards = level.indoorMapHazards.Where((IndoorMapHazard x) => x.hazardType.prefabToSpawn != mapObject.prefabToSpawn).ToArray();
             }
         }
+        public static string[] LayersFromMask(int mask)
+        {
+            string maskBinary = Convert.ToString(mask, 2);
+            List<string> layers = new List<string>();
+            for (int i = maskBinary.Length - 1; i >= 0; i--)
+            {
+                if (maskBinary[i] == '0')
+                {
+                    continue;
+                }
+                layers.Add(LayerMask.LayerToName(i));
+            }
+            return layers.ToArray();
+        }
     }
     [Serializable]
     public class KeyBinds : LcInputActions

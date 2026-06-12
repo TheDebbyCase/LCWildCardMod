@@ -2,6 +2,7 @@
 using LCWildCardMod.Utils;
 using LethalLib.Extras;
 using System.Collections.Generic;
+using System.Linq;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -520,7 +521,14 @@ namespace LCWildCardMod.Items
             lastEnemy = heldByEnemy;
             DiscardFromAny(false, heldByEnemy);
             heldByEnemy = null;
-            HoarderBugAI.RefreshGrabbableObjectsInMapList();
+            if (grabbableToEnemies && !deactivated && HoarderBugAI.HoarderBugItems.Count > 0)
+            {
+                HoarderBugItem bugItem = HoarderBugAI.HoarderBugItems.FirstOrDefault((x) => x.itemGrabbableObject == this);
+                if (bugItem != null && Vector3.Distance(bugItem.itemNestPosition, transform.position) > 7.5f)
+                {
+                    HoarderBugAI.grabbableObjectsInMap.Add(gameObject);
+                }
+            }
             base.DiscardItemFromEnemy();
         }
         internal virtual void GrabFromAny(bool fromPlayer = true, EnemyAI enemy = null)
