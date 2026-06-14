@@ -74,6 +74,246 @@ namespace LCWildCardMod.Utils
         {
             WildCardMod.Instance.Log.LogDebug(toLog);
         }
+        public static void LogIL(this MethodBase patch, MethodBase patching, List<CodeInstruction> codes)
+        {
+            if (patch.GetCustomAttribute<HarmonyTranspiler>() == null)
+            {
+                return;
+            }
+            Dictionary<int, string> args = new Dictionary<int, string>()
+            {
+                [0] = $"({patching.DeclaringType.FullName})"
+            };
+            ParameterInfo[] parameters = patching.GetParameters();
+            List<string> argStrings = new List<string>();
+            for (int i = 0; i < parameters.Length; i++)
+            {
+                ParameterInfo parameter = parameters[i];
+                argStrings.Add($"{parameter.ParameterType.FullName} {parameter.Name}");
+                args.Add(i + 1, $"({argStrings[^1]})");
+            }
+            StringBuilder builder = new StringBuilder("IL after patching ");
+            builder.Append(patching.DeclaringType.FullName).Append('.').Append(patching.Name).Append('(').AppendJoin(", ", argStrings).Append(')').Append(" with ").Append(patch.DeclaringType.FullName).Append('.').Append(patch.Name).AppendLine("\n");
+            Dictionary<int, string> locs = new Dictionary<int, string>();
+            LocalVariableInfo[] baseLocals = patching.GetMethodBody().LocalVariables.ToArray();
+            for (int i = 0; i < baseLocals.Length; i++)
+            {
+                LocalVariableInfo newLocal = baseLocals[i];
+                locs.Add(newLocal.LocalIndex, $"({newLocal.LocalType.FullName})");
+            }
+            Dictionary<Label, int> destinations = new Dictionary<Label, int>();
+            Dictionary<Label, int> starts = new Dictionary<Label, int>();
+            int step = 0;
+            bool breakOut = false;
+            for (int i = 0; i < codes.Count; i++)
+            {
+                bool lastCode = i == codes.Count - 1;
+                CodeInstruction code = codes[i];
+                switch (step)
+                {
+                    case 0:
+                        {
+                            Label[] newLabels = null;
+                            if (code.Branches(out Label? newLabel))
+                            {
+                                newLabels = new Label[] { newLabel.Value };
+                            }
+                            else if (code.opcode == OpCodes.Switch)
+                            {
+                                newLabels = code.operand as Label[];
+                            }
+                            if (newLabels != null)
+                            {
+                                for (int j = 0; j < newLabels.Length; j++)
+                                {
+                                    newLabel = newLabels[j];
+                                    if (!starts.TryAdd(newLabel.Value, i))
+                                    {
+                                        builder.Append("Error: Tried to add line ").Append(i).Append(" as a starting location for Label").Append(newLabel.Value.GetHashCode()).Append(", but it already had a starting location (").Append(starts[newLabel.Value]).Append(")!").AppendLine("\n");
+                                    }
+                                }
+                            }
+                            for (int j = 0; j < code.labels.Count; j++)
+                            {
+                                Label label = code.labels[j];
+                                if (destinations.TryAdd(label, i))
+                                {
+                                    continue;
+                                }
+                                builder.Append("Error: Tried to add line ").Append(i).Append(" as a destination for Label").Append(label.GetHashCode()).AppendLine(", but it already had a destination (").Append(destinations[label]).Append(")!").AppendLine("\n");
+                            }
+                            break;
+                        }
+                    case 1:
+                        {
+                            StringBuilder lineBuilder = new StringBuilder();
+                            bool hasEmptyBefore = builder[^1] == '\n' && builder[^2] == '\r' && builder[^3] == '\n';
+                            lineBuilder.Append(i).Append(": ").Append(code.ToString()).Replace("::", ".").Replace(" NULL", string.Empty);
+                            if (code.IsLdarg() || code.IsLdarga() || code.IsStarg())
+                            {
+                                if (!(code.operand is int argument))
+                                {
+                                    argument = -1;
+                                    if (code.opcode == OpCodes.Ldarg_0)
+                                    {
+                                        argument = 0;
+                                    }
+                                    else if (code.opcode == OpCodes.Ldarg_1)
+                                    {
+                                        argument = 1;
+                                    }
+                                    else if (code.opcode == OpCodes.Ldarg_2)
+                                    {
+                                        argument = 2;
+                                    }
+                                    else if (code.opcode == OpCodes.Ldarg_3)
+                                    {
+                                        argument = 3;
+                                    }
+                                }
+                                if (argument >= 0)
+                                {
+                                    lineBuilder.Append(' ').Append(args[argument]);
+                                }
+                            }
+                            else if (code.IsLdloc() || code.IsStloc())
+                            {
+                                if (!(code.operand is int local))
+                                {
+                                    local = -1;
+                                    if (code.IsLdloc())
+                                    {
+                                        if (code.opcode == OpCodes.Ldloc_0)
+                                        {
+                                            local = 0;
+                                        }
+                                        else if (code.opcode == OpCodes.Ldloc_1)
+                                        {
+                                            local = 1;
+                                        }
+                                        else if (code.opcode == OpCodes.Ldloc_2)
+                                        {
+                                            local = 2;
+                                        }
+                                        else if (code.opcode == OpCodes.Ldloc_3)
+                                        {
+                                            local = 3;
+                                        }
+                                    }
+                                    else if (code.IsStloc())
+                                    {
+                                        if (code.opcode == OpCodes.Stloc_0)
+                                        {
+                                            local = 0;
+                                        }
+                                        else if (code.opcode == OpCodes.Stloc_1)
+                                        {
+                                            local = 1;
+                                        }
+                                        else if (code.opcode == OpCodes.Stloc_2)
+                                        {
+                                            local = 2;
+                                        }
+                                        else if (code.opcode == OpCodes.Stloc_3)
+                                        {
+                                            local = 3;
+                                        }
+                                    }
+                                }
+                                if (local >= 0)
+                                {
+                                    lineBuilder.Append(' ').Append(locs[local]);
+                                }
+                            }
+                            else if (code.Branches(out Label? checking))
+                            {
+                                lineBuilder.Append(" (Jumps to: ");
+                                if (destinations.TryGetValue(checking.Value, out int destIndex))
+                                {
+                                    lineBuilder.Append(destIndex);
+                                }
+                                else
+                                {
+                                    lineBuilder.Append("NOT FOUND");
+                                }
+                                lineBuilder.AppendLine(")");
+                            }
+                            else if (code.opcode == OpCodes.Switch && code.operand is Label[] labels && labels.Length > 0)
+                            {
+                                lineBuilder.Append(" (Jumps to: ");
+                                List<object> dests = new List<object>();
+                                for (int j = 0; j < labels.Length; j++)
+                                {
+                                    if (!destinations.TryGetValue(labels[j], out int destIndex))
+                                    {
+                                        dests.Add("NOT FOUND");
+                                    }
+                                    dests.Add(destIndex);
+                                }
+                                lineBuilder.AppendJoin(", ", dests).AppendLine(")");
+                            }
+                            else if (!lastCode && (code.opcode == OpCodes.Ret || code.opcode == OpCodes.Jmp || code.opcode == OpCodes.Leave || code.opcode == OpCodes.Leave_S || code.opcode == OpCodes.Throw || code.opcode == OpCodes.Rethrow || code.opcode == OpCodes.Ckfinite || code.opcode == OpCodes.Endfinally || code.opcode == OpCodes.Endfilter))
+                            {
+                                lineBuilder.Append('\n');
+                            }
+                            else if (code.opcode == OpCodes.Break)
+                            {
+                                if (!hasEmptyBefore)
+                                {
+                                    lineBuilder.Insert(0, '\n');
+                                    hasEmptyBefore = true;
+                                }
+                                lineBuilder.Append('\n');
+                            }
+                            int labelCount = code.labels.Count;
+                            if (labelCount > 0)
+                            {
+                                if (!hasEmptyBefore)
+                                {
+                                    lineBuilder.Insert(0, '\n');
+                                    hasEmptyBefore = true;
+                                }
+                                lineBuilder.Append(" (Receives jump");
+                                if (labelCount > 1)
+                                {
+                                    lineBuilder.Append('s');
+                                }
+                                lineBuilder.Append(" from: ");
+                                List<object> startLocs = new List<object>();
+                                for (int j = 0; j < labelCount; j++)
+                                {
+                                    if (!starts.TryGetValue(code.labels[j], out int startIndex))
+                                    {
+                                        startLocs.Add("NOT FOUND");
+                                        continue;
+                                    }
+                                    startLocs.Add(startIndex);
+                                }
+                                lineBuilder.AppendJoin(", ", startLocs).Append(')');
+                            }
+                            builder.AppendLine(lineBuilder.ToString());
+                            break;
+                        }
+                    default:
+                        {
+                            breakOut = true;
+                            break;
+                        }
+                }
+                if (breakOut)
+                {
+                    break;
+                }
+                if (!lastCode)
+                {
+                    continue;
+                }
+                i = -1;
+                step++;
+            }
+            builder.Append('\n').AppendLine("----------------------------------------------------------------");
+            LogString(builder.ToString());
+        }
         public static List<CodeInstruction> DebugString(string toLog, params Label[] labelsStart)
         {
             return new List<CodeInstruction>

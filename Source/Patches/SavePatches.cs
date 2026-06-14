@@ -24,6 +24,7 @@ namespace LCWildCardMod.Patches
         }
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
+        [HarmonyAfter("deB.WildCard.save")]
         internal static IEnumerable<CodeInstruction> GraceSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
@@ -65,9 +66,9 @@ namespace LCWildCardMod.Patches
                 {
                     newLoadPlayerLocal,
                     new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Unknown),
-                    new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                    new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                     new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                    new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                    new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                     new CodeInstruction(OpCodes.Ldarg_S, 0),
                     new CodeInstruction(OpCodes.Call, savePlayerGrace),
                     new CodeInstruction(OpCodes.Brtrue_S, destination)
@@ -78,6 +79,10 @@ namespace LCWildCardMod.Patches
             }
             if (collisionIndex == -1)
             {
+                if (WildCardMod.ModConfig.Debug)
+                {
+                    WildCardMod.Instance.Log.LogDebug($"{original.DeclaringType.FullName}.{original.Name} does not use a local to store player collision result!");
+                }
                 return codes;
             }
             int inverseNullCheckIndex = -1;
@@ -124,21 +129,24 @@ namespace LCWildCardMod.Patches
                 Label newLabel = generator.DefineLabel();
                 finalCode.Add(loadPlayerLocal);
                 finalCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Unknown));
-                finalCode.Add(new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex));
+                finalCode.Add(new CodeInstruction(OpCodes.Ldloca_S, vectorLocal));
                 finalCode.Add(new CodeInstruction(OpCodes.Initobj, typeof(Vector3)));
-                finalCode.Add(new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex));
+                finalCode.Add(new CodeInstruction(OpCodes.Ldloc_S, vectorLocal));
                 finalCode.Add(new CodeInstruction(OpCodes.Ldarg_S, 0));
                 finalCode.Add(new CodeInstruction(OpCodes.Call, savePlayerGrace));
-                finalCode.Add(new CodeInstruction(OpCodes.Brfalse_S, newLabel));
-                finalCode.Add(new CodeInstruction(OpCodes.Ret));
+                finalCode.Add(new CodeInstruction(OpCodes.Brtrue_S, newLabel));
                 if (inverseNullCheckIndex != -1 && finalCode.Count > 0)
                 {
                     insertAt = inverseNullCheckIndex;
                     codes[insertAt].MoveLabelsTo(finalCode[0]);
                 }
-                codes[insertAt].labels.Add(newLabel);
+                codes[^1].labels.Add(newLabel);
             }
             codes.InsertRange(insertAt, finalCode);
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
     }
@@ -197,7 +205,7 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(BushWolfEnemy), nameof(BushWolfEnemy.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> BushWolfEnemy_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> BushWolfEnemy_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -215,7 +223,7 @@ namespace LCWildCardMod.Patches
                     new CodeInstruction(OpCodes.Ldfld, foxInKill),
                     new CodeInstruction(OpCodes.Ldc_I4_S, 0),
                     new CodeInstruction(OpCodes.Call, collision),
-                    new CodeInstruction(OpCodes.Stloc_S, playerLocal.LocalIndex)
+                    new CodeInstruction(OpCodes.Stloc_S, playerLocal)
                 };
                 codes.InsertRange(i + 1, newLocalDefineCode);
                 i += newLocalDefineCode.Count + 1;
@@ -225,7 +233,7 @@ namespace LCWildCardMod.Patches
                     {
                         continue;
                     }
-                    codes[j] = new CodeInstruction(OpCodes.Ldloc_S, playerLocal.LocalIndex);
+                    codes[j] = new CodeInstruction(OpCodes.Ldloc_S, playerLocal);
                     for (int k = j - 1; k >= 0; k--)
                     {
                         if (codes[k].labels.Count == 0)
@@ -262,7 +270,8 @@ namespace LCWildCardMod.Patches
                     }
                     if (!oldSkip.HasValue)
                     {
-                        return codes;
+                        WildCardMod.Instance.Log.LogWarning($"Unable to apply transpiler \"{MethodBase.GetCurrentMethod().Name}\" to \"{original.Name}\"!");
+                        return instructions;
                     }
                     Label newSkip = generator.DefineLabel();
                     for (int k = j; k < codes.Count; k++)
@@ -275,11 +284,11 @@ namespace LCWildCardMod.Patches
                         Label notSavedLabel = generator.DefineLabel();
                         List<CodeInstruction> newCode = new List<CodeInstruction>
                         {
-                            new CodeInstruction(OpCodes.Ldloc_S, playerLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloc_S, playerLocal),
                             new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Mauling),
-                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                             new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
                             new CodeInstruction(OpCodes.Call, savePlayer),
                             new CodeInstruction(OpCodes.Brfalse_S, notSavedLabel),
@@ -299,12 +308,16 @@ namespace LCWildCardMod.Patches
                 }
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(CadaverGrowthAI), nameof(CadaverGrowthAI.BurstFromPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> CadaverGrowthAI_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> CadaverGrowthAI_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -326,9 +339,9 @@ namespace LCWildCardMod.Patches
                     {
                         new CodeInstruction(OpCodes.Ldarg_S, 1),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Suffocation),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldnull),
                         new CodeInstruction(OpCodes.Call, savePlayer),
                         new CodeInstruction(OpCodes.Brfalse_S, resumeBurstLabel),
@@ -350,6 +363,10 @@ namespace LCWildCardMod.Patches
                     break;
                 }
                 break;
+            }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
             }
             return codes;
         }
@@ -387,24 +404,28 @@ namespace LCWildCardMod.Patches
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, 0),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Mauling),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Brtrue_S, newLabel.Value)
                     };
-                    codes.InsertRange(i + 1, newCode);
+                    codes.InsertRange(j + 1, newCode);
                     break;
                 }
                 break;
+            }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
             }
             return codes;
         }
         [HarmonyPatch(typeof(CentipedeAI), nameof(CentipedeAI.DamagePlayerOnIntervals))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> CentipedeAI_GraceSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> CentipedeAI_GraceSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = codes.Count - 1; i >= 0; i--)
@@ -428,9 +449,9 @@ namespace LCWildCardMod.Patches
                         first,
                         new CodeInstruction(OpCodes.Ldfld, clingPlayer),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Suffocation),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Call, savePlayerGrace),
                         new CodeInstruction(OpCodes.Brtrue_S, destination)
@@ -441,12 +462,16 @@ namespace LCWildCardMod.Patches
                 }
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(DressGirlAI), nameof(DressGirlAI.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> DressGirlAI_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> DressGirlAI_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = codes.Count - 1; i >= 0; i--)
@@ -468,9 +493,9 @@ namespace LCWildCardMod.Patches
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, 0),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Unknown),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Call, savePlayer),
                         new CodeInstruction(OpCodes.Brtrue_S, newLabel.Value)
@@ -481,7 +506,8 @@ namespace LCWildCardMod.Patches
                 }
                 if (!newLabel.HasValue)
                 {
-                    return codes;
+                    WildCardMod.Instance.Log.LogWarning($"Unable to apply transpiler \"{MethodBase.GetCurrentMethod().Name}\" to \"{original.Name}\"!");
+                    return instructions;
                 }
                 List<CodeInstruction> postCode = new List<CodeInstruction>
                 {
@@ -500,12 +526,16 @@ namespace LCWildCardMod.Patches
                 codes.InsertRange(i + 1, postCode);
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(DressGirlAI), nameof(DressGirlAI.Update))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> DressGirlAI_Switch(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> DressGirlAI_Switch(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -544,9 +574,9 @@ namespace LCWildCardMod.Patches
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
                             new CodeInstruction(OpCodes.Ldfld, hauntingPlayer),
                             new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Unknown),
-                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                             new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                             new CodeInstruction(OpCodes.Ldarg_S, 0),
                             new CodeInstruction(OpCodes.Call, savePlayerGrace),
                             new CodeInstruction(OpCodes.Brfalse_S, newLabel)
@@ -557,6 +587,10 @@ namespace LCWildCardMod.Patches
                     break;
                 }
                 break;
+            }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
             }
             return codes;
         }
@@ -594,9 +628,9 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Ldloc_S, 1),
                         new CodeInstruction(OpCodes.Ldfld, specialAnim),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Strangulation),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldloc_S, 1),
                         new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Brtrue_S, newLabel)
@@ -605,6 +639,10 @@ namespace LCWildCardMod.Patches
                     break;
                 }
                 break;
+            }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
             }
             return codes;
         }
@@ -634,9 +672,9 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Ldfld, playerEaten),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Crushing),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldloc_S, 1),
                         new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Brfalse_S, newLabel),
@@ -662,12 +700,16 @@ namespace LCWildCardMod.Patches
                 }
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(HauntedMaskItem), nameof(HauntedMaskItem.FinishAttaching))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> HauntedMaskItem_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> HauntedMaskItem_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -697,7 +739,8 @@ namespace LCWildCardMod.Patches
                     }
                     if (!newLabel.HasValue)
                     {
-                        return codes;
+                        WildCardMod.Instance.Log.LogWarning($"Unable to apply transpiler \"{MethodBase.GetCurrentMethod().Name}\" to \"{original.Name}\"!");
+                        return instructions;
                     }
                     LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     List<CodeInstruction> newCodes = new List<CodeInstruction>
@@ -705,9 +748,9 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Ldfld, maskHeldBy),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Suffocation),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldnull),
                         new CodeInstruction(OpCodes.Call, savePlayer),
                         new CodeInstruction(OpCodes.Brfalse_S, newLabel.Value)
@@ -717,12 +760,16 @@ namespace LCWildCardMod.Patches
                 }
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(JesterAI), nameof(JesterAI.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> JesterAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> JesterAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -743,9 +790,9 @@ namespace LCWildCardMod.Patches
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, 0),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Mauling),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Brfalse_S, newLabel),
@@ -761,12 +808,16 @@ namespace LCWildCardMod.Patches
                 }
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(MaskedPlayerEnemy), nameof(MaskedPlayerEnemy.killAnimation), MethodType.Enumerator)]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> MaskedPlayerEnemy_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> MaskedPlayerEnemy_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -798,9 +849,9 @@ namespace LCWildCardMod.Patches
                             new CodeInstruction(OpCodes.Ldloc_S, 1),
                             new CodeInstruction(OpCodes.Ldfld, specialAnim),
                             new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Strangulation),
-                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                             new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                             new CodeInstruction(OpCodes.Ldloc_S, 1),
                             new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                             new CodeInstruction(OpCodes.Brfalse_S, newLabel),
@@ -817,12 +868,16 @@ namespace LCWildCardMod.Patches
                 }
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(MouthDogAI), nameof(MouthDogAI.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> MouthDogAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> MouthDogAI_TriggerSave(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -841,7 +896,8 @@ namespace LCWildCardMod.Patches
                 }
                 if (!oldSkipKill.HasValue)
                 {
-                    return codes;
+                    WildCardMod.Instance.Log.LogWarning($"Unable to apply transpiler \"{MethodBase.GetCurrentMethod().Name}\" to \"{original.Name}\"!");
+                    return instructions;
                 }
                 LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                 Label newLabel = generator.DefineLabel();
@@ -849,9 +905,9 @@ namespace LCWildCardMod.Patches
                 {
                     new CodeInstruction(OpCodes.Ldloc_S, 0),
                     new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Mauling),
-                    new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                    new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                     new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                    new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                    new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                     new CodeInstruction(OpCodes.Ldarg_S, 0),
                     new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                     new CodeInstruction(OpCodes.Brtrue_S, newLabel)
@@ -867,12 +923,16 @@ namespace LCWildCardMod.Patches
                 }
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(PlayerControllerB), nameof(PlayerControllerB.DamagePlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> PlayerControllerB_TriggerSaveDamage(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> PlayerControllerB_TriggerSaveDamage(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             LocalBuilder overkill = null;
@@ -907,9 +967,9 @@ namespace LCWildCardMod.Patches
                             {
                                 new CodeInstruction(OpCodes.Ldc_I4_S, 0),
                                 new CodeInstruction(OpCodes.Ceq),
-                                new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex),
+                                new CodeInstruction(OpCodes.Stloc_S, overkill),
                                 new CodeInstruction(OpCodes.Ldc_I4_S, 0),
-                                new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex)
+                                new CodeInstruction(OpCodes.Stloc_S, healthOverriden)
                             };
                             codes.InsertRange(k + 1, setNewLocals);
                             i = k + setNewLocals.Count + 1;
@@ -917,8 +977,8 @@ namespace LCWildCardMod.Patches
                         }
                         if (overkill == null || !oldLabel1.HasValue)
                         {
-                            WildCardMod.Instance.Log.LogWarning("Unable to apply transpiler to PlayerControllerB.DamagePlayer! Halo save will not work properly!");
-                            return codes;
+                            WildCardMod.Instance.Log.LogWarning($"Unable to apply transpiler \"{MethodBase.GetCurrentMethod().Name}\" to \"{original.Name}\"!");
+                            return instructions;
                         }
                         break;
                     }
@@ -935,17 +995,17 @@ namespace LCWildCardMod.Patches
                 {
                     List<CodeInstruction> newBranch = new List<CodeInstruction>
                     {
-                        new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, overkill),
                         new CodeInstruction(OpCodes.Brfalse_S, oldLabel1.Value),
                         new CodeInstruction(OpCodes.Ldc_I4_S, 1),
-                        new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex)
+                        new CodeInstruction(OpCodes.Stloc_S, healthOverriden)
                     };
                     codes.InsertRange(i + 1, newBranch);
                     i += newBranch.Count + 1;
                     Label newLabel = generator.DefineLabel();
                     Label noSaveJump = generator.DefineLabel();
                     Label overridenJump = generator.DefineLabel();
-                    CodeInstruction elseIfCode = new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex);
+                    CodeInstruction elseIfCode = new CodeInstruction(OpCodes.Ldloc_S, overkill);
                     for (int j = i; j < codes.Count; j++)
                     {
                         if (codes[j].Branches(out _))
@@ -966,19 +1026,19 @@ namespace LCWildCardMod.Patches
                         new CodeInstruction(OpCodes.Brfalse_S, newLabel),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Ldarg_S, 4),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldnull),
                         new CodeInstruction(OpCodes.Call, savePlayerTrigger),
                         new CodeInstruction(OpCodes.Ldc_I4_S, 0),
                         new CodeInstruction(OpCodes.Ceq),
-                        new CodeInstruction(OpCodes.Stloc_S, overkill.LocalIndex),
-                        new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex),
+                        new CodeInstruction(OpCodes.Stloc_S, overkill),
+                        new CodeInstruction(OpCodes.Ldloc_S, overkill),
                         new CodeInstruction(OpCodes.Brtrue_S, noSaveJump),
                         new CodeInstruction(OpCodes.Ldc_I4_S, 1),
-                        new CodeInstruction(OpCodes.Stloc_S, healthOverriden.LocalIndex),
-                        new CodeInstruction(OpCodes.Ldloc_S, healthOverriden.LocalIndex).WithLabels(newLabel, noSaveJump),
+                        new CodeInstruction(OpCodes.Stloc_S, healthOverriden),
+                        new CodeInstruction(OpCodes.Ldloc_S, healthOverriden).WithLabels(newLabel, noSaveJump),
                         new CodeInstruction(OpCodes.Brtrue_S, overridenJump)
                     };
                     for (int j = i; j < codes.Count; j++)
@@ -1039,7 +1099,7 @@ namespace LCWildCardMod.Patches
                         Label overkillJump = generator.DefineLabel();
                         List<CodeInstruction> newCode = new List<CodeInstruction>
                         {
-                            new CodeInstruction(OpCodes.Ldloc_S, overkill.LocalIndex),
+                            new CodeInstruction(OpCodes.Ldloc_S, overkill),
                             new CodeInstruction(OpCodes.Brfalse_S, overkillJump)
                         };
                         codes[j + 1].MoveLabelsTo(newCode[0]);
@@ -1064,12 +1124,16 @@ namespace LCWildCardMod.Patches
                     break;
                 }
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(RedLocustBees), nameof(RedLocustBees.OnCollideWithPlayer))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> RedLocustBees_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> RedLocustBees_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             Label? skipKill = null;
@@ -1091,9 +1155,9 @@ namespace LCWildCardMod.Patches
                     {
                         new CodeInstruction(OpCodes.Ldloc_S, 0),
                         new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Electrocution),
-                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloca_S, vectorLocal),
                         new CodeInstruction(OpCodes.Initobj, typeof(Vector3)),
-                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex),
+                        new CodeInstruction(OpCodes.Ldloc_S, vectorLocal),
                         new CodeInstruction(OpCodes.Ldarg_S, 0),
                         new CodeInstruction(OpCodes.Call, savePlayer),
                         new CodeInstruction(OpCodes.Brtrue_S, skipKill.Value)
@@ -1104,7 +1168,8 @@ namespace LCWildCardMod.Patches
                 }
                 if (!skipKill.HasValue)
                 {
-                    return codes;
+                    WildCardMod.Instance.Log.LogWarning($"Unable to apply transpiler \"{MethodBase.GetCurrentMethod().Name}\" to \"{original.Name}\"!");
+                    return instructions;
                 }
                 for (int j = i; j < codes.Count; j++)
                 {
@@ -1117,12 +1182,16 @@ namespace LCWildCardMod.Patches
                 }
                 break;
             }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
+            }
             return codes;
         }
         [HarmonyPatch(typeof(VehicleController), nameof(VehicleController.DestroyCar))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> VehicleController_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator)
+        internal static IEnumerable<CodeInstruction> VehicleController_Save(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
             for (int i = 0; i < codes.Count; i++)
@@ -1145,9 +1214,9 @@ namespace LCWildCardMod.Patches
                     LocalBuilder vectorLocal = generator.DeclareLocal(typeof(Vector3));
                     preCode.Add(new CodeInstruction(OpCodes.Ldloc_S, 0));
                     preCode.Add(new CodeInstruction(OpCodes.Ldc_I4_S, (int)CauseOfDeath.Blast));
-                    preCode.Add(new CodeInstruction(OpCodes.Ldloca_S, vectorLocal.LocalIndex));
+                    preCode.Add(new CodeInstruction(OpCodes.Ldloca_S, vectorLocal));
                     preCode.Add(new CodeInstruction(OpCodes.Initobj, typeof(Vector3)));
-                    preCode.Add(new CodeInstruction(OpCodes.Ldloc_S, vectorLocal.LocalIndex));
+                    preCode.Add(new CodeInstruction(OpCodes.Ldloc_S, vectorLocal));
                     preCode.Add(new CodeInstruction(OpCodes.Ldnull));
                     preCode.Add(new CodeInstruction(OpCodes.Call, savePlayer));
                     preCode.Add(new CodeInstruction(OpCodes.Brtrue_S, skipKill.Value));
@@ -1155,7 +1224,8 @@ namespace LCWildCardMod.Patches
                 }
                 if (!skipKill.HasValue)
                 {
-                    return codes;
+                    WildCardMod.Instance.Log.LogWarning($"Unable to apply transpiler \"{MethodBase.GetCurrentMethod().Name}\" to \"{original.Name}\"!");
+                    return instructions;
                 }
                 int postIndex = -1;
                 Label? skipNew = null;
@@ -1177,12 +1247,17 @@ namespace LCWildCardMod.Patches
                 }
                 if (!skipNew.HasValue)
                 {
-                    return codes;
+                    WildCardMod.Instance.Log.LogWarning($"Unable to apply transpiler \"{MethodBase.GetCurrentMethod().Name}\" to \"{original.Name}\"!");
+                    return instructions;
                 }
                 codes[postIndex].labels.Add(skipNew.Value);
                 codes.InsertRange(postIndex, postCode);
                 codes.InsertRange(preIndex, preCode);
                 break;
+            }
+            if (WildCardMod.ModConfig.Debug)
+            {
+                MethodBase.GetCurrentMethod().LogIL(original, codes);
             }
             return codes;
         }

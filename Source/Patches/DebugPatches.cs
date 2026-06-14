@@ -1,6 +1,8 @@
 ﻿using HarmonyLib;
 using LCWildCardMod.Utils;
 using System.Collections.Generic;
+using System.Reflection;
+using System.Reflection.Emit;
 namespace LCWildCardMod.Patches
 {
     internal static class DebugPatches
@@ -9,14 +11,10 @@ namespace LCWildCardMod.Patches
         [HarmonyPatch(typeof(HarmonyHelper), nameof(HarmonyHelper.ILCodeCheck))]
         [HarmonyWrapSafe]
         [HarmonyTranspiler]
-        internal static IEnumerable<CodeInstruction> CheckIL(IEnumerable<CodeInstruction> instructions)
+        internal static IEnumerable<CodeInstruction> CheckIL(IEnumerable<CodeInstruction> instructions, ILGenerator generator, MethodBase original)
         {
-            Log.LogDebug("Checking IL of HarmonyHelper.ILCodeCheck");
             List<CodeInstruction> codes = new List<CodeInstruction>(instructions);
-            for (int i = 0; i < codes.Count; i++)
-            {
-                Log.LogDebug(codes[i]);
-            }
+            MethodBase.GetCurrentMethod().LogIL(original, codes);
             return codes;
         }
     }

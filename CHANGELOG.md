@@ -1,3 +1,8 @@
+## 2.0.5
+- Fixed a bug where Maneater would sometimes be unable to kill players
+- Fixed a bug where the life saver grace period would not apply to Kidnapper Fox
+- Added more debugging options to my transpilers
+
 ## 2.0.4
 - Fixed Clauvi Mouse animation not working on clients
 

@@ -26,7 +26,7 @@ namespace LCWildCardMod
     {
         public const string ModGUID = "deB.WildCard";
         public const string ModName = "WILDCARD Stuff";
-        public const string ModVersion = "2.0.4";
+        public const string ModVersion = "2.0.5";
         private static ReadOnlyDictionary<string, Type[]> publicHarmonies = null;
         private static ReadOnlyCollection<WildCardItem> publicScrapList = null;
         private static ReadOnlyCollection<WildCardSkin> publicSkinList = null;
@@ -343,7 +343,8 @@ namespace LCWildCardMod
             if (doAll || toUpdate.HasFlag(AssetType.Scrap))
             {
                 HarmonyHelper.TogglePatches($"{ModGUID}.cojiro", ModConfig.ScrapEnabled.TryGetValue("Cojiro", out bool cojiroEnabled) && cojiroEnabled, typeof(CojiroPatches));
-                HarmonyHelper.TogglePatches($"{ModGUID}.save", ILifeSaver.AnyEnabled, typeof(EnemyAIGraceSavePatch), typeof(SavePatches));
+                HarmonyHelper.TogglePatches($"{ModGUID}.save", ILifeSaver.AnyEnabled, typeof(SavePatches));
+                HarmonyHelper.TogglePatches($"{ModGUID}.grace", ILifeSaver.AnyEnabled, typeof(EnemyAIGraceSavePatch));
             }
             if (doAll || toUpdate.HasFlag(AssetType.Skin))
             {
