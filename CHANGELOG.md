@@ -1,3 +1,6 @@
+## 2.0.6
+- Added a little reminder that will play on the player's screen the first time they pick up a WildCardStuff item that uses the extra keybind per launch
+
 ## 2.0.5
 - Fixed a bug where Maneater would sometimes be unable to kill players
 - Fixed a bug where the life saver grace period would not apply to Kidnapper Fox

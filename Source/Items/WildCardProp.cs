@@ -11,6 +11,7 @@ namespace LCWildCardMod.Items
     public class WildCardProp : PhysicsProp, IWildCardBase
     {
         internal static BepInEx.Logging.ManualLogSource Log => WildCardMod.Instance.Log;
+        private static bool firstControlsReminder = false;
         string IWildCardBase.Name
         {
             get
@@ -492,6 +493,11 @@ namespace LCWildCardMod.Items
         {
             base.GrabItem();
             lastPlayer = playerHeldBy;
+            if (!firstControlsReminder && !hasBeenHeld && LastPlayerHeldBy.IsLocal() && CurrentItem.usesButton)
+            {
+                firstControlsReminder = true;
+                HUDManager.Instance.DisplayTip($"Try the {InputControlPath.ToHumanReadableString(WildCardMod.KeyBinds.WildCardButton.bindings[WildCardMod.KeyBinds.WildCardButton.GetBindingIndexForControl(WildCardMod.KeyBinds.WildCardButton.controls[0])].effectivePath, InputControlPath.HumanReadableStringOptions.OmitDevice)} button!", "Some items from WildCardStuff have cool effects when this is pressed!");
+            }
             GrabFromAny();
         }
         public override void DiscardItem()

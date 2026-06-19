@@ -26,7 +26,7 @@ namespace LCWildCardMod
     {
         public const string ModGUID = "deB.WildCard";
         public const string ModName = "WILDCARD Stuff";
-        public const string ModVersion = "2.0.5";
+        public const string ModVersion = "2.0.6";
         private static ReadOnlyDictionary<string, Type[]> publicHarmonies = null;
         private static ReadOnlyCollection<WildCardItem> publicScrapList = null;
         private static ReadOnlyCollection<WildCardSkin> publicSkinList = null;

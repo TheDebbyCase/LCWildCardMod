@@ -69,6 +69,218 @@ namespace LCWildCardMod.Utils
         internal static FieldInfo playerSinking = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.sinkingValue));
         internal static FieldInfo playerHealth = AccessTools.Field(typeof(PlayerControllerB), nameof(PlayerControllerB.health));
         internal static FieldInfo giantPlayerStealth = AccessTools.Field(typeof(ForestGiantAI), nameof(ForestGiantAI.playerStealthMeters));
+        private static readonly ReadOnlyDictionary<OpCode, int> stackChange = new ReadOnlyDictionary<OpCode, int>(new Dictionary<OpCode, int>()
+        {
+            [OpCodes.Ldloc] = 1,
+            [OpCodes.Ldloc_0] = 1,
+            [OpCodes.Ldloc_1] = 1,
+            [OpCodes.Ldloc_2] = 1,
+            [OpCodes.Ldloc_3] = 1,
+            [OpCodes.Ldloc_S] = 1,
+            [OpCodes.Ldloca] = 1,
+            [OpCodes.Ldloca_S] = 1,
+            [OpCodes.Ldarg] = 1,
+            [OpCodes.Ldarg_0] = 1,
+            [OpCodes.Ldarg_1] = 1,
+            [OpCodes.Ldarg_2] = 1,
+            [OpCodes.Ldarg_3] = 1,
+            [OpCodes.Ldarg_S] = 1,
+            [OpCodes.Ldarga] = 1,
+            [OpCodes.Ldarga_S] = 1,
+            [OpCodes.Ldnull] = 1,
+            [OpCodes.Ldobj] = 0,
+            [OpCodes.Ldfld] = 0,
+            [OpCodes.Ldsfld] = 1,
+            [OpCodes.Ldflda] = 0,
+            [OpCodes.Ldsflda] = 1,
+            [OpCodes.Ldstr] = 1,
+            [OpCodes.Ldtoken] = 1,
+            [OpCodes.Ldftn] = 1,
+            [OpCodes.Ldvirtftn] = 1,
+            [OpCodes.Ldc_I4] = 1,
+            [OpCodes.Ldc_I4_0] = 1,
+            [OpCodes.Ldc_I4_1] = 1,
+            [OpCodes.Ldc_I4_2] = 1,
+            [OpCodes.Ldc_I4_3] = 1,
+            [OpCodes.Ldc_I4_4] = 1,
+            [OpCodes.Ldc_I4_5] = 1,
+            [OpCodes.Ldc_I4_6] = 1,
+            [OpCodes.Ldc_I4_7] = 1,
+            [OpCodes.Ldc_I4_8] = 1,
+            [OpCodes.Ldc_I4_M1] = 1,
+            [OpCodes.Ldc_I4_S] = 1,
+            [OpCodes.Ldc_I8] = 1,
+            [OpCodes.Ldc_R4] = 1,
+            [OpCodes.Ldc_R8] = 1,
+            [OpCodes.Ldelem] = -1,
+            [OpCodes.Ldelem_I] = -1,
+            [OpCodes.Ldelem_I1] = -1,
+            [OpCodes.Ldelem_I2] = -1,
+            [OpCodes.Ldelem_I4] = -1,
+            [OpCodes.Ldelem_I8] = -1,
+            [OpCodes.Ldelem_R4] = -1,
+            [OpCodes.Ldelem_R8] = -1,
+            [OpCodes.Ldelem_U1] = -1,
+            [OpCodes.Ldelem_U2] = -1,
+            [OpCodes.Ldelem_U4] = -1,
+            [OpCodes.Ldelem_Ref] = -1,
+            [OpCodes.Ldelema] = -1,
+            [OpCodes.Ldlen] = 0,
+            [OpCodes.Ldind_I] = 1,
+            [OpCodes.Ldind_I1] = 1,
+            [OpCodes.Ldind_I2] = 1,
+            [OpCodes.Ldind_I4] = 1,
+            [OpCodes.Ldind_I8] = 1,
+            [OpCodes.Ldind_R4] = 1,
+            [OpCodes.Ldind_R8] = 1,
+            [OpCodes.Ldind_Ref] = 1,
+            [OpCodes.Ldind_U1] = 1,
+            [OpCodes.Ldind_U2] = 1,
+            [OpCodes.Ldind_U4] = 1,
+            [OpCodes.Localloc] = 1,
+            [OpCodes.Stloc] = -1,
+            [OpCodes.Stloc_0] = -1,
+            [OpCodes.Stloc_1] = -1,
+            [OpCodes.Stloc_2] = -1,
+            [OpCodes.Stloc_3] = -1,
+            [OpCodes.Stloc_S] = -1,
+            [OpCodes.Starg] = -1,
+            [OpCodes.Starg_S] = -1,
+            [OpCodes.Stfld] = -2,
+            [OpCodes.Stsfld] = -1,
+            [OpCodes.Stobj] = -2,
+            [OpCodes.Stelem] = -3,
+            [OpCodes.Stelem_I] = -3,
+            [OpCodes.Stelem_I1] = -3,
+            [OpCodes.Stelem_I2] = -3,
+            [OpCodes.Stelem_I4] = -3,
+            [OpCodes.Stelem_I8] = -3,
+            [OpCodes.Stelem_R4] = -3,
+            [OpCodes.Stelem_R8] = -3,
+            [OpCodes.Stelem_Ref] = -2,
+            [OpCodes.Stind_I] = -2,
+            [OpCodes.Stind_I1] = -2,
+            [OpCodes.Stind_I2] = -2,
+            [OpCodes.Stind_I4] = -2,
+            [OpCodes.Stind_I8] = -2,
+            [OpCodes.Stind_R4] = -2,
+            [OpCodes.Stind_Ref] = -2,
+            [OpCodes.Initobj] = -1,
+            [OpCodes.Newobj] = 1,
+            [OpCodes.Initblk] = -1,
+            [OpCodes.Newarr] = 1,
+            [OpCodes.Add] = -1,
+            [OpCodes.Add_Ovf] = -1,
+            [OpCodes.Add_Ovf_Un] = -1,
+            [OpCodes.Sub] = -1,
+            [OpCodes.Sub_Ovf] = -1,
+            [OpCodes.Sub_Ovf_Un] = -1,
+            [OpCodes.Mul] = -1,
+            [OpCodes.Mul_Ovf] = -1,
+            [OpCodes.Mul_Ovf_Un] = -1,
+            [OpCodes.Div] = -1,
+            [OpCodes.Div_Un] = -1,
+            [OpCodes.Rem] = -1,
+            [OpCodes.Rem_Un] = -1,
+            [OpCodes.Neg] = 0,
+            [OpCodes.And] = -1,
+            [OpCodes.Or] = 0,
+            [OpCodes.Not] = 0,
+            [OpCodes.Xor] = -1,
+            [OpCodes.Ceq] = -1,
+            [OpCodes.Clt] = -1,
+            [OpCodes.Clt_Un] = -1,
+            [OpCodes.Cgt] = -1,
+            [OpCodes.Cgt_Un] = -1,
+            [OpCodes.Br] = 0,
+            [OpCodes.Br_S] = 0,
+            [OpCodes.Brtrue] = -1,
+            [OpCodes.Brtrue_S] = -1,
+            [OpCodes.Brfalse] = -1,
+            [OpCodes.Brfalse_S] = -1,
+            [OpCodes.Beq] = -2,
+            [OpCodes.Beq_S] = -2,
+            [OpCodes.Blt] = -2,
+            [OpCodes.Blt_S] = -2,
+            [OpCodes.Ble] = -2,
+            [OpCodes.Ble_S] = -2,
+            [OpCodes.Bge] = -2,
+            [OpCodes.Bge_S] = -2,
+            [OpCodes.Bgt] = -2,
+            [OpCodes.Bgt_S] = -2,
+            [OpCodes.Bne_Un] = -2,
+            [OpCodes.Bne_Un_S] = -2,
+            [OpCodes.Blt_Un] = -2,
+            [OpCodes.Blt_Un_S] = -2,
+            [OpCodes.Ble_Un] = -2,
+            [OpCodes.Ble_Un_S] = -2,
+            [OpCodes.Bge_Un] = -2,
+            [OpCodes.Bge_Un_S] = -2,
+            [OpCodes.Bgt_Un] = -2,
+            [OpCodes.Bgt_Un_S] = -2,
+            [OpCodes.Switch] = -1,
+            [OpCodes.Jmp] = 0,
+            [OpCodes.Ret] = 0,
+            [OpCodes.Leave] = 0,
+            [OpCodes.Leave_S] = 0,
+            [OpCodes.Refanytype] = 0,
+            [OpCodes.Refanyval] = 0,
+            [OpCodes.Mkrefany] = 0,
+            [OpCodes.Castclass] = 0,
+            [OpCodes.Box] = 0,
+            [OpCodes.Unbox] = 0,
+            [OpCodes.Unbox_Any] = 0,
+            [OpCodes.Conv_I] = 0,
+            [OpCodes.Conv_I1] = 0,
+            [OpCodes.Conv_I2] = 0,
+            [OpCodes.Conv_I4] = 0,
+            [OpCodes.Conv_I8] = 0,
+            [OpCodes.Conv_Ovf_I] = 0,
+            [OpCodes.Conv_Ovf_I1] = 0,
+            [OpCodes.Conv_Ovf_I2] = 0,
+            [OpCodes.Conv_Ovf_I4] = 0,
+            [OpCodes.Conv_Ovf_I8] = 0,
+            [OpCodes.Conv_Ovf_I_Un] = 0,
+            [OpCodes.Conv_Ovf_I1_Un] = 0,
+            [OpCodes.Conv_Ovf_I2_Un] = 0,
+            [OpCodes.Conv_Ovf_I4_Un] = 0,
+            [OpCodes.Conv_Ovf_I8_Un] = 0,
+            [OpCodes.Conv_U] = 0,
+            [OpCodes.Conv_U1] = 0,
+            [OpCodes.Conv_U2] = 0,
+            [OpCodes.Conv_U4] = 0,
+            [OpCodes.Conv_U8] = 0,
+            [OpCodes.Conv_Ovf_U] = 0,
+            [OpCodes.Conv_Ovf_U1] = 0,
+            [OpCodes.Conv_Ovf_U2] = 0,
+            [OpCodes.Conv_Ovf_U4] = 0,
+            [OpCodes.Conv_Ovf_U8] = 0,
+            [OpCodes.Conv_Ovf_U_Un] = 0,
+            [OpCodes.Conv_Ovf_U1_Un] = 0,
+            [OpCodes.Conv_Ovf_U2_Un] = 0,
+            [OpCodes.Conv_Ovf_U4_Un] = 0,
+            [OpCodes.Conv_Ovf_U8_Un] = 0,
+            [OpCodes.Conv_R4] = 0,
+            [OpCodes.Conv_R8] = 0,
+            [OpCodes.Conv_R_Un] = 0,
+            [OpCodes.Cpblk] = -2,
+            [OpCodes.Cpobj] = -2,
+            [OpCodes.Dup] = 1,
+            [OpCodes.Nop] = 0,
+            [OpCodes.Pop] = -1,
+            [OpCodes.Shl] = -1,
+            [OpCodes.Shr] = -1,
+            [OpCodes.Shr_Un] = -1,
+            [OpCodes.Sizeof] = 1,
+            [OpCodes.Isinst] = 0,
+            [OpCodes.Break] = 0,
+            [OpCodes.Arglist] = 1,
+            [OpCodes.Throw] = -1,
+            [OpCodes.Rethrow] = 0,
+            [OpCodes.Ckfinite] = -1,
+            [OpCodes.Endfinally] = 0,
+            [OpCodes.Endfilter] = 0
+        });
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         internal static void LogString(string toLog)
         {
@@ -101,46 +313,83 @@ namespace LCWildCardMod.Utils
                 LocalVariableInfo newLocal = baseLocals[i];
                 locs.Add(newLocal.LocalIndex, $"({newLocal.LocalType.FullName})");
             }
-            Dictionary<Label, int> destinations = new Dictionary<Label, int>();
-            Dictionary<Label, int> starts = new Dictionary<Label, int>();
+            Dictionary<Label, Vector2Int> labelPairs = new Dictionary<Label, Vector2Int>();
+            Dictionary<int, Label[]> branchOuts = new Dictionary<int, Label[]>();
+            Dictionary<int, Label[]> branchIns = new Dictionary<int, Label[]>();
+            List<int> io = new List<int>();
             int step = 0;
             bool breakOut = false;
-            for (int i = 0; i < codes.Count; i++)
+            int codeCount = codes.Count;
+            for (int i = 0; i < codeCount; i++)
             {
-                bool lastCode = i == codes.Count - 1;
+                bool lastCode = i == codeCount - 1;
                 CodeInstruction code = codes[i];
+                OpCode opcode = code.opcode;
+                object operand = code.operand;
+                Label[] labels = code.labels.ToArray();
                 switch (step)
                 {
                     case 0:
                         {
+                            int value = 0;
+                            if (opcode == OpCodes.Call || opcode == OpCodes.Callvirt)
+                            {
+                                MethodInfo method = code.operand as MethodInfo;
+                                value = -method.GetParameters().Length;
+                                if (!method.IsStatic)
+                                {
+                                    value--;
+                                }
+                                if (method.ReturnType != typeof(void))
+                                {
+                                    value++;
+                                }
+                            }
+                            else if (stackChange.ContainsKey(opcode))
+                            {
+                                value = stackChange[opcode];
+                            }
+                            else
+                            {
+                                builder.Append("Error: Tried to add stack change value for OpCode: ").Append(opcode).Append(", but there was no saved value, setting change to 0!").AppendLine("\n");
+                            }
+                            io.Add(value);
                             Label[] newLabels = null;
                             if (code.Branches(out Label? newLabel))
                             {
                                 newLabels = new Label[] { newLabel.Value };
                             }
-                            else if (code.opcode == OpCodes.Switch)
+                            else if (opcode == OpCodes.Switch)
                             {
                                 newLabels = code.operand as Label[];
                             }
                             if (newLabels != null)
                             {
+                                branchOuts.Add(i, newLabels);
                                 for (int j = 0; j < newLabels.Length; j++)
                                 {
                                     newLabel = newLabels[j];
-                                    if (!starts.TryAdd(newLabel.Value, i))
+                                    if (labelPairs.TryAdd(newLabel.Value, new Vector2Int(i, -1)))
                                     {
-                                        builder.Append("Error: Tried to add line ").Append(i).Append(" as a starting location for Label").Append(newLabel.Value.GetHashCode()).Append(", but it already had a starting location (").Append(starts[newLabel.Value]).Append(")!").AppendLine("\n");
+                                        continue;
                                     }
+                                    labelPairs[newLabel.Value] = new Vector2Int(i, labelPairs[newLabel.Value].y);
                                 }
                             }
-                            for (int j = 0; j < code.labels.Count; j++)
+                            int labelCount = code.labels.Count;
+                            if (labelCount <= 0)
                             {
-                                Label label = code.labels[j];
-                                if (destinations.TryAdd(label, i))
+                                break;
+                            }
+                            branchIns.Add(i, labels);
+                            for (int j = 0; j < labelCount; j++)
+                            {
+                                Label label = labels[j];
+                                if (labelPairs.TryAdd(label, new Vector2Int(-1, i)))
                                 {
                                     continue;
                                 }
-                                builder.Append("Error: Tried to add line ").Append(i).Append(" as a destination for Label").Append(label.GetHashCode()).AppendLine(", but it already had a destination (").Append(destinations[label]).Append(")!").AppendLine("\n");
+                                labelPairs[label] = new Vector2Int(labelPairs[label].x, i);
                             }
                             break;
                         }
@@ -148,25 +397,25 @@ namespace LCWildCardMod.Utils
                         {
                             StringBuilder lineBuilder = new StringBuilder();
                             bool hasEmptyBefore = builder[^1] == '\n' && builder[^2] == '\r' && builder[^3] == '\n';
-                            lineBuilder.Append(i).Append(": ").Append(code.ToString()).Replace("::", ".").Replace(" NULL", string.Empty);
+                            lineBuilder.Append(i).Append(" (").Append(io[i]).Append(')').Append(": ").Append(code.ToString()).Replace("::", ".").Replace(" NULL", string.Empty);
                             if (code.IsLdarg() || code.IsLdarga() || code.IsStarg())
                             {
-                                if (!(code.operand is int argument))
+                                if (!(operand is int argument))
                                 {
                                     argument = -1;
-                                    if (code.opcode == OpCodes.Ldarg_0)
+                                    if (opcode == OpCodes.Ldarg_0)
                                     {
                                         argument = 0;
                                     }
-                                    else if (code.opcode == OpCodes.Ldarg_1)
+                                    else if (opcode == OpCodes.Ldarg_1)
                                     {
                                         argument = 1;
                                     }
-                                    else if (code.opcode == OpCodes.Ldarg_2)
+                                    else if (opcode == OpCodes.Ldarg_2)
                                     {
                                         argument = 2;
                                     }
-                                    else if (code.opcode == OpCodes.Ldarg_3)
+                                    else if (opcode == OpCodes.Ldarg_3)
                                     {
                                         argument = 3;
                                     }
@@ -178,43 +427,43 @@ namespace LCWildCardMod.Utils
                             }
                             else if (code.IsLdloc() || code.IsStloc())
                             {
-                                if (!(code.operand is int local))
+                                if (!(operand is int local))
                                 {
                                     local = -1;
                                     if (code.IsLdloc())
                                     {
-                                        if (code.opcode == OpCodes.Ldloc_0)
+                                        if (opcode == OpCodes.Ldloc_0)
                                         {
                                             local = 0;
                                         }
-                                        else if (code.opcode == OpCodes.Ldloc_1)
+                                        else if (opcode == OpCodes.Ldloc_1)
                                         {
                                             local = 1;
                                         }
-                                        else if (code.opcode == OpCodes.Ldloc_2)
+                                        else if (opcode == OpCodes.Ldloc_2)
                                         {
                                             local = 2;
                                         }
-                                        else if (code.opcode == OpCodes.Ldloc_3)
+                                        else if (opcode == OpCodes.Ldloc_3)
                                         {
                                             local = 3;
                                         }
                                     }
                                     else if (code.IsStloc())
                                     {
-                                        if (code.opcode == OpCodes.Stloc_0)
+                                        if (opcode == OpCodes.Stloc_0)
                                         {
                                             local = 0;
                                         }
-                                        else if (code.opcode == OpCodes.Stloc_1)
+                                        else if (opcode == OpCodes.Stloc_1)
                                         {
                                             local = 1;
                                         }
-                                        else if (code.opcode == OpCodes.Stloc_2)
+                                        else if (opcode == OpCodes.Stloc_2)
                                         {
                                             local = 2;
                                         }
-                                        else if (code.opcode == OpCodes.Stloc_3)
+                                        else if (opcode == OpCodes.Stloc_3)
                                         {
                                             local = 3;
                                         }
@@ -228,9 +477,9 @@ namespace LCWildCardMod.Utils
                             else if (code.Branches(out Label? checking))
                             {
                                 lineBuilder.Append(" (Jumps to: ");
-                                if (destinations.TryGetValue(checking.Value, out int destIndex))
+                                if (labelPairs.TryGetValue(checking.Value, out Vector2Int pairVector))
                                 {
-                                    lineBuilder.Append(destIndex);
+                                    lineBuilder.Append(pairVector.y);
                                 }
                                 else
                                 {
@@ -238,25 +487,26 @@ namespace LCWildCardMod.Utils
                                 }
                                 lineBuilder.AppendLine(")");
                             }
-                            else if (code.opcode == OpCodes.Switch && code.operand is Label[] labels && labels.Length > 0)
+                            else if (opcode == OpCodes.Switch && operand is Label[] gotLabels && labels.Length > 0)
                             {
                                 lineBuilder.Append(" (Jumps to: ");
                                 List<object> dests = new List<object>();
-                                for (int j = 0; j < labels.Length; j++)
+                                for (int j = 0; j < gotLabels.Length; j++)
                                 {
-                                    if (!destinations.TryGetValue(labels[j], out int destIndex))
+                                    if (!labelPairs.TryGetValue(gotLabels[j], out Vector2Int pairVector))
                                     {
                                         dests.Add("NOT FOUND");
+                                        continue;
                                     }
-                                    dests.Add(destIndex);
+                                    dests.Add(pairVector.y);
                                 }
                                 lineBuilder.AppendJoin(", ", dests).AppendLine(")");
                             }
-                            else if (!lastCode && (code.opcode == OpCodes.Ret || code.opcode == OpCodes.Jmp || code.opcode == OpCodes.Leave || code.opcode == OpCodes.Leave_S || code.opcode == OpCodes.Throw || code.opcode == OpCodes.Rethrow || code.opcode == OpCodes.Ckfinite || code.opcode == OpCodes.Endfinally || code.opcode == OpCodes.Endfilter))
+                            else if (!lastCode && opcode.Leaves())
                             {
                                 lineBuilder.Append('\n');
                             }
-                            else if (code.opcode == OpCodes.Break)
+                            else if (opcode == OpCodes.Break)
                             {
                                 if (!hasEmptyBefore)
                                 {
@@ -271,7 +521,6 @@ namespace LCWildCardMod.Utils
                                 if (!hasEmptyBefore)
                                 {
                                     lineBuilder.Insert(0, '\n');
-                                    hasEmptyBefore = true;
                                 }
                                 lineBuilder.Append(" (Receives jump");
                                 if (labelCount > 1)
@@ -282,12 +531,12 @@ namespace LCWildCardMod.Utils
                                 List<object> startLocs = new List<object>();
                                 for (int j = 0; j < labelCount; j++)
                                 {
-                                    if (!starts.TryGetValue(code.labels[j], out int startIndex))
+                                    if (!labelPairs.TryGetValue(code.labels[j], out Vector2Int pairVector))
                                     {
                                         startLocs.Add("NOT FOUND");
                                         continue;
                                     }
-                                    startLocs.Add(startIndex);
+                                    startLocs.Add(pairVector.x);
                                 }
                                 lineBuilder.AppendJoin(", ", startLocs).Append(')');
                             }
@@ -551,6 +800,14 @@ namespace LCWildCardMod.Utils
                 return load1.OperandIs(load2.operand);
             }
             return opCode1 == opCode2 && load1.OperandIs(load2.operand);
+        }
+        public static bool Leaves(this CodeInstruction code)
+        {
+            return code.opcode.Leaves();
+        }
+        public static bool Leaves(this OpCode opcode)
+        {
+            return opcode == OpCodes.Ret || opcode == OpCodes.Jmp || opcode == OpCodes.Leave || opcode == OpCodes.Leave_S || opcode == OpCodes.Throw || opcode == OpCodes.Rethrow || opcode == OpCodes.Ckfinite || opcode == OpCodes.Endfinally || opcode == OpCodes.Endfilter;
         }
         internal static (Harmony, Type[]) GetHarmony(string id, params Type[] toPatch)
         {
