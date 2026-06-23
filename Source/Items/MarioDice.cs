@@ -124,22 +124,23 @@ namespace LCWildCardMod.Items
             {
                 default:
                     {
-                        if (ScrapValue <= 0)
-                        {
-                            Explode();
-                            break;
-                        }
-                        ValueZero();
-                        break;
-                    }
-                case 2:
-                    {
                         if (lastThrownByEnemy)
                         {
                             Swarm();
                             break;
                         }
                         ForceMask();
+                        break;
+                        
+                    }
+                case 2:
+                    {
+                        if (ScrapValue <= 0)
+                        {
+                            Explode();
+                            break;
+                        }
+                        ValueZero();
                         break;
                     }
                 case 3:

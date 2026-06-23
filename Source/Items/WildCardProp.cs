@@ -385,7 +385,7 @@ namespace LCWildCardMod.Items
         protected override void OnNetworkPostSpawn()
         {
             base.OnNetworkPostSpawn();
-            IWildCardBase.OnNetworkPostSpawn(this, hasBeenHeld);
+            IWildCardBase.OnNetworkPostSpawn(this, scrapPersistedThroughRounds, scrapPersistedThroughRounds);
         }
         internal virtual void OnEnable()
         {

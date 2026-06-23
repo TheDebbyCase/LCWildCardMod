@@ -1,3 +1,7 @@
+## 2.0.8
+- Swapped Mario Dice effects 1 and 2
+- Fixed certain items effects playing on player spawn when in the ship when they shouldn't
+
 ## 2.0.7
 - The little reminder didnt't work... now it does!
 

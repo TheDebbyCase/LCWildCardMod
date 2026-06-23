@@ -925,18 +925,9 @@ namespace LCWildCardMod.Utils
                 light.SetBase(instance);
             }
         }
-        public static void OnNetworkPostSpawn(IWildCardBase instance, bool skipAudio = false)
+        public static void OnNetworkPostSpawn(IWildCardBase instance, bool firstSpawn = true, bool skipAudio = false)
         {
             instance.Animator?.SetNetworkEnabled(instance.NetworkAnimations);
-            for (int i = 0; i < instance.ModelVariants.Count; i++)
-            {
-                SelectModelVariants variants = instance.ModelVariants[i];
-                if (!variants.randomOnSpawn)
-                {
-                    continue;
-                }
-                variants.SwitchRandom();
-            }
             for (int i = 0; i < instance.Lights.Count; i++)
             {
                 SelectLights lights = instance.Lights[i];
@@ -945,6 +936,19 @@ namespace LCWildCardMod.Utils
                     continue;
                 }
                 lights.EnableAll();
+            }
+            if (!firstSpawn)
+            {
+                return;
+            }
+            for (int i = 0; i < instance.ModelVariants.Count; i++)
+            {
+                SelectModelVariants variants = instance.ModelVariants[i];
+                if (!variants.randomOnSpawn)
+                {
+                    continue;
+                }
+                variants.SwitchRandom();
             }
             if (skipAudio)
             {
