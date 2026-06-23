@@ -464,6 +464,12 @@ namespace LCWildCardMod.Items
         }
         public override void EquipItem()
         {
+            lastPlayer = playerHeldBy;
+            if (!firstControlsReminder && !hasBeenHeld && LastPlayerHeldBy.IsLocal() && CurrentItem.usesButton)
+            {
+                firstControlsReminder = true;
+                HUDManager.Instance.DisplayTip($"Try the {InputControlPath.ToHumanReadableString(WildCardMod.KeyBinds.WildCardButton.bindings[WildCardMod.KeyBinds.WildCardButton.GetBindingIndexForControl(WildCardMod.KeyBinds.WildCardButton.controls[0])].effectivePath, InputControlPath.HumanReadableStringOptions.OmitDevice)} button!", "Some items from WildCardStuff have cool effects when this is pressed!");
+            }
             base.EquipItem();
             Animator?.SetBool("BeingHeld", true);
             for (int i = 0; i < Lights.Count; i++)
@@ -492,12 +498,6 @@ namespace LCWildCardMod.Items
         public override void GrabItem()
         {
             base.GrabItem();
-            lastPlayer = playerHeldBy;
-            if (!firstControlsReminder && !hasBeenHeld && LastPlayerHeldBy.IsLocal() && CurrentItem.usesButton)
-            {
-                firstControlsReminder = true;
-                HUDManager.Instance.DisplayTip($"Try the {InputControlPath.ToHumanReadableString(WildCardMod.KeyBinds.WildCardButton.bindings[WildCardMod.KeyBinds.WildCardButton.GetBindingIndexForControl(WildCardMod.KeyBinds.WildCardButton.controls[0])].effectivePath, InputControlPath.HumanReadableStringOptions.OmitDevice)} button!", "Some items from WildCardStuff have cool effects when this is pressed!");
-            }
             GrabFromAny();
         }
         public override void DiscardItem()

@@ -1,3 +1,6 @@
+## 2.0.7
+- The little reminder didnt't work... now it does!
+
 ## 2.0.6
 - Added a little reminder that will play on the player's screen the first time they pick up a WildCardStuff item that uses the extra keybind per launch
 
